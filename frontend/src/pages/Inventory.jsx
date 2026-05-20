@@ -1,24 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { Save, Plus, Trash2, Pencil, Check } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Plus, Trash2, Pencil, Check } from 'lucide-react';
+import { apiRequest } from '../lib/api';
 import './Inventory.css';
 
 export default function Inventory() {
   const [items, setItems] = useState([]);
-  
-  // Estado para nuevo insumo
   const [newName, setNewName] = useState('');
   const [newUnit, setNewUnit] = useState('');
   const [newPrice, setNewPrice] = useState('');
-
-  // Estado para edición
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({ name: '', unit: '', price: '' });
 
-
-
   useEffect(() => {
-    fetch('http://localhost:3000/api/inventory')
-      .then(res => res.json())
+    apiRequest('/api/inventory')
       .then(data => {
         if (Array.isArray(data)) setItems(data);
       })
@@ -27,9 +21,11 @@ export default function Inventory() {
 
   const handleDelete = async (id) => {
     try {
-      await fetch(`http://localhost:3000/api/inventory/${id}`, { method: 'DELETE' });
+      await apiRequest(`/api/inventory/${id}`, { method: 'DELETE' });
       setItems(items.filter(item => item.id !== id));
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const handleEditStart = (item) => {
@@ -38,46 +34,41 @@ export default function Inventory() {
   };
 
   const handleEditSave = async (id) => {
-    const updatedFields = { 
-      name: editForm.name, 
-      unit: editForm.unit, 
-      price: Number(editForm.price) 
+    const updatedFields = {
+      name: editForm.name,
+      unit: editForm.unit,
+      price: Number(editForm.price),
     };
-    
+
     try {
-      await fetch(`http://localhost:3000/api/inventory/${id}`, {
+      const updatedItem = await apiRequest(`/api/inventory/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedFields)
+        body: JSON.stringify(updatedFields),
       });
-      setItems(items.map(item => item.id === id ? { ...item, ...updatedFields } : item));
+      setItems(items.map(item => item.id === id ? updatedItem : item));
       setEditingId(null);
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const handleAddItem = async (e) => {
     e.preventDefault();
-    if (!newName || !newPrice) return;
-    
-    try {
-      const res = await fetch('http://localhost:3000/api/inventory', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newName, unit: newUnit, price: Number(newPrice) })
-      });
-      
-      if (res.ok) {
-        const newItem = await res.json();
-        setItems([...items, newItem]);
-        setNewName('');
-        setNewPrice('');
-      }
-    } catch (e) { console.error(e); }
-  };
+    if (!newName || !newUnit || !newPrice) return;
 
-  const handleSave = () => {
-    localStorage.setItem('asado_inventory', JSON.stringify(items));
-    alert('¡Precios actualizados correctamente!');
+    try {
+      const newItem = await apiRequest('/api/inventory', {
+        method: 'POST',
+        body: JSON.stringify({ name: newName, unit: newUnit, price: Number(newPrice) }),
+      });
+
+      setItems([...items, newItem]);
+      setNewName('');
+      setNewUnit('');
+      setNewPrice('');
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   return (
@@ -87,10 +78,6 @@ export default function Inventory() {
           <h1>Catálogo de Insumos</h1>
           <p>Configura los precios base para tus cotizaciones.</p>
         </div>
-        <button className="btn btn-primary" onClick={handleSave}>
-          <Save size={18} />
-          Guardar Cambios
-        </button>
       </div>
 
       <div className="card add-insumo-form" style={{ marginBottom: '2rem' }}>
@@ -102,14 +89,14 @@ export default function Inventory() {
           </div>
           <div className="form-group">
             <label className="form-label">Unidad</label>
-            <input 
-              type="text" 
-              className="form-input" 
-              list="unit-options" 
+            <input
+              type="text"
+              className="form-input"
+              list="unit-options"
               placeholder="Ej. kg, litro, caja"
-              value={newUnit} 
-              onChange={e => setNewUnit(e.target.value)} 
-              required 
+              value={newUnit}
+              onChange={e => setNewUnit(e.target.value)}
+              required
             />
             <datalist id="unit-options">
               {Array.from(new Set(items.map(item => item.unit))).map(u => (
@@ -152,23 +139,23 @@ export default function Inventory() {
                   {editingId === item.id ? (
                     <>
                       <td>
-                        <input type="text" className="form-input" style={{ padding: '0.4rem', fontSize: '0.9rem' }} value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} />
+                        <input type="text" className="form-input" style={{ padding: '0.4rem', fontSize: '0.9rem' }} value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} />
                       </td>
                       <td>
-                        <input 
-                          type="text" 
-                          className="form-input" 
+                        <input
+                          type="text"
+                          className="form-input"
                           list="unit-options"
-                          style={{ padding: '0.4rem', fontSize: '0.9rem', width: '100px' }} 
-                          value={editForm.unit} 
-                          onChange={e => setEditForm({...editForm, unit: e.target.value})} 
+                          style={{ padding: '0.4rem', fontSize: '0.9rem', width: '100px' }}
+                          value={editForm.unit}
+                          onChange={e => setEditForm({ ...editForm, unit: e.target.value })}
                           required
                         />
                       </td>
                       <td>
                         <div className="price-input-wrapper">
                           <span>$</span>
-                          <input type="number" className="form-input" style={{ padding: '0.4rem', fontSize: '0.9rem' }} value={editForm.price} onChange={e => setEditForm({...editForm, price: e.target.value})} />
+                          <input type="number" className="form-input" style={{ padding: '0.4rem', fontSize: '0.9rem' }} value={editForm.price} onChange={e => setEditForm({ ...editForm, price: e.target.value })} />
                         </div>
                       </td>
                       <td style={{ textAlign: 'center', display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
@@ -185,15 +172,15 @@ export default function Inventory() {
                         <strong>${Number(item.price).toLocaleString('es-AR')}</strong>
                       </td>
                       <td style={{ textAlign: 'center', display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
-                        <button 
-                          className="btn-icon-edit" 
+                        <button
+                          className="btn-icon-edit"
                           onClick={() => handleEditStart(item)}
                           title="Editar insumo"
                         >
                           <Pencil size={18} />
                         </button>
-                        <button 
-                          className="btn-icon-danger" 
+                        <button
+                          className="btn-icon-danger"
                           onClick={() => handleDelete(item.id)}
                           title="Eliminar insumo"
                         >

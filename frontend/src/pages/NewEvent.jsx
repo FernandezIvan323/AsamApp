@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calculator as CalcIcon, ReceiptText, Users, Save, Calendar, MapPin, Beef } from 'lucide-react';
+import { Calculator as CalcIcon, ReceiptText, Users, Save, Calendar, Beef } from 'lucide-react';
+import { apiRequest } from '../lib/api';
 import './NewEvent.css';
 
 export default function NewEvent() {
@@ -24,8 +25,7 @@ export default function NewEvent() {
   const [selectedQuantities, setSelectedQuantities] = useState({});
 
   useEffect(() => {
-    fetch('http://localhost:3000/api/inventory')
-      .then(res => res.json())
+    apiRequest('/api/inventory')
       .then(data => {
         if (Array.isArray(data)) setInventory(data);
       })
@@ -69,7 +69,6 @@ export default function NewEvent() {
     }));
 
     const newEvent = {
-      id: Date.now().toString(),
       title: eventName,
       client: clientName,
       date: eventDate,
@@ -83,12 +82,10 @@ export default function NewEvent() {
       profitMargin: Number(profitMargin)
     };
 
-    fetch('http://localhost:3000/api/events', {
+    apiRequest('/api/events', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newEvent)
     })
-    .then(res => res.json())
     .then(() => {
       navigate('/history');
     })

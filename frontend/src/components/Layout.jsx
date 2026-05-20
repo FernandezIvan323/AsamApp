@@ -1,4 +1,3 @@
-import React from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { Flame, CalendarDays, Calculator, Beef, LineChart } from 'lucide-react';
 import './Layout.css';

@@ -1,134 +1,143 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import { PrismaClient } from '@prisma/client';
+import {
+  validateCatalogPayload,
+  validateEventPayload,
+  validateStatusPayload,
+} from './validation.js';
 
 const app = express();
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3000;
+const corsOrigin = process.env.CORS_ORIGIN;
 
-app.use(cors());
-app.use(express.json());
+app.use(cors(corsOrigin ? { origin: corsOrigin.split(',').map(origin => origin.trim()) } : undefined));
+app.use(express.json({ limit: '1mb' }));
 
-// Obtener todos los eventos
+function sendValidationError(res, errors) {
+  return res.status(400).json({ error: errors.join('. ') });
+}
+
+function handlePrismaError(res, error, fallbackMessage) {
+  console.error(error);
+  if (error?.code === 'P2025') {
+    return res.status(404).json({ error: 'Recurso no encontrado' });
+  }
+  return res.status(500).json({ error: fallbackMessage });
+}
+
 app.get('/api/events', async (req, res) => {
   try {
     const events = await prisma.event.findMany({
       include: { insumos: true },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     });
     res.json(events);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Error al obtener eventos' });
+    handlePrismaError(res, error, 'Error al obtener eventos');
   }
 });
 
-// Crear un nuevo evento
 app.post('/api/events', async (req, res) => {
+  const { errors, data } = validateEventPayload(req.body);
+  if (errors.length) return sendValidationError(res, errors);
+
   try {
-    const { title, client, date, time, location, guests, extraCosts, profitMargin, totalPrice, insumos } = req.body;
-    
     const event = await prisma.event.create({
       data: {
-        title, client, date, time, location, guests, extraCosts, profitMargin, totalPrice,
+        title: data.title,
+        client: data.client,
+        date: data.date,
+        time: data.time,
+        location: data.location,
+        guests: data.guests,
+        status: data.status,
+        extraCosts: data.extraCosts,
+        profitMargin: data.profitMargin,
+        totalPrice: data.totalPrice,
         insumos: {
-          create: insumos || []
-        }
+          create: data.insumos,
+        },
       },
-      include: { insumos: true }
+      include: { insumos: true },
     });
     res.status(201).json(event);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Error al crear evento' });
+    handlePrismaError(res, error, 'Error al crear evento');
   }
 });
 
-// Actualizar un evento (ej. cambiar estado)
 app.put('/api/events/:id', async (req, res) => {
+  const { errors, data } = validateStatusPayload(req.body);
+  if (errors.length) return sendValidationError(res, errors);
+
   try {
-    const { id } = req.params;
-    const { status } = req.body;
-    
-    // Por ahora, solo permitimos actualizar el estado de forma sencilla.
-    // Si se necesitara actualizar todo el evento e insumos, habría que borrar y recrear insumos.
     const event = await prisma.event.update({
-      where: { id },
-      data: { status },
-      include: { insumos: true }
+      where: { id: req.params.id },
+      data,
+      include: { insumos: true },
     });
     res.json(event);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Error al actualizar evento' });
+    handlePrismaError(res, error, 'Error al actualizar evento');
   }
 });
 
-// Eliminar un evento
 app.delete('/api/events/:id', async (req, res) => {
   try {
-    const { id } = req.params;
-    await prisma.event.delete({ where: { id } });
+    await prisma.event.delete({ where: { id: req.params.id } });
     res.status(204).send();
   } catch (error) {
-    res.status(500).json({ error: 'Error al eliminar evento' });
+    handlePrismaError(res, error, 'Error al eliminar evento');
   }
 });
 
-// --- RUTAS DE INVENTARIO (CATÁLOGO) ---
-
-// Obtener todo el catálogo
 app.get('/api/inventory', async (req, res) => {
   try {
     const items = await prisma.catalogItem.findMany({
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     });
     res.json(items);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Error al obtener inventario' });
+    handlePrismaError(res, error, 'Error al obtener inventario');
   }
 });
 
-// Crear nuevo insumo en el catálogo
 app.post('/api/inventory', async (req, res) => {
+  const { errors, data } = validateCatalogPayload(req.body);
+  if (errors.length) return sendValidationError(res, errors);
+
   try {
-    const { name, unit, price } = req.body;
-    const item = await prisma.catalogItem.create({
-      data: { name, unit, price }
-    });
+    const item = await prisma.catalogItem.create({ data });
     res.status(201).json(item);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Error al crear insumo' });
+    handlePrismaError(res, error, 'Error al crear insumo');
   }
 });
 
-// Actualizar un insumo
 app.put('/api/inventory/:id', async (req, res) => {
+  const { errors, data } = validateCatalogPayload(req.body);
+  if (errors.length) return sendValidationError(res, errors);
+
   try {
-    const { id } = req.params;
-    const { name, unit, price } = req.body;
     const item = await prisma.catalogItem.update({
-      where: { id },
-      data: { name, unit, price }
+      where: { id: req.params.id },
+      data,
     });
     res.json(item);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Error al actualizar insumo' });
+    handlePrismaError(res, error, 'Error al actualizar insumo');
   }
 });
 
-// Eliminar un insumo
 app.delete('/api/inventory/:id', async (req, res) => {
   try {
-    const { id } = req.params;
-    await prisma.catalogItem.delete({ where: { id } });
+    await prisma.catalogItem.delete({ where: { id: req.params.id } });
     res.status(204).send();
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Error al eliminar insumo' });
+    handlePrismaError(res, error, 'Error al eliminar insumo');
   }
 });
 

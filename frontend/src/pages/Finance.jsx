@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { TrendingUp, DollarSign, Calendar as CalIcon, BarChart3, PieChart } from 'lucide-react';
 import { parseISO, getMonth, getYear } from 'date-fns';
+import { apiRequest } from '../lib/api';
 import './Finance.css';
 
 const MONTHS = [
@@ -13,10 +14,11 @@ export default function Finance() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
   useEffect(() => {
-    const saved = localStorage.getItem('asado_events');
-    if (saved) {
-      setEvents(JSON.parse(saved));
-    }
+    apiRequest('/api/events')
+      .then(data => {
+        if (Array.isArray(data)) setEvents(data);
+      })
+      .catch(err => console.error("Error fetching finance events:", err));
   }, []);
 
   // Extraer los años disponibles para el filtro

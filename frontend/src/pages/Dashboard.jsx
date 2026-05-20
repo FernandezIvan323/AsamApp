@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar as CalendarIcon, Clock, Users, MapPin, Plus } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { apiRequest } from '../lib/api';
 import './Dashboard.css';
 
 export default function Dashboard() {
@@ -10,8 +11,7 @@ export default function Dashboard() {
   const [events, setEvents] = useState([]);
 
   useEffect(() => {
-    fetch('http://localhost:3000/api/events')
-      .then(res => res.json())
+    apiRequest('/api/events')
       .then(data => {
         if (Array.isArray(data)) setEvents(data);
         else console.error("Error from API:", data);

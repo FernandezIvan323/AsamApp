@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Search, Eye, Download, X, Printer, Flame, ChevronDown } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import './History.css';
 
 import { createPortal } from 'react-dom';
+import { apiRequest } from '../lib/api';
 
 const StatusDropdown = ({ value, onChange }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -90,8 +91,7 @@ export default function History() {
   const [selectedEvent, setSelectedEvent] = useState(null);
 
   useEffect(() => {
-    fetch('http://localhost:3000/api/events')
-      .then(res => res.json())
+    apiRequest('/api/events')
       .then(data => {
         if (Array.isArray(data)) setEvents(data);
         else console.error("Error from API:", data);
@@ -108,9 +108,8 @@ export default function History() {
     const updated = events.map(e => e.id === id ? { ...e, status: newStatus } : e);
     setEvents(updated);
     try {
-      await fetch(`http://localhost:3000/api/events/${id}`, {
+      await apiRequest(`/api/events/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus })
       });
     } catch (error) {
