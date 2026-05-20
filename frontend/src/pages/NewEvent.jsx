@@ -24,9 +24,12 @@ export default function NewEvent() {
   const [selectedQuantities, setSelectedQuantities] = useState({});
 
   useEffect(() => {
-    const saved = localStorage.getItem('asado_inventory');
-    const inv = saved ? JSON.parse(saved) : [];
-    setInventory(inv);
+    fetch('http://localhost:3000/api/inventory')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setInventory(data);
+      })
+      .catch(console.error);
   }, []);
 
   const handleQuantityChange = (id, value) => {
@@ -57,8 +60,16 @@ export default function NewEvent() {
       return;
     }
     
+    const formattedInsumos = summaryItems.map(item => ({
+      name: item.name,
+      quantity: Number(item.quantity),
+      unit: item.unit,
+      costPerUnit: Number(item.price),
+      totalCost: Number(item.totalCost)
+    }));
+
     const newEvent = {
-      id: Date.now(),
+      id: Date.now().toString(),
       title: eventName,
       client: clientName,
       date: eventDate,
@@ -67,15 +78,24 @@ export default function NewEvent() {
       guests: Number(adults) + Number(kids),
       status: 'Pendiente',
       totalPrice: finalPrice,
-      insumos: summaryItems,
+      insumos: formattedInsumos,
       extraCosts: Number(extraCosts),
       profitMargin: Number(profitMargin)
     };
 
-    const savedEvents = JSON.parse(localStorage.getItem('asado_events') || '[]');
-    savedEvents.push(newEvent);
-    localStorage.setItem('asado_events', JSON.stringify(savedEvents));
-    navigate('/history');
+    fetch('http://localhost:3000/api/events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newEvent)
+    })
+    .then(res => res.json())
+    .then(() => {
+      navigate('/history');
+    })
+    .catch(err => {
+      console.error("Error saving event:", err);
+      alert("Hubo un error al guardar el evento.");
+    });
   };
 
   return (

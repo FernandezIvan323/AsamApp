@@ -10,10 +10,13 @@ export default function Dashboard() {
   const [events, setEvents] = useState([]);
 
   useEffect(() => {
-    const saved = localStorage.getItem('asado_events');
-    if (saved) {
-      setEvents(JSON.parse(saved));
-    }
+    fetch('http://localhost:3000/api/events')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setEvents(data);
+        else console.error("Error from API:", data);
+      })
+      .catch(err => console.error("Error fetching events:", err));
   }, []);
 
   return (

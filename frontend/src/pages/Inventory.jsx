@@ -7,26 +7,29 @@ export default function Inventory() {
   
   // Estado para nuevo insumo
   const [newName, setNewName] = useState('');
-  const [newUnit, setNewUnit] = useState('kg');
+  const [newUnit, setNewUnit] = useState('');
   const [newPrice, setNewPrice] = useState('');
 
   // Estado para edición
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({ name: '', unit: '', price: '' });
 
-  const UNITS = ['kg', 'bolsa', 'botella', 'porción', 'platos', 'vasos', 'unidad'];
+
 
   useEffect(() => {
-    const saved = localStorage.getItem('asado_inventory');
-    if (saved) {
-      setItems(JSON.parse(saved));
-    } else {
-      setItems([]);
-    }
+    fetch('http://localhost:3000/api/inventory')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setItems(data);
+      })
+      .catch(console.error);
   }, []);
 
-  const handleDelete = (id) => {
-    setItems(items.filter(item => item.id !== id));
+  const handleDelete = async (id) => {
+    try {
+      await fetch(`http://localhost:3000/api/inventory/${id}`, { method: 'DELETE' });
+      setItems(items.filter(item => item.id !== id));
+    } catch (e) { console.error(e); }
   };
 
   const handleEditStart = (item) => {
@@ -34,30 +37,42 @@ export default function Inventory() {
     setEditForm({ name: item.name, unit: item.unit, price: item.price });
   };
 
-  const handleEditSave = (id) => {
-    setItems(items.map(item => item.id === id ? { 
-      ...item, 
+  const handleEditSave = async (id) => {
+    const updatedFields = { 
       name: editForm.name, 
       unit: editForm.unit, 
       price: Number(editForm.price) 
-    } : item));
-    setEditingId(null);
+    };
+    
+    try {
+      await fetch(`http://localhost:3000/api/inventory/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedFields)
+      });
+      setItems(items.map(item => item.id === id ? { ...item, ...updatedFields } : item));
+      setEditingId(null);
+    } catch (e) { console.error(e); }
   };
 
-  const handleAddItem = (e) => {
+  const handleAddItem = async (e) => {
     e.preventDefault();
     if (!newName || !newPrice) return;
     
-    const newItem = {
-      id: 'item_' + Date.now(),
-      name: newName,
-      unit: newUnit,
-      price: Number(newPrice)
-    };
-    
-    setItems([...items, newItem]);
-    setNewName('');
-    setNewPrice('');
+    try {
+      const res = await fetch('http://localhost:3000/api/inventory', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newName, unit: newUnit, price: Number(newPrice) })
+      });
+      
+      if (res.ok) {
+        const newItem = await res.json();
+        setItems([...items, newItem]);
+        setNewName('');
+        setNewPrice('');
+      }
+    } catch (e) { console.error(e); }
   };
 
   const handleSave = () => {
@@ -87,9 +102,20 @@ export default function Inventory() {
           </div>
           <div className="form-group">
             <label className="form-label">Unidad</label>
-            <select className="form-input" value={newUnit} onChange={e => setNewUnit(e.target.value)}>
-              {UNITS.map(u => <option key={u} value={u}>{u}</option>)}
-            </select>
+            <input 
+              type="text" 
+              className="form-input" 
+              list="unit-options" 
+              placeholder="Ej. kg, litro, caja"
+              value={newUnit} 
+              onChange={e => setNewUnit(e.target.value)} 
+              required 
+            />
+            <datalist id="unit-options">
+              {Array.from(new Set(items.map(item => item.unit))).map(u => (
+                <option key={u} value={u} />
+              ))}
+            </datalist>
           </div>
           <div className="form-group">
             <label className="form-label">Precio ($)</label>
@@ -129,9 +155,15 @@ export default function Inventory() {
                         <input type="text" className="form-input" style={{ padding: '0.4rem', fontSize: '0.9rem' }} value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} />
                       </td>
                       <td>
-                        <select className="form-input" style={{ padding: '0.4rem', fontSize: '0.9rem' }} value={editForm.unit} onChange={e => setEditForm({...editForm, unit: e.target.value})}>
-                          {UNITS.map(u => <option key={u} value={u}>{u}</option>)}
-                        </select>
+                        <input 
+                          type="text" 
+                          className="form-input" 
+                          list="unit-options"
+                          style={{ padding: '0.4rem', fontSize: '0.9rem', width: '100px' }} 
+                          value={editForm.unit} 
+                          onChange={e => setEditForm({...editForm, unit: e.target.value})} 
+                          required
+                        />
                       </td>
                       <td>
                         <div className="price-input-wrapper">

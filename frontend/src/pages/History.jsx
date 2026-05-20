@@ -90,14 +90,13 @@ export default function History() {
   const [selectedEvent, setSelectedEvent] = useState(null);
 
   useEffect(() => {
-    const saved = localStorage.getItem('asado_events');
-    if (saved) {
-      // Sort by date descending
-      const parsed = JSON.parse(saved).sort((a, b) => {
-        return new Date(b.date || 0) - new Date(a.date || 0);
-      });
-      setEvents(parsed);
-    }
+    fetch('http://localhost:3000/api/events')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setEvents(data);
+        else console.error("Error from API:", data);
+      })
+      .catch(err => console.error("Error fetching events:", err));
   }, []);
 
   const filteredEvents = events.filter(e => 
@@ -105,10 +104,18 @@ export default function History() {
     (e.client && e.client.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  const handleStatusChange = (id, newStatus) => {
+  const handleStatusChange = async (id, newStatus) => {
     const updated = events.map(e => e.id === id ? { ...e, status: newStatus } : e);
     setEvents(updated);
-    localStorage.setItem('asado_events', JSON.stringify(updated));
+    try {
+      await fetch(`http://localhost:3000/api/events/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+    } catch (error) {
+      console.error("Error updating status:", error);
+    }
   };
 
   const handlePrint = () => {

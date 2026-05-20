@@ -1,0 +1,47 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Event {
+  id           String   @id @default(uuid())
+  title        String
+  client       String?
+  date         String?
+  time         String?
+  location     String?
+  guests       Int      @default(0)
+  status       String   @default("Pendiente")
+  extraCosts   Float    @default(0)
+  profitMargin Float    @default(0)
+  totalPrice   Float    @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  insumos      Insumo[]
+}
+
+model Insumo {
+  id          String @id @default(uuid())
+  name        String
+  quantity    Float
+  unit        String
+  costPerUnit Float
+  totalCost   Float
+  
+  eventId     String
+  event       Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+
+model CatalogItem {
+  id        String   @id @default(uuid())
+  name      String
+  unit      String
+  price     Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
