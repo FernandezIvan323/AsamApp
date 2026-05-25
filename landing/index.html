@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AsamApp — Gestión profesional de eventos de asado</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav class="nav" id="nav">
+    <div class="nav-inner">
+      <div class="nav-logo">
+        <span class="logo-icon">🔥</span>
+        <span class="logo-text">AsamApp</span>
+      </div>
+      <ul class="nav-links">
+        <li><a href="#features">Funciones</a></li>
+        <li><a href="#workflow">Flujo</a></li>
+        <li><a href="#stack">Stack</a></li>
+        <li><a href="#install">Instalación</a></li>
+      </ul>
+      <a href="https://github.com/FernandezIvan323/ProyectoEventoAsados" target="_blank" class="btn btn-outline">Ver en GitHub</a>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-bg"></div>
+    <div class="container">
+      <div class="badge-pill">🥩 Para asadores independientes y emprendedores gastronómicos</div>
+      <h1 class="hero-title">Gestioná tu negocio<br /><span class="gradient-text">de asados</span> como un pro</h1>
+      <p class="hero-sub">Cotizá eventos, controlá insumos, registrá compras, seguí cobros y analizá tu rentabilidad real — todo desde una sola app local, sin suscripciones.</p>
+      <div class="hero-cta">
+        <a href="#install" class="btn btn-primary">Empezar gratis</a>
+        <a href="#features" class="btn btn-ghost">Ver funciones →</a>
+      </div>
+      <div class="hero-stats">
+        <div class="stat"><span class="stat-num">15+</span><span class="stat-label">Módulos</span></div>
+        <div class="stat-divider"></div>
+        <div class="stat"><span class="stat-num">100%</span><span class="stat-label">Local & privado</span></div>
+        <div class="stat-divider"></div>
+        <div class="stat"><span class="stat-num">0$</span><span class="stat-label">Sin suscripción</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- NICHO -->
+  <section class="niche section">
+    <div class="container">
+      <div class="section-label">¿Para quién es?</div>
+      <h2 class="section-title">Hecho para el asador que quiere crecer</h2>
+      <div class="niche-grid">
+        <div class="niche-card">
+          <div class="niche-icon">👨‍🍳</div>
+          <h3>Asadores independientes</h3>
+          <p>Manejás varios eventos por mes y necesitás saber exactamente cuánto ganás en cada uno.</p>
+        </div>
+        <div class="niche-card">
+          <div class="niche-icon">📋</div>
+          <h3>Emprendedores gastronómicos</h3>
+          <p>Querés profesionalizar tu negocio con presupuestos claros y seguimiento de clientes.</p>
+        </div>
+        <div class="niche-card">
+          <div class="niche-icon">🏪</div>
+          <h3>Pequeños caterings</h3>
+          <p>Coordinás equipo, proveedores y compras para múltiples eventos simultáneos.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="features section" id="features">
+    <div class="container">
+      <div class="section-label">Funcionalidades</div>
+      <h2 class="section-title">Todo lo que necesitás en un solo lugar</h2>
+      <div class="features-grid" id="features-grid"></div>
+    </div>
+  </section>
+
+  <!-- WORKFLOW -->
+  <section class="workflow section" id="workflow">
+    <div class="container">
+      <div class="section-label">Flujo de trabajo</div>
+      <h2 class="section-title">Del presupuesto al cobro, sin perder nada</h2>
+      <div class="workflow-steps" id="workflow-steps"></div>
+    </div>
+  </section>
+
+  <!-- PROS -->
+  <section class="pros section">
+    <div class="container">
+      <div class="section-label">Ventajas</div>
+      <h2 class="section-title">¿Por qué AsamApp?</h2>
+      <div class="pros-grid" id="pros-grid"></div>
+    </div>
+  </section>
+
+  <!-- STACK -->
+  <section class="stack section" id="stack">
+    <div class="container">
+      <div class="section-label">Tecnología</div>
+      <h2 class="section-title">Stack moderno y liviano</h2>
+      <div class="stack-grid" id="stack-grid"></div>
+    </div>
+  </section>
+
+  <!-- INSTALL -->
+  <section class="install section" id="install">
+    <div class="container">
+      <div class="section-label">Instalación</div>
+      <h2 class="section-title">Listo en 3 pasos</h2>
+      <div class="install-steps">
+        <div class="install-step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <h3>Backend</h3>
+            <pre><code>cd backend
+cp .env.example .env
+npm install
+npx prisma migrate deploy
+npm run dev</code></pre>
+            <p class="step-note">API corriendo en <code>http://localhost:3000</code></p>
+          </div>
+        </div>
+        <div class="install-step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <h3>Frontend</h3>
+            <pre><code>cd frontend
+cp .env.example .env
+npm install
+npm run dev</code></pre>
+            <p class="step-note">App en <code>http://localhost:5173</code></p>
+          </div>
+        </div>
+        <div class="install-step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <h3>¡Listo!</h3>
+            <p>Abrí el navegador y empezá a cargar tus eventos. La base de datos SQLite se crea automáticamente.</p>
+            <a href="https://github.com/FernandezIvan323/ProyectoEventoAsados" target="_blank" class="btn btn-primary" style="margin-top:1rem;display:inline-flex">Ver repositorio →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-inner">
+        <div class="nav-logo">
+          <span class="logo-icon">🔥</span>
+          <span class="logo-text">AsamApp</span>
+        </div>
+        <p class="footer-copy">Proyecto open source · ISC License · Hecho con ❤️ para asadores</p>
+        <a href="https://github.com/FernandezIvan323/ProyectoEventoAsados" target="_blank" class="btn btn-outline">GitHub</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
