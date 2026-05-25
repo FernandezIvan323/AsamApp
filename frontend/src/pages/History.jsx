@@ -1,119 +1,76 @@
-import { useState, useEffect, useRef } from 'react';
-import { Search, Eye, Download, X, Printer, Flame, ChevronDown } from 'lucide-react';
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Download, Eye, Flame, Printer, Search, Trash2, X } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
+
+import { EmptyState, ErrorState, LoadingState } from '@/components/feedback/ResourceState';
+import { ConfirmDialog } from '@/components/feedback/ConfirmDialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { useEvents } from '@/hooks/useEvents';
+import { EVENT_STATUSES, getStatusVariant } from '@/lib/eventStatus';
+import { currency, getEventFinancials, getEventSubtotal } from '@/lib/finance';
 import './History.css';
 
-import { createPortal } from 'react-dom';
-import { apiRequest } from '../lib/api';
-
-const StatusDropdown = ({ value, onChange }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
-  const dropdownRef = useRef(null);
-
-  const options = ['Pendiente', 'Aprobado', 'Realizado', 'Cancelado'];
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      // Si el click fue en el menu portal, no cerrar (el evento burbujea en React pero el target no estará en dropdownRef)
-      if (event.target.closest('.dropdown-menu-portal')) return;
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    };
-    
-    const handleScroll = (e) => {
-      // Solo cerramos si el scroll no es dentro del dropdown menu
-      if (!e.target.closest('.dropdown-menu-portal')) {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    window.addEventListener('scroll', handleScroll, true);
-    
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      window.removeEventListener('scroll', handleScroll, true);
-    };
-  }, []);
-
-  const toggleDropdown = () => {
-    if (!isOpen && dropdownRef.current) {
-      const rect = dropdownRef.current.getBoundingClientRect();
-      setCoords({
-        top: rect.bottom + window.scrollY,
-        left: rect.left + window.scrollX,
-        width: rect.width
-      });
-    }
-    setIsOpen(!isOpen);
-  };
-
-  return (
-    <div className="custom-status-dropdown" ref={dropdownRef}>
-      <div 
-        className={`status-select ${value.toLowerCase()}`}
-        onClick={toggleDropdown}
-      >
-        <span>{value}</span>
-        <ChevronDown size={14} className={`dropdown-arrow ${isOpen ? 'open' : ''}`} />
-      </div>
-      
-      {isOpen && createPortal(
-        <div 
-          className="dropdown-menu-portal"
-          style={{ top: coords.top + 5, left: coords.left, width: coords.width }}
-        >
-          {options.map(option => (
-            <div 
-              key={option}
-              className={`dropdown-item ${value === option ? 'selected' : ''}`}
-              onClick={() => {
-                onChange(option);
-                setIsOpen(false);
-              }}
-            >
-              {option}
-            </div>
-          ))}
-        </div>,
-        document.body
-      )}
-    </div>
-  );
-};
-
 export default function History() {
-  const [events, setEvents] = useState([]);
+  const { events, isLoading, error, refresh, setEventStatus, removeEvent } = useEvents();
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const [selectedEvent, setSelectedEvent] = useState(null);
+  const [mutationError, setMutationError] = useState(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [eventToDelete, setEventToDelete] = useState(null);
 
-  useEffect(() => {
-    apiRequest('/api/events')
-      .then(data => {
-        if (Array.isArray(data)) setEvents(data);
-        else console.error("Error from API:", data);
-      })
-      .catch(err => console.error("Error fetching events:", err));
-  }, []);
-
-  const filteredEvents = events.filter(e => 
-    e.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    (e.client && e.client.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredEvents = events.filter(event => {
+    const term = searchTerm.toLowerCase();
+    const matchesSearch =
+      event.title.toLowerCase().includes(term) ||
+      (event.client && event.client.toLowerCase().includes(term));
+    const matchesStatus = !statusFilter || event.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   const handleStatusChange = async (id, newStatus) => {
-    const updated = events.map(e => e.id === id ? { ...e, status: newStatus } : e);
-    setEvents(updated);
     try {
-      await apiRequest(`/api/events/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify({ status: newStatus })
-      });
-    } catch (error) {
-      console.error("Error updating status:", error);
+      setMutationError(null);
+      await setEventStatus(id, newStatus);
+    } catch (err) {
+      setMutationError(err);
+    }
+  };
+
+  const handleDeleteClick = (event) => {
+    setEventToDelete(event);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!eventToDelete) return;
+    try {
+      setMutationError(null);
+      await removeEvent(eventToDelete.id);
+      if (selectedEvent?.id === eventToDelete.id) setSelectedEvent(null);
+      setDeleteConfirmOpen(false);
+      setEventToDelete(null);
+    } catch (err) {
+      setMutationError(err);
     }
   };
 
@@ -122,101 +79,132 @@ export default function History() {
   };
 
   return (
-    <div className="history-page">
-      <div className="history-header">
+    <div className="space-y-6">
+      <div className="space-y-2">
+        <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary">
+          Historial
+        </Badge>
         <div>
-          <h1>Historial de Presupuestos</h1>
-          <p>Visualiza todos los eventos y cotizaciones creadas.</p>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Historial de Presupuestos</h1>
+          <p className="mt-2 text-muted-foreground">Visualiza todos los eventos y cotizaciones creadas.</p>
         </div>
       </div>
 
-      <div className="card">
-        <div className="history-toolbar">
-          <div className="search-box">
-            <Search size={18} color="var(--text-muted)" />
-            <input 
-              type="text" 
-              placeholder="Buscar por nombre de evento o cliente..." 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="form-input"
-            />
+      <Card>
+        <CardHeader>
+          <CardTitle>Presupuestos</CardTitle>
+          <CardDescription>Busca, revisa, cambia estados o elimina registros antiguos.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap gap-3">
+            <div className="relative min-w-[16rem] flex-1 max-w-xl">
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                className="pl-9"
+                type="text"
+                placeholder="Buscar por nombre de evento o cliente..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <select
+              className="form-input h-9 min-h-9 w-48 py-1 text-sm"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="">Todos los estados</option>
+              {EVENT_STATUSES.map(status => (
+                <option key={status} value={status}>{status}</option>
+              ))}
+            </select>
           </div>
-        </div>
 
-        <div className="table-responsive">
-          <table className="history-table">
-            <thead>
-              <tr>
-                <th>Fecha</th>
-                <th>Evento</th>
-                <th>Cliente</th>
-                <th>Invitados</th>
-                <th>Total</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredEvents.length === 0 ? (
-                <tr>
-                  <td colSpan="7" style={{ textAlign: 'center', padding: '2rem' }}>
-                    No se encontraron presupuestos.
-                  </td>
-                </tr>
-              ) : (
-                filteredEvents.map(event => {
+          {mutationError && <p className="text-sm text-destructive">{mutationError.message}</p>}
+
+          {isLoading ? (
+            <LoadingState title="Cargando historial" description="Estamos consultando tus presupuestos." />
+          ) : error ? (
+            <ErrorState description={error.message} onRetry={refresh} />
+          ) : filteredEvents.length === 0 ? (
+            <EmptyState title="No se encontraron presupuestos" description="Ajusta la búsqueda o crea un nuevo evento." />
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Fecha</TableHead>
+                  <TableHead>Evento</TableHead>
+                  <TableHead>Cliente</TableHead>
+                  <TableHead>Invitados</TableHead>
+                  <TableHead>Total</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredEvents.map(event => {
                   const dateObj = event.date ? parseISO(event.date) : new Date();
                   return (
-                    <tr key={event.id}>
-                      <td>{format(dateObj, 'dd/MM/yyyy', { locale: es })}</td>
-                      <td><strong>{event.title}</strong></td>
-                      <td>{event.client || '-'}</td>
-                      <td>{event.guests}</td>
-                      <td><strong>${event.totalPrice?.toLocaleString('es-AR', {maximumFractionDigits: 0})}</strong></td>
-                      <td>
-                        <StatusDropdown 
+                    <TableRow key={event.id}>
+                      <TableCell>{format(dateObj, 'dd/MM/yyyy', { locale: es })}</TableCell>
+                      <TableCell className="font-medium">{event.title}</TableCell>
+                      <TableCell>{event.client || '-'}</TableCell>
+                      <TableCell>{event.guests}</TableCell>
+                      <TableCell className="font-semibold">${currency(event.totalPrice)}</TableCell>
+                      <TableCell>
+                        <select
+                          className="form-input h-9 min-h-9 w-36 py-1 text-sm"
                           value={event.status}
-                          onChange={(newStatus) => handleStatusChange(event.id, newStatus)}
-                        />
-                      </td>
-                      <td style={{ display: 'flex', gap: '0.5rem' }}>
-                        <button className="btn btn-secondary btn-sm" title="Ver Detalles" onClick={() => setSelectedEvent(event)}>
-                          <Eye size={16} /> Ver
-                        </button>
-                        <button className="btn btn-primary btn-sm" title="Descargar PDF" onClick={() => { setSelectedEvent(event); setTimeout(handlePrint, 300); }}>
-                          <Download size={16} /> PDF
-                        </button>
-                      </td>
-                    </tr>
-                  )
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                          onChange={(e) => handleStatusChange(event.id, e.target.value)}
+                        >
+                          {EVENT_STATUSES.map(status => (
+                            <option key={status} value={status}>{status}</option>
+                          ))}
+                        </select>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex justify-end gap-2">
+                          <Button size="sm" variant="secondary" asChild>
+                            <Link to={`/history/${event.id}`}>
+                              <Eye className="size-4" />
+                              Gestionar
+                            </Link>
+                          </Button>
+                          <Button size="sm" onClick={() => { setSelectedEvent(event); setTimeout(handlePrint, 300); }}>
+                            <Download className="size-4" />
+                            PDF
+                          </Button>
+                          <Button size="icon" variant="ghost" onClick={() => handleDeleteClick(event)} title="Eliminar presupuesto">
+                            <Trash2 className="size-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
 
       {selectedEvent && (
         <div className="modal-overlay no-print">
           <div className="modal-content print-area">
-            
-            {/* Cabecera del Ticket */}
             <div className="ticket-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-                <Flame size={28} color="var(--primary-color)" />
-                <h2 style={{ fontSize: '1.5rem', color: 'var(--primary-color)' }}>ProyectoAsado</h2>
+              <div className="mb-4 flex items-center gap-2">
+                <Flame className="size-7 text-primary" />
+                <h2 className="text-xl font-semibold text-primary">ProyectoAsado</h2>
+                <Badge variant={getStatusVariant(selectedEvent.status)} className="ml-auto">{selectedEvent.status}</Badge>
               </div>
-              <h3 style={{ fontSize: '1.2rem', marginBottom: '0.5rem' }}>Presupuesto: {selectedEvent.title}</h3>
+              <h3 className="mb-2 text-lg font-semibold">Presupuesto: {selectedEvent.title}</h3>
               <p><strong>Cliente:</strong> {selectedEvent.client || 'Consumidor Final'}</p>
               <p><strong>Fecha:</strong> {selectedEvent.date ? format(parseISO(selectedEvent.date), 'dd/MM/yyyy') : '-'} {selectedEvent.time && `a las ${selectedEvent.time}`}</p>
               <p><strong>Lugar:</strong> {selectedEvent.location || '-'}</p>
               <p><strong>Invitados Totales:</strong> {selectedEvent.guests}</p>
             </div>
 
-            {/* Lista de Insumos */}
             <div className="ticket-section">
-              <h4 style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>Insumos Necesarios</h4>
+              <h4 className="mb-4 border-b border-border pb-2 font-semibold">Insumos Necesarios</h4>
               <table className="ticket-table">
                 <thead>
                   <tr>
@@ -226,52 +214,66 @@ export default function History() {
                   </tr>
                 </thead>
                 <tbody>
-                  {selectedEvent.insumos && selectedEvent.insumos.map((item, idx) => (
-                    <tr key={idx}>
+                  {selectedEvent.insumos?.map((item) => (
+                    <tr key={item.id || `${item.name}-${item.quantity}`}>
                       <td>{item.name}</td>
                       <td style={{ textAlign: 'center' }}>{item.quantity} {item.unit}</td>
-                      <td style={{ textAlign: 'right' }}>${item.totalCost?.toLocaleString('es-AR')}</td>
+                      <td style={{ textAlign: 'right' }}>${currency(item.totalCost)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
 
-            {/* Resumen Financiero */}
             <div className="ticket-section ticket-financials">
               <div className="ticket-row">
                 <span>Subtotal Insumos:</span>
-                <span>${(selectedEvent.insumos?.reduce((acc, curr) => acc + curr.totalCost, 0) || 0).toLocaleString('es-AR')}</span>
+                <span>${currency((selectedEvent.insumos?.reduce((acc, curr) => acc + Number(curr.totalCost || 0), 0) || 0))}</span>
               </div>
               <div className="ticket-row">
                 <span>Costos Adicionales:</span>
-                <span>${(selectedEvent.extraCosts || 0).toLocaleString('es-AR')}</span>
+                <span>${currency(selectedEvent.extraCosts)}</span>
               </div>
               <div className="ticket-row">
                 <span>Margen de Ganancia ({selectedEvent.profitMargin || 0}%):</span>
-                <span>${((selectedEvent.totalPrice || 0) - ((selectedEvent.insumos?.reduce((acc, curr) => acc + curr.totalCost, 0) || 0) + (selectedEvent.extraCosts || 0))).toLocaleString('es-AR', {maximumFractionDigits: 0})}</span>
+                <span>${currency(getEventFinancials(selectedEvent).profit)}</span>
               </div>
               <div className="ticket-row ticket-total">
                 <span>Total General:</span>
-                <span>${selectedEvent.totalPrice?.toLocaleString('es-AR', {maximumFractionDigits: 0})}</span>
+                <span>${currency(selectedEvent.totalPrice)}</span>
               </div>
-              <div className="ticket-row" style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.5rem' }}>
-                <span>Costo Sugerido por Persona:</span>
-                <span>${(selectedEvent.totalPrice / (selectedEvent.guests || 1)).toLocaleString('es-AR', {maximumFractionDigits: 0})}</span>
+              <div className="ticket-row mt-2 text-sm text-muted-foreground">
+                <span>Costo base por persona:</span>
+                <span>${currency(getEventSubtotal(selectedEvent) / (selectedEvent.guests || 1))}</span>
               </div>
             </div>
 
-            <div className="modal-actions no-print" style={{ marginTop: '2rem', display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
-              <button className="btn btn-secondary" onClick={() => setSelectedEvent(null)}>
-                <X size={18} /> Cerrar
-              </button>
-              <button className="btn btn-primary" onClick={handlePrint}>
-                <Printer size={18} /> Guardar como PDF / Imprimir
-              </button>
+            <div className="modal-actions no-print mt-8 flex justify-end gap-3">
+              <Button variant="secondary" onClick={() => setSelectedEvent(null)}>
+                <X className="size-4" /> Cerrar
+              </Button>
+              <Button onClick={handlePrint}>
+                <Printer className="size-4" /> Guardar como PDF / Imprimir
+              </Button>
             </div>
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={deleteConfirmOpen}
+        title="¿Eliminar presupuesto del historial?"
+        description={eventToDelete ? `Estás a punto de eliminar el presupuesto de "${eventToDelete.title}". Esta acción es irreversible.` : ''}
+        confirmText="Eliminar presupuesto"
+        cancelText="Cancelar"
+        variant="destructive"
+        note="Nota: Esta acción eliminará permanentemente la cotización y todos sus registros financieros del historial."
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => {
+          setDeleteConfirmOpen(false);
+          setEventToDelete(null);
+        }}
+      />
     </div>
   );
 }

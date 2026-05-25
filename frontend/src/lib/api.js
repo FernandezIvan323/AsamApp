@@ -1,13 +1,26 @@
+import { clearStoredToken, getStoredToken } from '@/lib/auth';
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export async function apiRequest(path, options = {}) {
+  const token = getStoredToken();
+  const headers = {
+    'Content-Type': 'application/json',
+    ...options.headers,
+  };
+  if (token) headers.Authorization = `Bearer ${token}`;
+
   const response = await fetch(`${API_BASE_URL}${path}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
+    headers,
     ...options,
   });
+
+  if (response.status === 401) {
+    clearStoredToken();
+    if (!path.includes('/auth/')) {
+      window.location.href = '/login';
+    }
+  }
 
   if (!response.ok) {
     let message = `Error ${response.status}`;

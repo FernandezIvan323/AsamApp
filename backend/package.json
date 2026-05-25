@@ -7,7 +7,10 @@
   "scripts": {
     "dev": "nodemon server.js",
     "start": "node server.js",
-    "test": "node --test"
+    "test": "node --test",
+    "test:unit": "node --test test.js auth.test.js",
+    "test:integration": "node --test integration.test.js",
+    "start:prod": "node server.js"
   },
   "keywords": [],
   "author": "",

@@ -16,13 +16,20 @@ model Event {
   location     String?
   guests       Int      @default(0)
   status       String   @default("Pendiente")
+  menuNotes    String?
+  recipeName   String?
   extraCosts   Float    @default(0)
   profitMargin Float    @default(0)
   totalPrice   Float    @default(0)
+  amountPaid   Float    @default(0)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   insumos      Insumo[]
+  tasks        EventTask[]
+  payments     EventPayment[]
+  purchases    MarketPurchase[]
+  changelog    EventChangeLog[]
 }
 
 model Insumo {
@@ -42,6 +49,147 @@ model CatalogItem {
   name      String
   unit      String
   price     Float
+  stock     Float    @default(0)
+  minStock  Float    @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  movements StockMovement[]
+}
+
+model MarketPurchase {
+  id            String   @id @default(uuid())
+  purchasedAt   DateTime @default(now())
+  store         String
+  vendorName    String?
+  vendorPhone   String?
+  paymentMethod String
+  totalAmount   Float    @default(0)
+  notes         String?
+  receiptPhotos String   @default("[]")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  eventId       String?
+  event         Event?   @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  providerId    String?
+  provider      Provider? @relation(fields: [providerId], references: [id], onDelete: SetNull)
+  items         MarketPurchaseItem[]
+}
+
+model MarketPurchaseItem {
+  id             String @id @default(uuid())
+  name           String
+  quantity       Float
+  unit           String
+  unitPrice      Float
+  subtotal       Float
+
+  purchaseId     String
+  purchase       MarketPurchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+}
+
+model Provider {
+  id        String   @id @default(uuid())
+  name      String
+  phone     String?
+  category  String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  purchases MarketPurchase[]
+}
+
+model RecipeCombo {
+  id          String   @id @default(uuid())
+  name        String
+  category    String?
+  description String?
+  servings    Int      @default(0)
+  basePrice   Float    @default(0)
+  itemsJson   String   @default("[]")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model EventTask {
+  id        String   @id @default(uuid())
+  title     String
+  dueDate   String?
+  done      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+
+model EventPayment {
+  id            String   @id @default(uuid())
+  paidAt        DateTime @default(now())
+  amount        Float
+  paymentMethod String
+  notes         String?
+  createdAt     DateTime @default(now())
+
+  eventId       String
+  event         Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+
+model StockMovement {
+  id            String   @id @default(uuid())
+  type          String
+  quantity      Float
+  notes         String?
+  createdAt     DateTime @default(now())
+
+  catalogItemId String
+  catalogItem   CatalogItem @relation(fields: [catalogItemId], references: [id], onDelete: Cascade)
+}
+
+model Note {
+  id        String   @id @default(uuid())
+  title     String
+  content   String?
+  done      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model QuoteTemplate {
+  id           String   @id @default(uuid())
+  name         String
+  description  String?
+  guests       Int      @default(0)
+  extraCosts   Float    @default(0)
+  profitMargin Float    @default(0)
+  menuNotes    String?
+  recipeName   String?
+  itemsJson    String   @default("[]")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+
+model EventChangeLog {
+  id         String   @id @default(uuid())
+  field      String   // "status" | "totalPrice"
+  oldValue   String?
+  newValue   String?
+  createdAt  DateTime @default(now())
+
+  eventId    String
+  event      Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+
+model FixedCost {
+  id          String   @id @default(uuid())
+  name        String
+  amount      Float
+  frequency   String   @default("Mensual") // Mensual | Anual | Por evento
+  category    String?
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

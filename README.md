@@ -1,68 +1,114 @@
-# 🥩 Proyecto Asados - Cotizador de Eventos
+# Proyecto Asados (AsamApp)
 
-Una aplicación web Full-Stack diseñada para gestionar, calcular y almacenar presupuestos para eventos de asados. Permite crear un catálogo de insumos con precios base y generar cotizaciones precisas calculando el costo total, costos extra y margen de ganancia.
+Aplicación web full-stack para cotizar y operar eventos de asado: presupuestos, inventario, compras de mercado, finanzas y checklist operativo.
 
-## 🚀 Tecnologías Utilizadas
+## Stack
 
-Este proyecto está dividido en dos partes principales (Frontend y Backend):
+| Capa | Tecnología |
+|------|------------|
+| Frontend | React 19, Vite, Tailwind CSS 4, React Router |
+| Backend | Node.js, Express 5, Prisma |
+| Base de datos | SQLite (local) |
 
-**Frontend:**
-- [React](https://reactjs.org/) (Framework de interfaz de usuario)
-- [Vite](https://vitejs.dev/) (Empaquetador y entorno de desarrollo)
-- CSS Vanilla (Estilos personalizados sin frameworks externos)
-- [Lucide React](https://lucide.dev/) (Iconografía)
-
-**Backend:**
-- [Node.js](https://nodejs.org/) & [Express](https://expressjs.com/) (Servidor API REST)
-- [Prisma ORM](https://www.prisma.io/) (Manejo de base de datos)
-- [SQLite](https://www.sqlite.org/) (Motor de base de datos local)
-
-## 📁 Estructura del Proyecto
+## Estructura
 
 ```text
 ProyectoAsado/
-├── backend/          # Servidor de Node.js, API y Base de datos SQLite
-│   ├── prisma/       # Esquema de Prisma y migraciones
-│   └── server.js     # Código principal del servidor Express
-└── frontend/         # Aplicación web de React
-    ├── src/          # Componentes, vistas y hojas de estilo
-    └── package.json  # Dependencias del frontend
+├── backend/          # API REST + Prisma + SQLite
+├── frontend/         # SPA React
+└── README.md
 ```
 
-## 🛠️ Instalación y Uso Local
+## Instalación rápida (desarrollo)
 
-Para correr este proyecto en tu máquina local, necesitas abrir **dos terminales separadas**, una para el Backend y otra para el Frontend.
+### 1. Backend
 
-### 1. Iniciar el Backend (Servidor y Base de datos)
-Abre una terminal, navega a la carpeta del proyecto y ejecuta:
 ```bash
 cd backend
+cp .env.example .env
 npm install
+npx prisma migrate deploy
 npm run dev
 ```
-*(El servidor backend estará corriendo en el puerto 3000)*
 
-### 2. Iniciar el Frontend (Interfaz Visual)
-Abre otra terminal, navega a la carpeta del proyecto y ejecuta:
+API en `http://localhost:3000`
+
+### 2. Frontend
+
 ```bash
 cd frontend
+cp .env.example .env
 npm install
 npm run dev
 ```
-*(La aplicación web estará disponible típicamente en el puerto 5173)*
 
-### 3. Explorar la Base de Datos (Opcional)
-Si deseas ver y modificar las tablas de la base de datos visualmente a través de **Prisma Studio**, abre una tercera terminal y ejecuta:
+App en `http://localhost:5173`
+
+### 3. Prisma Studio (opcional)
+
 ```bash
 cd backend
 npx prisma studio
 ```
-*(Prisma Studio se abrirá en tu navegador en el puerto 5555)*
 
-## ✨ Funcionalidades Principales
+## Producción local (un solo puerto)
 
-- **Catálogo de Insumos:** Gestiona una lista de insumos base con unidades dinámicas y costos predeterminados.
-- **Cotizador de Eventos:** Selecciona los insumos deseados, ajusta las cantidades y la aplicación calculará el costo en tiempo real.
-- **Márgenes y Costos Extra:** Incluye costos adicionales (como transporte) y define tu porcentaje de ganancia esperado.
-- **Historial de Eventos:** Visualiza todos los presupuestos guardados, edita su estado (Pendiente, Confirmado, Cancelado) y elimina registros antiguos.
-- **Dashboard Financiero:** *(Próximamente)* Estadísticas y resúmenes de ganancias.
+```bash
+cd frontend && npm run build
+cd ../backend
+# En .env: SERVE_FRONTEND=true
+npm run start:prod
+```
+
+Abre `http://localhost:3000` — el backend sirve la API y el frontend compilado.
+
+## Autenticación (opcional)
+
+Por defecto la API está abierta (`AUTH_ENABLED=false`).
+
+Para activar login local, en `backend/.env`:
+
+```env
+AUTH_ENABLED=true
+AUTH_USERNAME=admin
+AUTH_PASSWORD=tu-clave-segura
+AUTH_SECRET=un-secreto-largo-aleatorio
+```
+
+Reinicia el backend. El frontend mostrará pantalla de login.
+
+## Tests
+
+```bash
+# Validación y módulos (backend)
+cd backend && npm run test:unit
+
+# API con base de datos temporal (backend)
+cd backend && npm run test:integration
+
+# Lógica de cotización y finanzas (frontend)
+cd frontend && npm test
+```
+
+## Funcionalidades
+
+- **Cotizador** — insumos del catálogo, margen, costos extra
+- **Historial** — estados de workflow, detalle, edición, duplicar, imprimir
+- **Lista de compras** — insumos consolidados de eventos aprobados
+- **Gastos de mercado** — compras reales con comprobantes (base64)
+- **Inventario** — stock y movimientos entrada/salida/ajuste
+- **Recetas y plantillas** — combos reutilizables
+- **Proveedores** — agenda de vendedores
+- **Operaciones** — KPIs, tareas, alertas de stock
+- **Finanzas** — cotizado vs gastado vs cobrado
+- **Calendario** — vista mensual de eventos
+- **Exportar** — JSON/CSV de respaldo
+- **Búsqueda global** — eventos, insumos, proveedores, notas
+
+## Variables de entorno
+
+Ver `backend/.env.example` y `frontend/.env.example`.
+
+## Licencia
+
+ISC

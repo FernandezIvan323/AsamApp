@@ -1,12 +1,31 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Calculator as CalcIcon, ReceiptText, Users, Save, Calendar, Beef } from 'lucide-react';
-import { apiRequest } from '../lib/api';
+import { ErrorState, LoadingState } from '@/components/feedback/ResourceState';
+import { AlertDialog } from '@/components/feedback/ConfirmDialog';
+import { useInventory } from '@/hooks/useInventory';
+import { currency } from '@/lib/finance';
+import { applyRecipeToForm, applyTemplateToForm } from '@/lib/eventQuote';
+import { calculateQuote, getSelectedQuoteItems, toEventInsumos } from '@/lib/quote';
+import { createEvent } from '@/services/eventsApi';
+import { getRecipes } from '@/services/recipesApi';
+import { getQuoteTemplates } from '@/services/quoteTemplatesApi';
 import './NewEvent.css';
 
 export default function NewEvent() {
   const navigate = useNavigate();
-  const [inventory, setInventory] = useState([]);
+  const routerLocation = useLocation();
+  const { items: inventory, isLoading: isInventoryLoading, error: inventoryError, refresh: refreshInventory } = useInventory();
+  const [saveError, setSaveError] = useState(null);
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [alertTitle, setAlertTitle] = useState('');
+  const [alertDescription, setAlertDescription] = useState('');
+
+  const triggerAlert = (title, desc) => {
+    setAlertTitle(title);
+    setAlertDescription(desc);
+    setAlertOpen(true);
+  };
   
   // Event Details State
   const [eventName, setEventName] = useState('');
@@ -14,23 +33,75 @@ export default function NewEvent() {
   const [eventDate, setEventDate] = useState('');
   const [eventTime, setEventTime] = useState('');
   const [location, setLocation] = useState('');
+  const [menuNotes, setMenuNotes] = useState('');
+  const [recipeName, setRecipeName] = useState('');
+  const [selectedRecipeId, setSelectedRecipeId] = useState('');
+  const [recipes, setRecipes] = useState([]);
 
   // Form State
-  const [adults, setAdults] = useState(20);
-  const [kids, setKids] = useState(5);
-  const [profitMargin, setProfitMargin] = useState(30);
-  const [extraCosts, setExtraCosts] = useState(15000);
+  const [adults, setAdults] = useState('');
+  const [kids, setKids] = useState('');
+  const [profitMargin, setProfitMargin] = useState('');
+  const [extraCosts, setExtraCosts] = useState('');
 
   // Insumos seleccionados (cantidades) - Diccionario: { id_insumo: cantidad }
   const [selectedQuantities, setSelectedQuantities] = useState({});
 
   useEffect(() => {
-    apiRequest('/api/inventory')
-      .then(data => {
-        if (Array.isArray(data)) setInventory(data);
-      })
-      .catch(console.error);
+    getRecipes()
+      .then(data => setRecipes(Array.isArray(data) ? data : []))
+      .catch(() => setRecipes([]));
   }, []);
+
+  useEffect(() => {
+    const recipeId = routerLocation.state?.recipeId;
+    if (!recipeId || recipes.length === 0 || inventory.length === 0) return;
+    const recipe = recipes.find(r => r.id === recipeId);
+    if (recipe) {
+      setSelectedRecipeId(recipeId);
+      applyRecipeToForm(recipe, inventory, {
+        setRecipeName,
+        setMenuNotes,
+        setSelectedQuantities,
+        setServings: (v) => setAdults(v),
+      });
+    }
+  }, [routerLocation.state?.recipeId, recipes, inventory]);
+
+  useEffect(() => {
+    const templateId = routerLocation.state?.templateId;
+    if (!templateId || inventory.length === 0) return;
+    getQuoteTemplates()
+      .then(all => {
+        const template = (Array.isArray(all) ? all : []).find(t => t.id === templateId);
+        if (template) {
+          applyTemplateToForm(template, inventory, {
+            setRecipeName,
+            setMenuNotes,
+            setSelectedQuantities,
+            setExtraCosts,
+            setProfitMargin,
+            setServings: (v) => setAdults(v),
+          });
+        }
+      })
+      .catch(() => {});
+  }, [routerLocation.state?.templateId, inventory]);
+
+  const handleRecipeSelect = (recipeId) => {
+    setSelectedRecipeId(recipeId);
+    const recipe = recipes.find(r => r.id === recipeId);
+    if (!recipe) {
+      setRecipeName('');
+      return;
+    }
+    applyRecipeToForm(recipe, inventory, {
+      setRecipeName,
+      setMenuNotes,
+      setSelectedQuantities,
+      setServings: (v) => setAdults(v),
+    });
+  };
 
   const handleQuantityChange = (id, value) => {
     setSelectedQuantities(prev => ({
@@ -39,34 +110,20 @@ export default function NewEvent() {
     }));
   };
 
-  // Resumen Calculado
-  const getSummaryItems = () => {
-    return inventory.filter(item => selectedQuantities[item.id] > 0).map(item => ({
-      ...item,
-      quantity: selectedQuantities[item.id],
-      totalCost: selectedQuantities[item.id] * item.price
-    }));
-  };
-
-  const summaryItems = getSummaryItems();
-  const costTotal = summaryItems.reduce((acc, curr) => acc + curr.totalCost, 0);
-  const subtotal = costTotal + Number(extraCosts);
-  const ganancia = subtotal * (Number(profitMargin) / 100);
-  const finalPrice = subtotal + ganancia;
+  const guests = Number(adults) + Number(kids);
+  const summaryItems = getSelectedQuoteItems(inventory, selectedQuantities);
+  const quote = calculateQuote({ items: summaryItems, extraCosts, profitMargin, guests });
 
   const handleSaveEvent = () => {
     if (!eventName || !eventDate) {
-      alert("Por favor, ingresa al menos el Nombre del Evento y la Fecha.");
+      triggerAlert(
+        "Información requerida",
+        "Por favor, ingresa al menos el Nombre del Evento y la Fecha para poder guardar el presupuesto."
+      );
       return;
     }
     
-    const formattedInsumos = summaryItems.map(item => ({
-      name: item.name,
-      quantity: Number(item.quantity),
-      unit: item.unit,
-      costPerUnit: Number(item.price),
-      totalCost: Number(item.totalCost)
-    }));
+    const formattedInsumos = toEventInsumos(summaryItems);
 
     const newEvent = {
       title: eventName,
@@ -74,24 +131,28 @@ export default function NewEvent() {
       date: eventDate,
       time: eventTime,
       location: location,
-      guests: Number(adults) + Number(kids),
+      menuNotes,
+      recipeName,
+      guests,
       status: 'Pendiente',
-      totalPrice: finalPrice,
+      totalPrice: quote.finalPrice,
       insumos: formattedInsumos,
       extraCosts: Number(extraCosts),
       profitMargin: Number(profitMargin)
     };
 
-    apiRequest('/api/events', {
-      method: 'POST',
-      body: JSON.stringify(newEvent)
-    })
+    setSaveError(null);
+    createEvent(newEvent)
     .then(() => {
       navigate('/history');
     })
     .catch(err => {
       console.error("Error saving event:", err);
-      alert("Hubo un error al guardar el evento.");
+      setSaveError(err);
+      triggerAlert(
+        "Error de guardado",
+        "Hubo un error al intentar guardar el presupuesto. Por favor, intenta de nuevo."
+      );
     });
   };
 
@@ -141,13 +202,39 @@ export default function NewEvent() {
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">Adultos</label>
-                <input type="number" className="form-input" value={adults} onChange={e => setAdults(e.target.value)} min="1"/>
+                <input type="number" className="form-input" placeholder="Ej. 20" value={adults} onChange={e => setAdults(e.target.value)} min="0"/>
               </div>
               <div className="form-group">
                 <label className="form-label">Niños (Comen mitad)</label>
-                <input type="number" className="form-input" value={kids} onChange={e => setKids(e.target.value)} min="0"/>
+                <input type="number" className="form-input" placeholder="Ej. 5" value={kids} onChange={e => setKids(e.target.value)} min="0"/>
               </div>
             </div>
+          </div>
+
+          <div className="card ne-section">
+            <h2 className="section-title"><Beef size={20} /> Menu y comidas especiales</h2>
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Receta / combo base</label>
+                <select className="form-input" value={selectedRecipeId} onChange={e => handleRecipeSelect(e.target.value)}>
+                  <option value="">Sin combo predefinido</option>
+                  {recipes.map(recipe => (
+                    <option key={recipe.id} value={recipe.id}>{recipe.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Solicitud especial del cliente</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="Ej. sopa, arroz de cerdo, ensalada, yuca"
+                  value={menuNotes}
+                  onChange={e => setMenuNotes(e.target.value)}
+                />
+              </div>
+            </div>
+            <p className="section-desc">Usa este campo para dejar claro que se cotizo: sopas, arroz de cerdo, guarniciones, bebidas u otras comidas fuera del asado base.</p>
           </div>
 
           <div className="card ne-section">
@@ -159,7 +246,11 @@ export default function NewEvent() {
             <p className="section-desc">Ingresa las cantidades para el evento basado en tu catálogo.</p>
             
             <div className="insumos-grid">
-              {inventory.length === 0 ? (
+              {isInventoryLoading ? (
+                <LoadingState title="Cargando insumos" description="Estamos consultando el catálogo." />
+              ) : inventoryError ? (
+                <ErrorState description={inventoryError.message} onRetry={refreshInventory} />
+              ) : inventory.length === 0 ? (
                 <p style={{ color: 'var(--text-muted)' }}>Primero debes agregar insumos en la sección "Insumos" del menú lateral.</p>
               ) : (
                 inventory.map(item => (
@@ -184,11 +275,11 @@ export default function NewEvent() {
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">Costos Extra ($) (Mozos, Traslado)</label>
-                <input type="number" className="form-input" value={extraCosts} onChange={e => setExtraCosts(e.target.value)} />
+                <input type="number" className="form-input" placeholder="Ej. 15000" value={extraCosts} onChange={e => setExtraCosts(e.target.value)} />
               </div>
               <div className="form-group">
                 <label className="form-label">Margen de Ganancia (%)</label>
-                <input type="number" className="form-input" value={profitMargin} onChange={e => setProfitMargin(e.target.value)} />
+                <input type="number" className="form-input" placeholder="Ej. 30" value={profitMargin} onChange={e => setProfitMargin(e.target.value)} />
               </div>
             </div>
           </div>
@@ -219,23 +310,23 @@ export default function NewEvent() {
             <div className="summary-financials">
               <div className="fin-row">
                 <span>Costo Insumos:</span>
-                <span>${costTotal.toLocaleString('es-AR', {maximumFractionDigits: 0})}</span>
+                <span>${currency(quote.costTotal)}</span>
               </div>
               <div className="fin-row">
                 <span>Costos Extra:</span>
-                <span>${Number(extraCosts).toLocaleString('es-AR')}</span>
+                <span>${currency(extraCosts)}</span>
               </div>
               <div className="fin-row margin-row">
                 <span>Ganancia ({profitMargin}%):</span>
-                <span>${ganancia.toLocaleString('es-AR', {maximumFractionDigits: 0})}</span>
+                <span>${currency(quote.profit)}</span>
               </div>
               <div className="fin-row total-row">
                 <span>Presupuesto Total:</span>
-                <span>${finalPrice.toLocaleString('es-AR', {maximumFractionDigits: 0})}</span>
+                <span>${currency(quote.finalPrice)}</span>
               </div>
               <div className="fin-row total-per-person">
                 <span>Precio Sugerido por Persona:</span>
-                <span>${(finalPrice / (Number(adults) + Number(kids) || 1)).toLocaleString('es-AR', {maximumFractionDigits: 0})}</span>
+                <span>${guests > 0 ? currency(quote.pricePerPerson) : '0'}</span>
               </div>
             </div>
 
@@ -243,6 +334,11 @@ export default function NewEvent() {
             <button className="btn btn-primary btn-full" onClick={handleSaveEvent} style={{ marginTop: '1.5rem' }}>
               <Save size={18} /> Guardar Presupuesto
             </button>
+            {saveError && (
+              <p style={{ fontSize: '0.85rem', textAlign: 'center', color: 'var(--destructive)' }}>
+                {saveError.message}
+              </p>
+            )}
             <p style={{ fontSize: '0.8rem', textAlign: 'center', color: 'var(--text-muted)' }}>
             </p>
           </div>
@@ -250,6 +346,14 @@ export default function NewEvent() {
 
         </div>
       </div>
+
+      <AlertDialog
+        isOpen={alertOpen}
+        title={alertTitle}
+        description={alertDescription}
+        buttonText="Entendido"
+        onClose={() => setAlertOpen(false)}
+      />
     </div>
   );
 }
