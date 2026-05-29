@@ -210,7 +210,7 @@ export default function NewMarketPurchase() {
         <div className="space-y-2">
           <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary">Nueva compra</Badge>
           <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Registrar Compra de Mercado</h1>
-          <p className="text-muted-foreground">Guarda productos, vendedor, contacto, metodo de pago y fotos de facturas.</p>
+          <p className="text-muted-foreground">Guarda productos, vendedor, contacto, método de pago y fotos de facturas.</p>
         </div>
         <Button variant="ghost" onClick={() => navigate('/weekly-expenses')} className="w-full sm:w-auto">
           <ArrowLeft className="size-4" />
@@ -220,15 +220,16 @@ export default function NewMarketPurchase() {
 
       <div className="ne-grid">
         <div className="space-y-4">
+          {/* Tarjeta Unificada: Información de la Compra */}
           <Card>
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2 text-base">
                 <Calendar className="size-4.5 text-accent" />
-                Informacion general
+                Información de la Compra
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4">
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Fecha y hora *</label>
                   <input
@@ -239,7 +240,7 @@ export default function NewMarketPurchase() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Metodo de pago</label>
+                  <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Método de pago</label>
                   <select
                     className={inputClass + ' appearance-none'}
                     value={form.paymentMethod}
@@ -251,17 +252,18 @@ export default function NewMarketPurchase() {
                   </select>
                 </div>
               </div>
-              <div className="mt-4 space-y-1.5">
-                <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Establecimiento / Tienda *</label>
-                <input
-                  type="text"
-                  className={inputClass}
-                  placeholder="Ej. Supermercado, Carniceria, Tienda local"
-                  value={form.store}
-                  onChange={event => setForm({ ...form, store: event.target.value })}
-                />
-              </div>
-              <div className="mt-4 grid grid-cols-2 gap-4">
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-1.5 md:col-span-2">
+                  <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Establecimiento / Tienda *</label>
+                  <input
+                    type="text"
+                    className={inputClass}
+                    placeholder="Ej. Supermercado, Carnicería, Tienda local"
+                    value={form.store}
+                    onChange={event => setForm({ ...form, store: event.target.value })}
+                  />
+                </div>
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Asociar a evento</label>
                   <select className={inputClass + ' appearance-none'} value={form.eventId} onChange={event => setForm({ ...form, eventId: event.target.value })}>
@@ -271,6 +273,9 @@ export default function NewMarketPurchase() {
                     ))}
                   </select>
                 </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-border/40 pt-4">
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Proveedor registrado</label>
                   <select className={inputClass + ' appearance-none'} value={form.providerId} onChange={event => setForm({ ...form, providerId: event.target.value })}>
@@ -280,31 +285,18 @@ export default function NewMarketPurchase() {
                     ))}
                   </select>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <UserRound className="size-4.5 text-accent" />
-                Datos del vendedor
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Nombre del vendedor</label>
                   <input
                     type="text"
                     className={inputClass}
-                    placeholder="Nombre de quien vendio"
+                    placeholder="Nombre de quien vendió"
                     value={form.vendorName}
                     onChange={event => setForm({ ...form, vendorName: event.target.value })}
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Numero de celular</label>
+                  <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Celular del vendedor</label>
                   <input
                     type="tel"
                     className={inputClass}
@@ -317,6 +309,7 @@ export default function NewMarketPurchase() {
             </CardContent>
           </Card>
 
+          {/* Tarjeta de Productos / Items */}
           <Card>
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2 text-base">
@@ -324,8 +317,8 @@ export default function NewMarketPurchase() {
                 Productos / Items
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="rounded-lg border border-border/60 bg-card p-4">
+            <CardContent className="space-y-5">
+              <div className="rounded-xl border border-border/60 bg-black/20 p-5 shadow-inner">
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-12 md:items-end">
                   <div className="space-y-1.5 md:col-span-4">
                     <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Producto</label>
@@ -379,9 +372,40 @@ export default function NewMarketPurchase() {
                   </div>
                 </div>
               </div>
+
+              {/* Lista Interactiva de Productos dentro del Formulario */}
+              {form.items.length > 0 && (
+                <div className="border-t border-border/40 pt-4">
+                  <h4 className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase mb-3">Productos añadidos en esta compra</h4>
+                  <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                    {form.items.map(item => (
+                      <div key={item.localId} className="flex items-center justify-between gap-3 bg-black/25 border border-border/60 rounded-xl px-4 py-3 hover:bg-black/35 transition-colors">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold text-foreground truncate">{item.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {item.quantity} {item.unit} × ${currency(item.unitPrice)}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0">
+                          <span className="text-sm font-bold text-foreground">${currency(itemSubtotal(item))}</span>
+                          <button
+                            type="button"
+                            onClick={() => removeItem(item.localId)}
+                            className="shrink-0 rounded-lg p-1.5 transition-colors hover:bg-destructive/20 text-destructive/80 hover:text-destructive"
+                            title="Quitar producto"
+                          >
+                            <Trash2 className="size-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
+          {/* Tarjeta de Facturas y Notas */}
           <Card>
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2 text-base">
@@ -395,7 +419,7 @@ export default function NewMarketPurchase() {
                 <label className="flex min-h-32 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-border bg-secondary p-6 text-center transition-colors hover:border-primary/60 hover:bg-primary/5">
                   <Image className="mb-3 size-7 text-primary" />
                   <span className="text-sm font-semibold text-foreground">Subir fotos de facturas</span>
-                  <span className="mt-1 text-xs text-muted-foreground">Hasta 6 imagenes por compra</span>
+                  <span className="mt-1 text-xs text-muted-foreground">Hasta 6 imágenes por compra</span>
                   <input type="file" accept="image/*" multiple className="hidden" onChange={handlePhotoUpload} />
                 </label>
               </div>
@@ -433,6 +457,7 @@ export default function NewMarketPurchase() {
           </Card>
         </div>
 
+        {/* Panel de Resumen Lateral */}
         <div className="ne-summary-container">
           <Card className="sticky top-6 space-y-4">
             <CardHeader className="border-b border-border pb-4">
@@ -519,3 +544,4 @@ export default function NewMarketPurchase() {
     </div>
   );
 }
+

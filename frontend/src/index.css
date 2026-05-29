@@ -314,3 +314,67 @@ select option:active {
   background-color: var(--primary) !important;
   color: var(--primary-foreground) !important;
 }
+
+/* ─── Premium Slate & Emerald Form Controls ─── */
+input[type="text"],
+input[type="number"],
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"],
+input[type="tel"],
+select,
+textarea,
+.form-input,
+[data-slot="input"] {
+  background-color: #080C16 !important; /* Elegant deep dark slate, darker than card */
+  border: 1px solid rgba(148, 163, 184, 0.28) !important; /* Visible slate border for great contrast */
+  color: #F8FAFC !important; /* Crisp white-blue text */
+  border-radius: 0.5rem !important; /* Smooth rounded corners matching --radius */
+  font-size: 0.875rem !important;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4) !important; /* Premium inner shadow for depth and recessed look */
+  transition: all 180ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+input[type="text"]::placeholder,
+input[type="number"]::placeholder,
+input[type="date"]::placeholder,
+input[type="time"]::placeholder,
+input[type="datetime-local"]::placeholder,
+input[type="tel"]::placeholder,
+textarea::placeholder,
+.form-input::placeholder,
+[data-slot="input"]::placeholder {
+  color: #64748B !important; /* Elegant slate-gray placeholder */
+  opacity: 0.8 !important;
+}
+
+input[type="text"]:hover,
+input[type="number"]:hover,
+input[type="date"]:hover,
+input[type="time"]:hover,
+input[type="datetime-local"]:hover,
+input[type="tel"]:hover,
+select:hover,
+textarea:hover,
+.form-input:hover,
+[data-slot="input"]:hover {
+  border-color: rgba(148, 163, 184, 0.45) !important; /* Brighter slate border on hover */
+  background-color: #0B101D !important; /* Slightly lighter slate-blue on hover */
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="date"]:focus,
+input[type="time"]:focus,
+input[type="datetime-local"]:focus,
+input[type="tel"]:focus,
+select:focus,
+textarea:focus,
+.form-input:focus,
+[data-slot="input"]:focus {
+  border-color: #10B981 !important; /* Vibrant emerald green border on focus */
+  background-color: #0E1526 !important; /* Focused slate background */
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2), 0 0 0 3px rgba(16, 185, 129, 0.25) !important; /* Beautiful glowing emerald ring */
+  outline: none !important;
+}
+

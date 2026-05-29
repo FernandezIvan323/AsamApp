@@ -23,11 +23,31 @@ import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const COLORS = [
-  { card: 'bg-amber-500/25 border-amber-400/30 hover:border-amber-400/60', dot: 'bg-amber-400' },
-  { card: 'bg-sky-500/25 border-sky-400/30 hover:border-sky-400/60', dot: 'bg-sky-400' },
-  { card: 'bg-rose-500/25 border-rose-400/30 hover:border-rose-400/60', dot: 'bg-rose-400' },
-  { card: 'bg-emerald-500/25 border-emerald-400/30 hover:border-emerald-400/60', dot: 'bg-emerald-400' },
-  { card: 'bg-violet-500/25 border-violet-400/30 hover:border-violet-400/60', dot: 'bg-violet-400' },
+  {
+    card: 'bg-amber-950/15 border-amber-500/20 hover:border-amber-500/50 hover:shadow-[0_8px_32px_rgba(245,158,11,0.06)] backdrop-blur-md',
+    dot: 'bg-amber-400',
+    badge: 'bg-amber-500/10 text-amber-300 border border-amber-500/20',
+  },
+  {
+    card: 'bg-sky-950/15 border-sky-500/20 hover:border-sky-500/50 hover:shadow-[0_8px_32px_rgba(14,165,233,0.06)] backdrop-blur-md',
+    dot: 'bg-sky-400',
+    badge: 'bg-sky-500/10 text-sky-300 border border-sky-500/20',
+  },
+  {
+    card: 'bg-rose-950/15 border-rose-500/20 hover:border-rose-500/50 hover:shadow-[0_8px_32px_rgba(244,63,94,0.06)] backdrop-blur-md',
+    dot: 'bg-rose-400',
+    badge: 'bg-rose-500/10 text-rose-300 border border-rose-500/20',
+  },
+  {
+    card: 'bg-emerald-950/15 border-emerald-500/20 hover:border-emerald-500/50 hover:shadow-[0_8px_32px_rgba(16,185,129,0.06)] backdrop-blur-md',
+    dot: 'bg-emerald-400',
+    badge: 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20',
+  },
+  {
+    card: 'bg-violet-950/15 border-violet-500/20 hover:border-violet-500/50 hover:shadow-[0_8px_32px_rgba(139,92,246,0.06)] backdrop-blur-md',
+    dot: 'bg-violet-400',
+    badge: 'bg-violet-500/10 text-violet-300 border border-violet-500/20',
+  },
 ];
 
 const FILTERS = [
@@ -389,7 +409,7 @@ export default function Notes() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-lg rounded-xl border border-border bg-card p-6 shadow-2xl"
+              className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#111726]/80 backdrop-blur-lg p-6 shadow-2xl"
               onClick={e => e.stopPropagation()}
             >
               <div className="flex items-start justify-between gap-4">
@@ -463,7 +483,8 @@ function NoteCard({ note, colorIndex, openMenuId, onOpenMenu, onEdit, onToggle, 
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       className={cn(
-        'group relative flex cursor-pointer flex-col rounded-xl border p-4 transition-all duration-200 hover:shadow-md',
+        'group relative flex cursor-pointer flex-col rounded-2xl border p-4 hover:shadow-lg',
+        'transition-all duration-300 cubic-bezier(0.16, 1, 0.3, 1) hover:-translate-y-1.5',
         COLORS[colorIndex % COLORS.length].card,
       )}
       onClick={() => onClick(note)}
@@ -498,24 +519,27 @@ function NoteCard({ note, colorIndex, openMenuId, onOpenMenu, onEdit, onToggle, 
 
       {/* Title */}
       <p className={cn(
-        'text-sm font-semibold leading-snug line-clamp-3',
-        note.done ? 'text-muted-foreground line-through' : 'text-foreground',
+        'text-sm font-semibold leading-snug line-clamp-3 pr-4',
+        note.done ? 'text-muted-foreground line-through opacity-60' : 'text-foreground',
       )}>
         {note.title}
       </p>
 
       {/* Content */}
       {note.content && (
-        <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">{note.content}</p>
+        <p className="mt-2 line-clamp-2 text-xs text-muted-foreground/80 leading-relaxed">{note.content}</p>
       )}
 
       {/* Tags */}
       {(note.tags || []).length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-1">
+        <div className="mt-3 flex flex-wrap gap-1">
           {(note.tags || []).slice(0, 3).map(tag => (
             <span
               key={tag}
-              className="rounded-full bg-black/15 px-2 py-0.5 text-[9px] font-medium uppercase tracking-wider text-muted-foreground/80"
+              className={cn(
+                'rounded-full px-2.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider',
+                COLORS[colorIndex % COLORS.length].badge
+              )}
             >
               {tag}
             </span>
@@ -524,16 +548,21 @@ function NoteCard({ note, colorIndex, openMenuId, onOpenMenu, onEdit, onToggle, 
       )}
 
       {/* Footer */}
-      <div className="mt-auto flex items-center justify-between pt-3">
+      <div className="mt-4 flex items-center justify-between pt-3 border-t border-white/5">
         <span className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
           <CalendarDays className="size-3" />
           {format(new Date(note.createdAt), "d MMM", { locale: es })}
         </span>
         <span className={cn(
-          'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium',
-          note.done ? 'bg-emerald-500/25 text-emerald-200' : 'bg-red-500/25 text-red-200',
+          'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-semibold tracking-wide border',
+          note.done
+            ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20'
+            : 'bg-rose-500/10 text-rose-300 border-rose-500/20',
         )}>
-          <span className={cn('size-1.5 rounded-full', note.done ? 'bg-emerald-200' : 'bg-red-200')} />
+          <span className={cn(
+            'size-1.5 rounded-full animate-pulse',
+            note.done ? 'bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.8)]' : 'bg-rose-400 shadow-[0_0_8px_rgba(239,68,68,0.8)]'
+          )} />
           {note.done ? 'Realizado' : 'Pendiente'}
         </span>
       </div>
