@@ -118,9 +118,9 @@ body {
 }
 
 .hero-title {
-  font-family: var(--font-serif);
+  font-family: var(--font);
   font-size: clamp(38px, 6vw, 68px);
-  font-weight: 400; line-height: 1.05; letter-spacing: -.02em;
+  font-weight: 700; line-height: 1.05; letter-spacing: -.02em;
   margin-bottom: 1.25rem; color: var(--white);
 }
 .gradient-text {
