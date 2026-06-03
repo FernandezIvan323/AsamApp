@@ -29,49 +29,6 @@ ProyectoAsado/
 └── README.md
 ```
 
-## Instalación rápida (desarrollo)
-
-### 1. Backend
-
-```bash
-cd backend
-cp .env.example .env
-npm install
-npx prisma migrate deploy
-npm run dev
-```
-
-API en `http://localhost:3000`
-
-### 2. Frontend
-
-```bash
-cd frontend
-cp .env.example .env
-npm install
-npm run dev
-```
-
-App en `http://localhost:5173` — landing page en la raíz, app React en `/app/`.
-
-### 3. Prisma Studio (opcional)
-
-```bash
-cd backend
-npx prisma studio
-```
-
-## Producción local (un solo puerto)
-
-```bash
-cd frontend && npm run build
-cd ../backend
-# En .env: SERVE_FRONTEND=true
-npm run start:prod
-```
-
-Abre `http://localhost:3000` — el backend sirve la API y el frontend compilado.
-
 ## Landing Page
 
 El sitio promocional (`/`) es HTML+CSS+JS estático servido por Vite. Incluye:
