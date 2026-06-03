@@ -6,105 +6,160 @@
   <title>AsamApp — Gestión profesional de eventos de asado</title>
   <link rel="stylesheet" href="styles.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet" />
 </head>
 <body>
 
   <!-- NAV -->
   <nav class="nav" id="nav">
     <div class="nav-inner">
-      <div class="nav-logo">
-        <span class="logo-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg></span>
+      <a href="/" class="nav-logo">
+        <span class="logo-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg></span>
         <span class="logo-text">AsamApp</span>
-      </div>
+      </a>
       <ul class="nav-links">
         <li><a href="#features">Funciones</a></li>
         <li><a href="#workflow">Flujo</a></li>
         <li><a href="#stack">Stack</a></li>
       </ul>
-      <a href="/app/" class="btn btn-primary">Abrir app</a>
+      <a href="/app/" class="btn btn-primary btn-sm">Abrir app</a>
+      <button class="nav-toggle" id="nav-toggle" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+    <div class="nav-mobile" id="nav-mobile">
+      <a href="#features">Funciones</a>
+      <a href="#workflow">Flujo</a>
+      <a href="#stack">Stack</a>
+      <a href="/app/" class="btn btn-primary" style="margin-top:.5rem">Abrir app</a>
     </div>
   </nav>
 
   <!-- HERO -->
   <section class="hero">
-    <div class="hero-bg"></div>
+    <div class="hero-mesh"></div>
+    <div class="hero-grid"></div>
     <div class="container">
-      <div class="badge-pill">🥩 Para asadores independientes y emprendedores gastronómicos</div>
-      <h1 class="hero-title">Gestioná tu negocio<br /><span class="gradient-text">de asados</span> como un pro</h1>
+      <div class="hero-badge">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+        Para asadores independientes y emprendedores gastronómicos
+      </div>
+      <h1 class="hero-title">Gestioná tu negocio<br/><span class="gradient-text">de asados</span> como un&nbsp;pro</h1>
       <p class="hero-sub">Cotizá eventos, controlá insumos, registrá compras, seguí cobros y analizá tu rentabilidad real — todo desde una sola app local, sin suscripciones.</p>
       <div class="hero-cta">
-      <a href="/app/" class="btn btn-primary">Abrir la app →</a>
-      <a href="#features" class="btn btn-ghost">Ver funciones →</a>
+        <a href="/app/" class="btn btn-primary btn-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          Abrir la app
+        </a>
+        <a href="#features" class="btn btn-ghost btn-lg">Ver funciones</a>
       </div>
       <div class="hero-stats">
-        <div class="stat"><span class="stat-num">15+</span><span class="stat-label">Módulos</span></div>
-        <div class="stat-divider"></div>
-        <div class="stat"><span class="stat-num">100%</span><span class="stat-label">Local & privado</span></div>
-        <div class="stat-divider"></div>
-        <div class="stat"><span class="stat-num">0$</span><span class="stat-label">Sin suscripción</span></div>
+        <div class="stat">
+          <span class="stat-num">15+</span>
+          <span class="stat-label">Modulos</span>
+        </div>
+        <div class="stat-sep"></div>
+        <div class="stat">
+          <span class="stat-num">100%</span>
+          <span class="stat-label">Local & privado</span>
+        </div>
+        <div class="stat-sep"></div>
+        <div class="stat">
+          <span class="stat-num">$0</span>
+          <span class="stat-label">Sin suscripcion</span>
+        </div>
       </div>
     </div>
   </section>
 
   <!-- NICHO -->
-  <section class="niche section">
+  <section class="section niche-section">
     <div class="container">
-      <div class="section-label">¿Para quién es?</div>
-      <h2 class="section-title">Hecho para el asador que quiere crecer</h2>
+      <div class="section-header">
+        <span class="section-tag">Para quien es</span>
+        <h2 class="section-title">Hecho para el asador<br/>que quiere crecer</h2>
+      </div>
       <div class="niche-grid">
-        <div class="niche-card">
-          <div class="niche-icon">👨‍🍳</div>
+        <div class="niche-card fade-in">
+          <div class="niche-icon-wrap niche-icon-green">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
           <h3>Asadores independientes</h3>
           <p>Manejás varios eventos por mes y necesitás saber exactamente cuánto ganás en cada uno.</p>
         </div>
-        <div class="niche-card">
-          <div class="niche-icon">📋</div>
-          <h3>Emprendedores gastronómicos</h3>
+        <div class="niche-card fade-in">
+          <div class="niche-icon-wrap niche-icon-blue">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/></svg>
+          </div>
+          <h3>Emprendedores gastronomicos</h3>
           <p>Querés profesionalizar tu negocio con presupuestos claros y seguimiento de clientes.</p>
         </div>
-        <div class="niche-card">
-          <div class="niche-icon">🏪</div>
+        <div class="niche-card fade-in">
+          <div class="niche-icon-wrap niche-icon-amber">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/><path d="M2 7h20"/><path d="M22 7v3a2 2 0 0 1-2 2a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 16 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 12 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 8 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 4 12a2 2 0 0 1-2-2V7"/></svg>
+          </div>
           <h3>Pequeños caterings</h3>
-          <p>Coordinás equipo, proveedores y compras para múltiples eventos simultáneos.</p>
+          <p>Coordinás equipo, proveedores y compras para multiples eventos simultáneos.</p>
         </div>
       </div>
     </div>
   </section>
 
   <!-- FEATURES -->
-  <section class="features section" id="features">
+  <section class="section" id="features">
     <div class="container">
-      <div class="section-label">Funcionalidades</div>
-      <h2 class="section-title">Todo lo que necesitás en un solo lugar</h2>
+      <div class="section-header">
+        <span class="section-tag">Funcionalidades</span>
+        <h2 class="section-title">Todo lo que necesitás<br/>en un solo lugar</h2>
+      </div>
       <div class="features-grid" id="features-grid"></div>
     </div>
   </section>
 
   <!-- WORKFLOW -->
-  <section class="workflow section" id="workflow">
+  <section class="section workflow-section" id="workflow">
     <div class="container">
-      <div class="section-label">Flujo de trabajo</div>
-      <h2 class="section-title">Del presupuesto al cobro, sin perder nada</h2>
+      <div class="section-header">
+        <span class="section-tag">Flujo de trabajo</span>
+        <h2 class="section-title">Del presupuesto al cobro,<br/>sin perder nada</h2>
+      </div>
       <div class="workflow-steps" id="workflow-steps"></div>
     </div>
   </section>
 
   <!-- PROS -->
-  <section class="pros section">
+  <section class="section">
     <div class="container">
-      <div class="section-label">Ventajas</div>
-      <h2 class="section-title">¿Por qué AsamApp?</h2>
+      <div class="section-header">
+        <span class="section-tag">Ventajas</span>
+        <h2 class="section-title">¿Por qué AsamApp?</h2>
+      </div>
       <div class="pros-grid" id="pros-grid"></div>
     </div>
   </section>
 
   <!-- STACK -->
-  <section class="stack section" id="stack">
+  <section class="section stack-section" id="stack">
     <div class="container">
-      <div class="section-label">Tecnología</div>
-      <h2 class="section-title">Stack moderno y liviano</h2>
+      <div class="section-header">
+        <span class="section-tag">Tecnología</span>
+        <h2 class="section-title">Stack moderno y liviano</h2>
+      </div>
       <div class="stack-grid" id="stack-grid"></div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="section cta-section">
+    <div class="container">
+      <div class="cta-card">
+        <h2>¿Listo para profesionalizar<br/>tus asados?</h2>
+        <p>Descargá AsamApp, instalala en minutos y empezá a gestionar tu negocio hoy mismo.</p>
+        <a href="/app/" class="btn btn-primary btn-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          Abrir AsamApp
+        </a>
+      </div>
     </div>
   </section>
 
@@ -113,11 +168,14 @@
     <div class="container">
       <div class="footer-inner">
         <div class="nav-logo">
-          <span class="logo-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg></span>
+          <span class="logo-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg></span>
           <span class="logo-text">AsamApp</span>
         </div>
-        <p class="footer-copy">Proyecto open source · ISC License · Hecho con ❤️ para asadores</p>
-        <a href="https://github.com/FernandezIvan323/ProyectoEventoAsados" target="_blank" class="btn btn-outline">GitHub</a>
+        <p class="footer-copy">Proyecto open source · ISC License · Hecho con dedication para asadores</p>
+        <a href="https://github.com/FernandezIvan323/ProyectoEventoAsados" target="_blank" class="footer-link">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg>
+          GitHub
+        </a>
       </div>
     </div>
   </footer>
