@@ -2,8 +2,8 @@
   "name": "AsamApp - Gestion de eventos gastronomicos",
   "short_name": "AsamApp",
   "description": "Cotiza, controla insumos, registra compras y conoce la rentabilidad real de cada evento gastronomico.",
-  "start_url": "/app/",
-  "scope": "/app/",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
   "background_color": "#0a0e1a",
@@ -29,19 +29,19 @@
     {
       "name": "Nuevo evento",
       "short_name": "Nuevo",
-      "url": "/app/new-event",
+      "url": "/new-event",
       "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }]
     },
     {
       "name": "Cotizador rapido",
       "short_name": "Cotizar",
-      "url": "/app/quick-quote",
+      "url": "/quick-quote",
       "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }]
     },
     {
       "name": "Notas",
       "short_name": "Notas",
-      "url": "/app/notes",
+      "url": "/notes",
       "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }]
     }
   ]

@@ -9,7 +9,7 @@ const { PrismaClient } = require(path.resolve(__dirname, '../../backend/node_mod
 const crypto = require('node:crypto');
 
 const SCREENSHOTS_DIR = path.resolve(__dirname, '../docs/screenshots');
-const APP_URL = 'http://localhost:5173/app';
+const APP_URL = 'http://localhost:5173';
 const API_URL = 'http://localhost:3000';
 
 function hashPassword(password) {

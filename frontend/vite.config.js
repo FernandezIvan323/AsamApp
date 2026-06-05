@@ -15,41 +15,41 @@ function landingPagePlugin() {
       server.middlewares.use((req, res, next) => {
         const url = req.url || '/'
 
-        // Let Vite handle its own internals and the React app
-        if (url.startsWith('/app/') || url === '/app' || url.startsWith('/@') || url.startsWith('/src') || url.startsWith('/node_modules') || url.startsWith('/favicon')) {
-          return next()
-        }
-
-        // Map URL to file in landing directory
-        const file = url === '/' ? 'index.html' : url.slice(1)
-        const filePath = path.join(landingDir, file)
-
-        if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
-          const ext = path.extname(filePath)
-          const types = {
-            '.html': 'text/html; charset=utf-8',
-            '.css': 'text/css; charset=utf-8',
-            '.js': 'application/javascript; charset=utf-8',
-            '.svg': 'image/svg+xml',
-            '.png': 'image/png',
-            '.jpg': 'image/jpeg',
-            '.ico': 'image/x-icon',
+        // Let Vite handle everything except /landing/*
+        // /landing/ y /landing/* -> serve static files from landing/ directory
+        if (url.startsWith('/landing/') || url === '/landing') {
+          const file = url === '/landing' || url === '/landing/' ? 'index.html' : url.replace(/^\/landing\//, '')
+          const filePath = path.join(landingDir, file)
+          if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+            const ext = path.extname(filePath)
+            const types = {
+              '.html': 'text/html; charset=utf-8',
+              '.css': 'text/css; charset=utf-8',
+              '.js': 'application/javascript; charset=utf-8',
+              '.svg': 'image/svg+xml',
+              '.png': 'image/png',
+              '.jpg': 'image/jpeg',
+              '.ico': 'image/x-icon',
+            }
+            res.setHeader('Content-Type', types[ext] || 'application/octet-stream')
+            res.end(fs.readFileSync(filePath))
+            return
           }
-          res.setHeader('Content-Type', types[ext] || 'application/octet-stream')
-          res.end(fs.readFileSync(filePath))
+          // Fallback: serve landing index.html for deep links
+          res.setHeader('Content-Type', 'text/html; charset=utf-8')
+          res.end(fs.readFileSync(path.join(landingDir, 'index.html')))
           return
         }
 
-        // Fallback: serve landing index.html (for deep links on the landing)
-        res.setHeader('Content-Type', 'text/html; charset=utf-8')
-        res.end(fs.readFileSync(path.join(landingDir, 'index.html')))
+        // Everything else (incluyendo /) -> React app
+        return next()
       })
     },
   }
 }
 
 export default defineConfig({
-  base: '/app/',
+  base: '/',
   plugins: [react(), tailwindcss(), landingPagePlugin()],
   resolve: {
     alias: {

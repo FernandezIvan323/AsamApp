@@ -16,7 +16,7 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <BrowserRouter basename="/app">
+    <BrowserRouter>
       <AuthGate>
         <App />
       </AuthGate>
