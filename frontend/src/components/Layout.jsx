@@ -209,11 +209,15 @@ export default function Layout() {
 
         <main className="min-w-0 p-4 sm:p-6 lg:p-8 bg-background">
           <div className="mx-auto w-full max-w-7xl">
-            <div className="mb-4 flex items-center justify-end gap-2">
-              <LocaleSwitcher />
-              <NotificationsBell />
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex-1">
+                <GlobalSearch />
+              </div>
+              <div className="flex items-center gap-2">
+                <LocaleSwitcher />
+                <NotificationsBell />
+              </div>
             </div>
-            <GlobalSearch />
             <Outlet />
           </div>
         </main>

@@ -32,7 +32,7 @@ export default function GlobalSearch() {
   );
 
   return (
-    <div className="relative mb-4 max-w-xl">
+    <div className="relative max-w-md w-full">
       <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
       <Input
         className="pl-9"

@@ -696,7 +696,7 @@ function NoteFormModal({ note, draft, setDraft, onClose, onSave, onDelete, onPin
             linkedType={draft.linkedType}
             linkedId={draft.linkedId}
             onChangeType={handleSelect('linkedType')}
-            onChangeId={handleChange('linkedId')}
+            onChangeId={handleSelect('linkedId')}
             options={options}
           />
         </div>
