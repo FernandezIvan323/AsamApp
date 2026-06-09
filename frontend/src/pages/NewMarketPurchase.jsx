@@ -3,7 +3,6 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
   Calendar,
-  Camera,
   Image,
   Plus,
   ReceiptText,
