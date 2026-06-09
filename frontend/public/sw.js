@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v1.0.0';
+const CACHE_VERSION = 'v1.1.0';
 const STATIC_CACHE = `asamapp-static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `asamapp-runtime-${CACHE_VERSION}`;
 
@@ -7,6 +7,9 @@ const PRECACHE_URLS = [
   '/app/',
   '/manifest.json',
   '/favicon.svg',
+  '/icon-192.svg',
+  '/icon-512.svg',
+  '/og-banner.svg',
 ];
 
 self.addEventListener('install', (event) => {
