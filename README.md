@@ -14,24 +14,6 @@ Aplicación web full-stack para gestionar eventos gastronómicos: cotización, p
 > **Estado:** v1.0.1 — production-ready local.
 > Ver [`CHANGELOG.md`](./CHANGELOG.md) para historial completo de versiones.
 
-## Capturas
-
-<table>
-  <tr>
-    <td><img src="./docs/screenshots/01-landing.png" alt="Landing" /></td>
-    <td><img src="./docs/screenshots/05-dashboard.png" alt="Dashboard" /></td>
-  </tr>
-  <tr>
-    <td><img src="./docs/screenshots/07-new-event.png" alt="Nuevo evento" /></td>
-    <td><img src="./docs/screenshots/09-finance.png" alt="Finanzas" /></td>
-  </tr>
-  <tr>
-    <td><img src="./docs/screenshots/10-notes.png" alt="Notas" /></td>
-    <td><img src="./docs/screenshots/11-inventory.png" alt="Inventario" /></td>
-  </tr>
-</table>
-
-Más capturas en [`docs/screenshots/`](./docs/screenshots/): calendar, operations, login, register, dashboard mobile y landing mobile.
 
 ## Stack
 
