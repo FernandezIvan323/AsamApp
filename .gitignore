@@ -4,6 +4,7 @@ dist/
 dev.db
 dev.db-journal
 test-integration.db
+test-isolation.db
 .vite/
 *.log
 backups/

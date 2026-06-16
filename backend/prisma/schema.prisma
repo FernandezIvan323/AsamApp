@@ -17,8 +17,78 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  events    Event[]  @relation("EventOwner")
-  notes     Note[]   @relation("NoteOwner")
+  events             Event[]              @relation("EventOwner")
+  notes              Note[]               @relation("NoteOwner")
+  marketPurchases    MarketPurchase[]     @relation("MarketPurchaseOwner")
+  providers          Provider[]           @relation("ProviderOwner")
+  catalogItems       CatalogItem[]        @relation("CatalogItemOwner")
+  fixedCosts         FixedCost[]          @relation("FixedCostOwner")
+  recipes            RecipeCombo[]        @relation("RecipeComboOwner")
+  quoteTemplates     QuoteTemplate[]      @relation("QuoteTemplateOwner")
+  purchaseItems      MarketPurchaseItem[] @relation("MarketPurchaseItemOwner")
+  eventTasks         EventTask[]          @relation("EventTaskOwner")
+  eventPayments      EventPayment[]       @relation("EventPaymentOwner")
+  stockMovements     StockMovement[]      @relation("StockMovementOwner")
+  noteChangeLogs     NoteChangeLog[]      @relation("NoteChangeLogOwner")
+  eventChangeLogs    EventChangeLog[]     @relation("EventChangeLogOwner")
+  eventPhotos        EventPhoto[]         @relation("EventPhotoOwner")
+  insumos            Insumo[]             @relation("InsumoOwner")
+  clients            Client[]             @relation("ClientOwner")
+  employees          Employee[]           @relation("EmployeeOwner")
+  employeeActivities EmployeeActivity[]   @relation("EmployeeActivityOwner")
+}
+
+model Client {
+  id        String   @id @default(uuid())
+  name      String
+  phone     String?
+  email     String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ownerId   String?
+  owner     User?    @relation("ClientOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+
+  events    Event[]
+}
+
+model Employee {
+  id          String   @id @default(uuid())
+  name        String
+  phone       String?
+  email       String?
+  role        String   @default("Cocinero")
+  hourlyRate  Float    @default(0)
+  notes       String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  ownerId     String?
+  owner       User?    @relation("EmployeeOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+
+  activities  EmployeeActivity[]
+}
+
+model EmployeeActivity {
+  id          String   @id @default(uuid())
+  date        DateTime @default(now())
+  hours       Float
+  description String?
+  paymentType String   @default("Por hora")
+  payment     Float    @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  ownerId      String?
+  owner        User?    @relation("EmployeeActivityOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+
+  employeeId   String
+  employee     Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  eventId      String?
+  event        Event?   @relation(fields: [eventId], references: [id], onDelete: SetNull)
 }
 
 model Event {
@@ -42,24 +112,16 @@ model Event {
   ownerId      String?
   owner        User?    @relation("EventOwner", fields: [ownerId], references: [id], onDelete: SetNull)
 
+  clientId     String?
+  clientRef    Client?  @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
   insumos      Insumo[]
   tasks        EventTask[]
   payments     EventPayment[]
   purchases    MarketPurchase[]
   changelog    EventChangeLog[]
   photos       EventPhoto[]
-}
-
-model Insumo {
-  id          String @id @default(uuid())
-  name        String
-  quantity    Float
-  unit        String
-  costPerUnit Float
-  totalCost   Float
-  
-  eventId     String
-  event       Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  employeeActivities EmployeeActivity[]
 }
 
 model CatalogItem {
@@ -71,6 +133,9 @@ model CatalogItem {
   minStock  Float    @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  ownerId   String?
+  owner     User?    @relation("CatalogItemOwner", fields: [ownerId], references: [id], onDelete: SetNull)
 
   movements StockMovement[]
 }
@@ -88,6 +153,9 @@ model MarketPurchase {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
+  ownerId   String?
+  owner     User?    @relation("MarketPurchaseOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+
   eventId       String?
   event         Event?   @relation(fields: [eventId], references: [id], onDelete: SetNull)
   providerId    String?
@@ -103,6 +171,9 @@ model MarketPurchaseItem {
   unitPrice      Float
   subtotal       Float
 
+  ownerId        String?
+  owner          User?    @relation("MarketPurchaseItemOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+
   purchaseId     String
   purchase       MarketPurchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
 }
@@ -115,6 +186,9 @@ model Provider {
   notes     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  ownerId   String?
+  owner     User?    @relation("ProviderOwner", fields: [ownerId], references: [id], onDelete: SetNull)
 
   purchases MarketPurchase[]
 }
@@ -129,6 +203,9 @@ model RecipeCombo {
   itemsJson   String   @default("[]")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  ownerId   String?
+  owner     User?    @relation("RecipeComboOwner", fields: [ownerId], references: [id], onDelete: SetNull)
 }
 
 model EventTask {
@@ -138,6 +215,9 @@ model EventTask {
   done      Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  ownerId   String?
+  owner     User?    @relation("EventTaskOwner", fields: [ownerId], references: [id], onDelete: SetNull)
 
   eventId   String
   event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
@@ -151,6 +231,9 @@ model EventPayment {
   notes         String?
   createdAt     DateTime @default(now())
 
+  ownerId   String?
+  owner     User?    @relation("EventPaymentOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+
   eventId       String
   event         Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
 }
@@ -161,6 +244,9 @@ model StockMovement {
   quantity      Float
   notes         String?
   createdAt     DateTime @default(now())
+
+  ownerId   String?
+  owner     User?    @relation("StockMovementOwner", fields: [ownerId], references: [id], onDelete: SetNull)
 
   catalogItemId String
   catalogItem   CatalogItem @relation(fields: [catalogItemId], references: [id], onDelete: Cascade)
@@ -196,6 +282,8 @@ model NoteChangeLog {
   field     String
   oldValue  String?
   newValue  String?
+  ownerId   String?
+  owner     User?    @relation("NoteChangeLogOwner", fields: [ownerId], references: [id], onDelete: SetNull)
   noteId    String
   note      Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
@@ -213,6 +301,9 @@ model QuoteTemplate {
   itemsJson    String   @default("[]")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  ownerId      String?
+  owner        User?    @relation("QuoteTemplateOwner", fields: [ownerId], references: [id], onDelete: SetNull)
 }
 
 
@@ -222,6 +313,9 @@ model EventChangeLog {
   oldValue   String?
   newValue   String?
   createdAt  DateTime @default(now())
+
+  ownerId    String?
+  owner      User?    @relation("EventChangeLogOwner", fields: [ownerId], references: [id], onDelete: SetNull)
 
   eventId    String
   event      Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
@@ -236,6 +330,9 @@ model FixedCost {
   notes       String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  ownerId     String?
+  owner       User?    @relation("FixedCostOwner", fields: [ownerId], references: [id], onDelete: SetNull)
 }
 
 model EventPhoto {
@@ -247,6 +344,24 @@ model EventPhoto {
   caption   String?
   createdAt DateTime @default(now())
 
+  ownerId   String?
+  owner     User?    @relation("EventPhotoOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+
   eventId   String
   event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+
+model Insumo {
+  id          String @id @default(uuid())
+  name        String
+  quantity    Float
+  unit        String
+  costPerUnit Float
+  totalCost   Float
+
+  ownerId     String?
+  owner       User?  @relation("InsumoOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+
+  eventId     String
+  event       Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
 }

@@ -4,8 +4,9 @@ import { Building2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Select } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { currency } from '@/lib/finance';
 import { createFixedCost, deleteFixedCost, getFixedCosts, updateFixedCost } from '@/services/fixedCostsApi';
@@ -97,12 +98,11 @@ export default function FixedCosts() {
                 <Label>Monto ($) *</Label>
                 <Input type="number" min="0" step="0.01" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} required />
               </div>
-              <div className="space-y-1">
-                <Label>Frecuencia</Label>
-                <select className="form-input h-9 w-full" value={form.frequency} onChange={e => setForm(f => ({ ...f, frequency: e.target.value }))}>
+              <FormField label="Frecuencia">
+                <Select value={form.frequency} onChange={e => setForm(f => ({ ...f, frequency: e.target.value }))}>
                   {FREQUENCIES.map(fr => <option key={fr} value={fr}>{fr}</option>)}
-                </select>
-              </div>
+                </Select>
+              </FormField>
               <div className="space-y-1">
                 <Label>Categoría</Label>
                 <Input value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} placeholder="Ej: Transporte, Equipamiento" />

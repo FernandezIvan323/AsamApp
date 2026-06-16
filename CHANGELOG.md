@@ -4,6 +4,44 @@ Todos los cambios relevantes del proyecto se documentan aqui.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es/1.1.0/)
 y el versionado sigue [Semantic Versioning](https://semver.org/lang/es/).
 
+## [2.1.0] - 2026-06-16
+
+### Agregado
+- **Módulo de Empleados**: página `Employees.jsx` con CRUD completo (nombre, teléfono, email, rol, tarifa por hora, estado activo). Registro de actividades por empleado con horas trabajadas, descripción, tipo de pago (Por hora / Por evento / Fijo) y cálculo automático de total. Vinculación a eventos.
+- **Módulo de Clientes**: página `Clients.jsx` con CRUD (nombre, teléfono, email, notas). Lista de eventos asociados a cada cliente.
+- **Integración Cliente-Evento**: los formularios de nuevo/editar evento ahora incluyen un combobox con búsqueda de clientes existentes. El evento guarda `clientId` como FK a la tabla Client. Vista de eventos por cliente en la página de clientes.
+- **Aislamiento multi-tenant verificado**: 10 tests de integración que confirman que cada usuario ve solo sus propios datos (eventos, inventario, proveedores, notas, recetas, compras, gastos fijos, plantillas) y que el admin puede ver todo.
+- **Componentes UI reutilizables**: `FormField`, `Select`, `Toast` — componentes base con diseño consistente Tailwind CSS.
+- **Librería de validación frontend**: `validators.js` con validadores reutilizables para formularios.
+- **Script de migración multi-tenant**: `migrate-to-mtr.js` — migra datos huérfanos (ownerId IS NULL) al admin fundador. Idempotente, crea backup automático antes de ejecutar.
+
+### Mejorado
+- **Rediseño completo de páginas**: NewEvent, EditEvent, EventDetail, NewMarketPurchase, QuickQuote, FixedCosts, Login, Register — modernizadas con Tailwind CSS V4, diseño responsive, mejor UX.
+- **CSS limpiado**: eliminados 6 CSS legacy (App.css, Layout.css, Dashboard.css, Finance.css, Inventory.css, NewEvent.css). Todo el estilo unificado en `index.css` con variables CSS del theme.
+- **Layout responsive**: sidebar colapsable en mobile con menú hamburguesa. Topbar adaptativa.
+- **Buscador global mejorado**: `search.js` con FTS5 + fallback LIKE, mejor tokenización.
+- **Alertas inteligentes**: 6 tipos de alerta (Proveedores sin uso, Stock bajo, Eventos próximos, Compras sin evento, Presupuestos sin margen, Eventos sin precio). Sistema de severidades (info/warn/error).
+- **Paleta de colores Stripe-style**: migración de verde → naranja (#f97316) como color primario. Tema coherente en toda la app.
+- **Dashboard con widgets**: CTA de eventos que necesitan atención, margen real destacado con badge "Cerrado" en eventos cobrados.
+- **Multi-proveedor en compras**: soporte para registrar múltiples compras en una misma sesión.
+- **PWA**: theme color naranja, service worker con estrategia network-first, iconos rediseñados.
+- **Landing page**: banner OG rediseñado, meta tags para redes sociales, licencia MIT.
+- **Registro público**: nuevos usuarios se crean con role 'user' por defecto (sin permisos de admin).
+
+### Corregido
+- `pendingRevenue` excluye correctamente eventos cobrados y cancelados.
+- Botón 'Volver al inicio' del login apunta a /landing/ (no a /app/).
+- Buscador alineado con notificaciones e idioma en la topbar.
+- Contexto de notas corregido en sidebar.
+- 44 errores de lint eliminados (CI ahora pasa con 0 errores/warnings).
+- Atributos SVG kebab-case → camelCase en Login/Register (eliminan warnings de React).
+
+### Seguridad
+- `AUTH_SECRET` se valida al arranque: servidor rechaza iniciar en producción si está vacío o con valor por defecto.
+- Multi-tenant: ownerId en todos los modelos, middleware `ownerFilter()` en cada query, endpoints protegidos por usuario.
+- Roles vía `permissions.js`: admin (todo), editor (CRUD sin borrar usuarios), viewer (solo lectura).
+- Tests de permisos: 12 tests que verifican matriz de permisos por rol.
+
 ## [1.0.1] - 2026-06-05
 
 ### Mejorado

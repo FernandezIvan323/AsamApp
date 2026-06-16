@@ -15,11 +15,13 @@ import { AlertDialog } from '@/components/feedback/ConfirmDialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { FormField } from '@/components/ui/form-field';
+import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 import { currency } from '@/lib/finance';
 import { getEvents } from '@/services/eventsApi';
 import { createMarketPurchase } from '@/services/marketPurchasesApi';
 import { getProviders } from '@/services/providersApi';
-import './NewEvent.css';
 
 const PAYMENT_METHODS = ['Efectivo', 'Tarjeta', 'Transferencia', 'Otro'];
 const COMMON_UNITS = ['unidad', 'kg', 'g', 'lb', 'litro', 'paquete', 'bandeja', 'caja'];
@@ -111,8 +113,6 @@ function PurchaseBlock({ purchase, providers, index, total, onChange, onRemove }
     onChange({ ...purchase, receiptPhotos: purchase.receiptPhotos.filter((_, i) => i !== index) });
   };
 
-  const inputClass = 'w-full rounded-lg border border-border bg-card px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground transition-all duration-150 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/50';
-
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between border-b border-border pb-4">
@@ -128,60 +128,47 @@ function PurchaseBlock({ purchase, providers, index, total, onChange, onRemove }
       </CardHeader>
       <CardContent className="space-y-4 pt-5">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <div className="space-y-1.5 md:col-span-2">
-            <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Establecimiento / Tienda *</label>
-            <input
-              type="text"
-              className={inputClass}
-              placeholder="Ej. Supermercado, Carniceria"
-              value={purchase.store}
-              onChange={e => updateField('store', e.target.value)}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Proveedor registrado</label>
-            <select className={inputClass + ' appearance-none'} value={purchase.providerId} onChange={e => updateField('providerId', e.target.value)}>
+          <FormField label="Establecimiento / Tienda *" className="md:col-span-2">
+            <Input value={purchase.store} onChange={e => updateField('store', e.target.value)} placeholder="Ej. Supermercado, Carniceria" />
+          </FormField>
+          <FormField label="Proveedor registrado">
+            <Select value={purchase.providerId} onChange={e => updateField('providerId', e.target.value)}>
               <option value="">Sin proveedor</option>
               {providers.map(provider => (
                 <option key={provider.id} value={provider.id}>{provider.name}</option>
               ))}
-            </select>
-          </div>
+            </Select>
+          </FormField>
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 border-t border-border/40 pt-4">
-          <div className="space-y-1.5">
-            <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Metodo de pago</label>
-            <select className={inputClass + ' appearance-none'} value={purchase.paymentMethod} onChange={e => updateField('paymentMethod', e.target.value)}>
+          <FormField label="Metodo de pago">
+            <Select value={purchase.paymentMethod} onChange={e => updateField('paymentMethod', e.target.value)}>
               {PAYMENT_METHODS.map(method => (
                 <option key={method} value={method}>{method}</option>
               ))}
-            </select>
-          </div>
+            </Select>
+          </FormField>
         </div>
 
         <div className="border-t border-border/40 pt-4 space-y-3">
           <h4 className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Productos</h4>
           <div className="rounded-xl border border-border/60 bg-black/20 p-4 shadow-inner">
             <div className="grid grid-cols-1 gap-3 md:grid-cols-12 md:items-end">
-              <div className="space-y-1.5 md:col-span-4">
-                <label className="text-[10px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Producto</label>
-                <input type="text" className={inputClass} placeholder="Ej. Carne" value={productDraft.name} onChange={e => setProductDraft({ ...productDraft, name: e.target.value })} />
-              </div>
-              <div className="space-y-1.5 md:col-span-2">
-                <label className="text-[10px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Cantidad</label>
-                <input type="number" min="0.01" step="0.01" className={inputClass} value={productDraft.quantity} onChange={e => setProductDraft({ ...productDraft, quantity: e.target.value })} />
-              </div>
-              <div className="space-y-1.5 md:col-span-2">
-                <label className="text-[10px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Unidad</label>
-                <select className={inputClass + ' appearance-none'} value={productDraft.unit} onChange={e => setProductDraft({ ...productDraft, unit: e.target.value })}>
+              <FormField label="Producto" className="md:col-span-4">
+                <Input value={productDraft.name} onChange={e => setProductDraft({ ...productDraft, name: e.target.value })} placeholder="Ej. Carne" />
+              </FormField>
+              <FormField label="Cantidad" className="md:col-span-2">
+                <Input type="number" min="0.01" step="0.01" value={productDraft.quantity} onChange={e => setProductDraft({ ...productDraft, quantity: e.target.value })} />
+              </FormField>
+              <FormField label="Unidad" className="md:col-span-2">
+                <Select value={productDraft.unit} onChange={e => setProductDraft({ ...productDraft, unit: e.target.value })}>
                   {COMMON_UNITS.map(unit => (<option key={unit} value={unit}>{unit}</option>))}
-                </select>
-              </div>
-              <div className="space-y-1.5 md:col-span-2">
-                <label className="text-[10px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Precio unit.</label>
-                <input type="number" min="0" step="0.01" className={inputClass} value={productDraft.unitPrice} onChange={e => setProductDraft({ ...productDraft, unitPrice: e.target.value })} />
-              </div>
+                </Select>
+              </FormField>
+              <FormField label="Precio unit." className="md:col-span-2">
+                <Input type="number" min="0" step="0.01" value={productDraft.unitPrice} onChange={e => setProductDraft({ ...productDraft, unitPrice: e.target.value })} />
+              </FormField>
               <div className="md:col-span-2">
                 <Button type="button" onClick={addItem} className="w-full" size="sm">
                   <Plus className="size-4" /> Agregar
@@ -211,10 +198,9 @@ function PurchaseBlock({ purchase, providers, index, total, onChange, onRemove }
         </div>
 
         <div className="border-t border-border/40 pt-4 space-y-3">
-          <div className="space-y-1.5">
-            <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Notas</label>
-            <textarea className={inputClass + ' min-h-20 resize-y'} placeholder="Opcional" value={purchase.notes} onChange={e => updateField('notes', e.target.value)} />
-          </div>
+          <FormField label="Notas">
+            <textarea className="border-input bg-background ring-offset-background placeholder:text-muted-foreground flex min-h-20 w-full resize-y rounded-md border px-3 py-2 text-sm shadow-xs transition-all duration-200 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]" placeholder="Opcional" value={purchase.notes} onChange={e => updateField('notes', e.target.value)} />
+          </FormField>
         </div>
 
         <div className="border-t border-border/40 pt-4 space-y-3">
@@ -390,7 +376,7 @@ export default function NewMarketPurchase() {
         </Button>
       </div>
 
-      <div className="ne-grid">
+      <div className="grid grid-cols-[1.5fr_1fr] gap-6 items-start lg:grid-cols-1">
         <div className="space-y-4">
           <Card>
             <CardHeader className="pb-4">
@@ -401,28 +387,17 @@ export default function NewMarketPurchase() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Fecha y hora *</label>
-                  <input
-                    type="datetime-local"
-                    className="w-full rounded-lg border border-border bg-card px-3.5 py-2.5 text-sm text-foreground transition-all duration-150 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/50"
-                    value={session.purchasedAt}
-                    onChange={e => setSession({ ...session, purchasedAt: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Asociar a evento</label>
-                  <select
-                    className="w-full appearance-none rounded-lg border border-border bg-card px-3.5 py-2.5 text-sm text-foreground transition-all duration-150 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/50"
-                    value={session.eventId}
-                    onChange={e => setSession({ ...session, eventId: e.target.value })}
-                  >
+                <FormField label="Fecha y hora *">
+                  <Input type="datetime-local" value={session.purchasedAt} onChange={e => setSession({ ...session, purchasedAt: e.target.value })} />
+                </FormField>
+                <FormField label="Asociar a evento">
+                  <Select value={session.eventId} onChange={e => setSession({ ...session, eventId: e.target.value })}>
                     <option value="">Gasto general</option>
                     {events.map(event => (
                       <option key={event.id} value={event.id}>{event.title}</option>
                     ))}
-                  </select>
-                </div>
+                  </Select>
+                </FormField>
               </div>
             </CardContent>
           </Card>
@@ -444,7 +419,7 @@ export default function NewMarketPurchase() {
           </Button>
         </div>
 
-        <div className="ne-summary-container">
+        <div className="flex flex-col gap-4">
           <Card className="sticky top-6 space-y-4">
             <CardHeader className="border-b border-border pb-4">
               <CardTitle className="flex items-center gap-2 text-base">

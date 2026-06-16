@@ -28,6 +28,7 @@ import { EmptyState, ErrorState, LoadingState } from '@/components/feedback/Reso
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { StaggerContainer, StaggerItem } from '@/components/PageTransition';
 import { getAllowedStatuses, getStatusVariant } from '@/lib/eventStatus';
 import { currency, getEventFinancials, getEventRealFinancials, getEventSubtotal } from '@/lib/finance';
@@ -303,26 +304,24 @@ export default function EventDetail() {
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-5">
-            <div className="overflow-x-auto">
-              <table className="w-full caption-bottom text-sm">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="h-10 px-3 text-left text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Item</th>
-                    <th className="h-10 px-3 text-left text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Cant.</th>
-                    <th className="h-10 px-3 text-right text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(event.insumos || []).map(item => (
-                    <tr key={item.id} className="border-b border-border/50 transition-colors hover:bg-muted/40">
-                      <td className="p-3 text-sm text-foreground">{item.name}</td>
-                      <td className="p-3 text-sm text-muted-foreground">{item.quantity} {item.unit}</td>
-                      <td className="p-3 text-right text-sm font-medium text-foreground">${currency(item.totalCost)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <Table>
+              <TableHeader>
+                <TableRow className="border-border">
+                  <TableHead className="text-[10px] uppercase tracking-wider">Item</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-wider">Cant.</TableHead>
+                  <TableHead className="text-right text-[10px] uppercase tracking-wider">Total</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {(event.insumos || []).map(item => (
+                  <TableRow key={item.id}>
+                    <TableCell className="text-sm text-foreground">{item.name}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{item.quantity} {item.unit}</TableCell>
+                    <TableCell className="text-right text-sm font-medium text-foreground">${currency(item.totalCost)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
             <div className="mt-4 space-y-1.5 border-t border-border pt-4">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Subtotal + extras</span>
@@ -428,26 +427,24 @@ export default function EventDetail() {
                 <p className="text-xs text-muted-foreground">Los abonos aparecerán aquí.</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full caption-bottom text-sm">
-                  <thead>
-                    <tr className="border-b border-border">
-                      <th className="h-9 px-3 text-left text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Fecha</th>
-                      <th className="h-9 px-3 text-left text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Método</th>
-                      <th className="h-9 px-3 text-right text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Monto</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {event.payments.map(p => (
-                      <tr key={p.id} className="border-b border-border/50 transition-colors hover:bg-muted/40">
-                        <td className="p-3 text-xs text-muted-foreground">{format(new Date(p.paidAt), 'dd/MM/yyyy HH:mm')}</td>
-                        <td className="p-3 text-sm text-foreground">{p.paymentMethod}</td>
-                        <td className="p-3 text-right text-sm font-medium text-emerald-400">${currency(p.amount)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-border">
+                    <TableHead className="text-[10px] uppercase tracking-wider">Fecha</TableHead>
+                    <TableHead className="text-[10px] uppercase tracking-wider">Método</TableHead>
+                    <TableHead className="text-right text-[10px] uppercase tracking-wider">Monto</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {event.payments.map(p => (
+                    <TableRow key={p.id}>
+                      <TableCell className="text-xs text-muted-foreground">{format(new Date(p.paidAt), 'dd/MM/yyyy HH:mm')}</TableCell>
+                      <TableCell className="text-sm text-foreground">{p.paymentMethod}</TableCell>
+                      <TableCell className="text-right text-sm font-medium text-emerald-400">${currency(p.amount)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             )}
           </CardContent>
         </Card>
@@ -472,28 +469,26 @@ export default function EventDetail() {
                 </Button>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full caption-bottom text-sm">
-                  <thead>
-                    <tr className="border-b border-border">
-                      <th className="h-9 px-3 text-left text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Fecha</th>
-                      <th className="h-9 px-3 text-left text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Tienda</th>
-                      <th className="h-9 px-3 text-left text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Items</th>
-                      <th className="h-9 px-3 text-right text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {event.purchases.map(p => (
-                      <tr key={p.id} className="border-b border-border/50 transition-colors hover:bg-muted/40">
-                        <td className="p-3 text-xs text-muted-foreground">{format(new Date(p.purchasedAt), 'dd/MM/yyyy')}</td>
-                        <td className="p-3 text-sm text-foreground">{p.store}</td>
-                        <td className="p-3 text-sm text-muted-foreground">{p.items?.length || 0} productos</td>
-                        <td className="p-3 text-right text-sm font-medium text-foreground">${currency(p.totalAmount)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-border">
+                    <TableHead className="text-[10px] uppercase tracking-wider">Fecha</TableHead>
+                    <TableHead className="text-[10px] uppercase tracking-wider">Tienda</TableHead>
+                    <TableHead className="text-[10px] uppercase tracking-wider">Items</TableHead>
+                    <TableHead className="text-right text-[10px] uppercase tracking-wider">Total</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {event.purchases.map(p => (
+                    <TableRow key={p.id}>
+                      <TableCell className="text-xs text-muted-foreground">{format(new Date(p.purchasedAt), 'dd/MM/yyyy')}</TableCell>
+                      <TableCell className="text-sm text-foreground">{p.store}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{p.items?.length || 0} productos</TableCell>
+                      <TableCell className="text-right text-sm font-medium text-foreground">${currency(p.totalAmount)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             )}
           </CardContent>
         </Card>
@@ -509,28 +504,26 @@ export default function EventDetail() {
               <CardDescription>Cambios de precio y estado registrados automáticamente.</CardDescription>
             </CardHeader>
             <CardContent className="pt-5">
-              <div className="overflow-x-auto">
-                <table className="w-full caption-bottom text-sm">
-                  <thead>
-                    <tr className="border-b border-border">
-                      <th className="h-9 px-3 text-left text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Fecha</th>
-                      <th className="h-9 px-3 text-left text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Campo</th>
-                      <th className="h-9 px-3 text-left text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Antes</th>
-                      <th className="h-9 px-3 text-left text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Después</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {event.changelog.map(log => (
-                      <tr key={log.id} className="border-b border-border/50 transition-colors hover:bg-muted/40">
-                        <td className="p-3 text-xs text-muted-foreground">{format(new Date(log.createdAt), 'dd/MM/yyyy HH:mm')}</td>
-                        <td className="p-3 text-sm font-medium text-foreground capitalize">{log.field === 'totalPrice' ? 'Precio' : 'Estado'}</td>
-                        <td className="p-3 text-sm text-muted-foreground">{log.field === 'totalPrice' ? `$${currency(Number(log.oldValue))}` : log.oldValue}</td>
-                        <td className="p-3 text-sm text-foreground">{log.field === 'totalPrice' ? `$${currency(Number(log.newValue))}` : log.newValue}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-border">
+                    <TableHead className="text-[10px] uppercase tracking-wider">Fecha</TableHead>
+                    <TableHead className="text-[10px] uppercase tracking-wider">Campo</TableHead>
+                    <TableHead className="text-[10px] uppercase tracking-wider">Antes</TableHead>
+                    <TableHead className="text-[10px] uppercase tracking-wider">Después</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {event.changelog.map(log => (
+                    <TableRow key={log.id}>
+                      <TableCell className="text-xs text-muted-foreground">{format(new Date(log.createdAt), 'dd/MM/yyyy HH:mm')}</TableCell>
+                      <TableCell className="text-sm font-medium text-foreground capitalize">{log.field === 'totalPrice' ? 'Precio' : 'Estado'}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{log.field === 'totalPrice' ? `$${currency(Number(log.oldValue))}` : log.oldValue}</TableCell>
+                      <TableCell className="text-sm text-foreground">{log.field === 'totalPrice' ? `$${currency(Number(log.newValue))}` : log.newValue}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         )}

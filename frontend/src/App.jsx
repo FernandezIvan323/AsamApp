@@ -21,6 +21,8 @@ const Templates = lazy(() => import('./pages/Templates'));
 const ExportData = lazy(() => import('./pages/ExportData'));
 const QuickQuote = lazy(() => import('./pages/QuickQuote'));
 const FixedCosts = lazy(() => import('./pages/FixedCosts'));
+const Clients = lazy(() => import('./pages/Clients'));
+const Employees = lazy(() => import('./pages/Employees'));
 
 function PageLoader() {
   return (
@@ -55,6 +57,9 @@ function App() {
         <Route path="templates" element={<Suspense fallback={<PageLoader />}><Templates /></Suspense>} />
         <Route path="quick-quote" element={<Suspense fallback={<PageLoader />}><QuickQuote /></Suspense>} />
         <Route path="fixed-costs" element={<Suspense fallback={<PageLoader />}><FixedCosts /></Suspense>} />
+        <Route path="clients" element={<Suspense fallback={<PageLoader />}><Clients /></Suspense>} />
+        <Route path="clients/:id" element={<Suspense fallback={<PageLoader />}><Clients /></Suspense>} />
+        <Route path="employees" element={<Suspense fallback={<PageLoader />}><Employees /></Suspense>} />
         <Route path="export" element={<Suspense fallback={<PageLoader />}><ExportData /></Suspense>} />
       </Route>
     </Routes>

@@ -52,7 +52,7 @@ process.on('uncaughtException', (err) => {
 });
 
 app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', version: '1.0.0' });
+  res.json({ status: 'ok', version: '2.0.0' });
 });
 
 app.get('/api/auth/config', handleAuthConfig);
@@ -69,6 +69,11 @@ function requirePermission(permission) {
     }
     next();
   };
+}
+
+function ownerFilter(req) {
+  if (!req.user) return {};
+  return req.user.role === 'admin' ? {} : { ownerId: req.user?.id };
 }
 
 function sendValidationError(res, errors) {
@@ -129,6 +134,7 @@ function getEventInclude() {
     payments: true,
     purchases: { include: { items: true, provider: true } },
     changelog: { orderBy: { createdAt: 'desc' }, take: 50 },
+    clientRef: { select: { id: true, name: true, phone: true, email: true } },
   };
 }
 
@@ -143,6 +149,7 @@ function serializeEvent(event) {
 app.get('/api/events', async (req, res) => {
   try {
     const events = await prisma.event.findMany({
+      where: ownerFilter(req),
       include: getEventInclude(),
       orderBy: { createdAt: 'desc' },
     });
@@ -154,8 +161,8 @@ app.get('/api/events', async (req, res) => {
 
 app.get('/api/events/:id', async (req, res) => {
   try {
-    const event = await prisma.event.findUnique({
-      where: { id: req.params.id },
+    const event = await prisma.event.findFirst({
+      where: { id: req.params.id, ...ownerFilter(req) },
       include: getEventInclude(),
     });
     if (!event) return res.status(404).json({ error: 'Evento no encontrado' });
@@ -174,6 +181,7 @@ app.post('/api/events', async (req, res) => {
       data: {
         title: data.title,
         client: data.client,
+        clientId: data.clientId,
         date: data.date,
         time: data.time,
         location: data.location,
@@ -185,8 +193,9 @@ app.post('/api/events', async (req, res) => {
         profitMargin: data.profitMargin,
         amountPaid: data.amountPaid,
         totalPrice: data.totalPrice,
+        ownerId: req.user?.id,
         insumos: {
-          create: data.insumos,
+          create: (data.insumos || []).map(i => ({ ...i, ownerId: req.user?.id })),
         },
       },
       include: getEventInclude(),
@@ -200,7 +209,7 @@ app.post('/api/events', async (req, res) => {
 app.put('/api/events/:id', async (req, res) => {
   try {
     if (req.body?.title !== undefined) {
-      const existing = await prisma.event.findUnique({ where: { id: req.params.id } });
+      const existing = await prisma.event.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
       if (!existing) return res.status(404).json({ error: 'Evento no encontrado' });
 
       const { errors, data } = validateEventPayload({
@@ -215,6 +224,7 @@ app.put('/api/events/:id', async (req, res) => {
         data: {
           title: data.title,
           client: data.client,
+          clientId: data.clientId,
           date: data.date,
           time: data.time,
           location: data.location,
@@ -227,7 +237,7 @@ app.put('/api/events/:id', async (req, res) => {
           totalPrice: data.totalPrice,
           insumos: {
             deleteMany: {},
-            create: data.insumos,
+            create: (data.insumos || []).map(i => ({ ...i, ownerId: req.user?.id })),
           },
         },
         include: getEventInclude(),
@@ -251,7 +261,7 @@ app.put('/api/events/:id', async (req, res) => {
     const { errors, data } = validateStatusPayload(req.body);
     if (errors.length) return sendValidationError(res, errors);
 
-    const existing = await prisma.event.findUnique({ where: { id: req.params.id } });
+    const existing = await prisma.event.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
     if (!existing) return res.status(404).json({ error: 'Evento no encontrado' });
 
     const event = await prisma.event.update({
@@ -274,8 +284,8 @@ app.put('/api/events/:id', async (req, res) => {
 
 app.get('/api/events/:id/financials', async (req, res) => {
   try {
-    const event = await prisma.event.findUnique({
-      where: { id: req.params.id },
+    const event = await prisma.event.findFirst({
+      where: { id: req.params.id, ...ownerFilter(req) },
       include: getEventInclude(),
     });
     if (!event) return res.status(404).json({ error: 'Evento no encontrado' });
@@ -292,7 +302,7 @@ app.get('/api/shopping-list', async (req, res) => {
       : DEFAULT_SHOPPING_STATUSES;
 
     const events = await prisma.event.findMany({
-      where: { status: { in: statuses } },
+      where: { status: { in: statuses }, ...ownerFilter(req) },
       include: { insumos: true },
       orderBy: { date: 'asc' },
     });
@@ -305,6 +315,8 @@ app.get('/api/shopping-list', async (req, res) => {
 
 app.delete('/api/events/:id', async (req, res) => {
   try {
+    const existing = await prisma.event.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
+    if (!existing) return res.status(404).json({ error: 'Evento no encontrado' });
     await prisma.event.delete({ where: { id: req.params.id } });
     res.status(204).send();
   } catch (error) {
@@ -314,8 +326,8 @@ app.delete('/api/events/:id', async (req, res) => {
 
 app.post('/api/events/:id/duplicate', async (req, res) => {
   try {
-    const source = await prisma.event.findUnique({
-      where: { id: req.params.id },
+    const source = await prisma.event.findFirst({
+      where: { id: req.params.id, ...ownerFilter(req) },
       include: { insumos: true },
     });
     if (!source) return res.status(404).json({ error: 'Evento no encontrado' });
@@ -339,6 +351,7 @@ app.post('/api/events/:id/duplicate', async (req, res) => {
         profitMargin: source.profitMargin,
         amountPaid: 0,
         totalPrice: source.totalPrice,
+        ownerId: req.user?.id,
         insumos: {
           create: source.insumos.map(item => ({
             name: item.name,
@@ -346,6 +359,7 @@ app.post('/api/events/:id/duplicate', async (req, res) => {
             unit: item.unit,
             costPerUnit: item.costPerUnit,
             totalCost: item.totalCost,
+            ownerId: req.user?.id,
           })),
         },
       },
@@ -362,8 +376,10 @@ app.post('/api/events/:id/tasks', async (req, res) => {
   if (errors.length) return sendValidationError(res, errors);
 
   try {
+    const event = await prisma.event.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
+    if (!event) return res.status(404).json({ error: 'Evento no encontrado' });
     const task = await prisma.eventTask.create({
-      data: { ...data, eventId: req.params.id },
+      data: { ...data, eventId: req.params.id, ownerId: req.user?.id },
     });
     res.status(201).json(task);
   } catch (error) {
@@ -376,6 +392,8 @@ app.put('/api/events/:eventId/tasks/:taskId', async (req, res) => {
   if (errors.length) return sendValidationError(res, errors);
 
   try {
+    const event = await prisma.event.findFirst({ where: { id: req.params.eventId, ...ownerFilter(req) } });
+    if (!event) return res.status(404).json({ error: 'Evento no encontrado' });
     const task = await prisma.eventTask.update({
       where: { id: req.params.taskId },
       data,
@@ -391,8 +409,10 @@ app.post('/api/events/:id/payments', async (req, res) => {
   if (errors.length) return sendValidationError(res, errors);
 
   try {
+    const event = await prisma.event.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
+    if (!event) return res.status(404).json({ error: 'Evento no encontrado' });
     const payment = await prisma.eventPayment.create({
-      data: { ...data, eventId: req.params.id },
+      data: { ...data, eventId: req.params.id, ownerId: req.user?.id },
     });
     const paidTotal = await prisma.eventPayment.aggregate({
       where: { eventId: req.params.id },
@@ -411,6 +431,7 @@ app.post('/api/events/:id/payments', async (req, res) => {
 app.get('/api/inventory', async (req, res) => {
   try {
     const items = await prisma.catalogItem.findMany({
+      where: ownerFilter(req),
       orderBy: { createdAt: 'desc' },
     });
     res.json(items);
@@ -424,7 +445,7 @@ app.post('/api/inventory', async (req, res) => {
   if (errors.length) return sendValidationError(res, errors);
 
   try {
-    const item = await prisma.catalogItem.create({ data });
+    const item = await prisma.catalogItem.create({ data: { ...data, ownerId: req.user?.id } });
     res.status(201).json(item);
   } catch (error) {
     handlePrismaError(res, error, 'Error al crear insumo');
@@ -436,6 +457,8 @@ app.put('/api/inventory/:id', async (req, res) => {
   if (errors.length) return sendValidationError(res, errors);
 
   try {
+    const existing = await prisma.catalogItem.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
+    if (!existing) return res.status(404).json({ error: 'Insumo no encontrado' });
     const item = await prisma.catalogItem.update({
       where: { id: req.params.id },
       data,
@@ -448,6 +471,8 @@ app.put('/api/inventory/:id', async (req, res) => {
 
 app.delete('/api/inventory/:id', async (req, res) => {
   try {
+    const existing = await prisma.catalogItem.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
+    if (!existing) return res.status(404).json({ error: 'Insumo no encontrado' });
     await prisma.catalogItem.delete({ where: { id: req.params.id } });
     res.status(204).send();
   } catch (error) {
@@ -457,6 +482,8 @@ app.delete('/api/inventory/:id', async (req, res) => {
 
 app.get('/api/inventory/:id/stock-movements', async (req, res) => {
   try {
+    const item = await prisma.catalogItem.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
+    if (!item) return res.status(404).json({ error: 'Insumo no encontrado' });
     const movements = await prisma.stockMovement.findMany({
       where: { catalogItemId: req.params.id },
       orderBy: { createdAt: 'desc' },
@@ -473,7 +500,8 @@ app.post('/api/inventory/:id/stock-movements', async (req, res) => {
   if (errors.length) return sendValidationError(res, errors);
 
   try {
-    const current = await prisma.catalogItem.findUniqueOrThrow({ where: { id: req.params.id } });
+    const current = await prisma.catalogItem.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
+    if (!current) return res.status(404).json({ error: 'Insumo no encontrado' });
     const nextStock = data.type === 'Entrada'
       ? current.stock + data.quantity
       : data.type === 'Salida'
@@ -481,7 +509,7 @@ app.post('/api/inventory/:id/stock-movements', async (req, res) => {
         : data.quantity;
 
     const movement = await prisma.stockMovement.create({
-      data: { ...data, catalogItemId: req.params.id },
+      data: { ...data, catalogItemId: req.params.id, ownerId: req.user?.id },
     });
     const item = await prisma.catalogItem.update({
       where: { id: req.params.id },
@@ -496,6 +524,7 @@ app.post('/api/inventory/:id/stock-movements', async (req, res) => {
 app.get('/api/providers', async (req, res) => {
   try {
     const providers = await prisma.provider.findMany({
+      where: ownerFilter(req),
       include: { purchases: true },
       orderBy: { createdAt: 'desc' },
     });
@@ -510,7 +539,7 @@ app.post('/api/providers', async (req, res) => {
   if (errors.length) return sendValidationError(res, errors);
 
   try {
-    const provider = await prisma.provider.create({ data });
+    const provider = await prisma.provider.create({ data: { ...data, ownerId: req.user?.id } });
     res.status(201).json(provider);
   } catch (error) {
     handlePrismaError(res, error, 'Error al crear proveedor');
@@ -522,6 +551,8 @@ app.put('/api/providers/:id', async (req, res) => {
   if (errors.length) return sendValidationError(res, errors);
 
   try {
+    const existing = await prisma.provider.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
+    if (!existing) return res.status(404).json({ error: 'Proveedor no encontrado' });
     const provider = await prisma.provider.update({
       where: { id: req.params.id },
       data,
@@ -534,6 +565,8 @@ app.put('/api/providers/:id', async (req, res) => {
 
 app.delete('/api/providers/:id', async (req, res) => {
   try {
+    const existing = await prisma.provider.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
+    if (!existing) return res.status(404).json({ error: 'Proveedor no encontrado' });
     await prisma.provider.delete({ where: { id: req.params.id } });
     res.status(204).send();
   } catch (error) {
@@ -541,9 +574,211 @@ app.delete('/api/providers/:id', async (req, res) => {
   }
 });
 
+/* ─── Clients ─── */
+app.get('/api/clients', async (req, res) => {
+  try {
+    const clients = await prisma.client.findMany({
+      where: ownerFilter(req),
+      include: { _count: { select: { events: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+    res.json(clients);
+  } catch (error) {
+    handlePrismaError(res, error, 'Error al obtener clientes');
+  }
+});
+
+app.get('/api/clients/:id', async (req, res) => {
+  try {
+    const client = await prisma.client.findFirst({
+      where: { id: req.params.id, ...ownerFilter(req) },
+      include: { events: { orderBy: { date: 'desc' }, take: 20 } },
+    });
+    if (!client) return res.status(404).json({ error: 'Cliente no encontrado' });
+    res.json(client);
+  } catch (error) {
+    handlePrismaError(res, error, 'Error al obtener cliente');
+  }
+});
+
+app.post('/api/clients', async (req, res) => {
+  const { name } = req.body;
+  if (!name?.trim()) return sendValidationError(res, ['El nombre del cliente es obligatorio']);
+  try {
+    const client = await prisma.client.create({
+      data: { name: name.trim(), phone: req.body.phone, email: req.body.email, notes: req.body.notes, ownerId: req.user?.id },
+    });
+    res.status(201).json(client);
+  } catch (error) {
+    handlePrismaError(res, error, 'Error al crear cliente');
+  }
+});
+
+app.put('/api/clients/:id', async (req, res) => {
+  const { name } = req.body;
+  if (!name?.trim()) return sendValidationError(res, ['El nombre del cliente es obligatorio']);
+  try {
+    const existing = await prisma.client.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
+    if (!existing) return res.status(404).json({ error: 'Cliente no encontrado' });
+    const client = await prisma.client.update({
+      where: { id: req.params.id },
+      data: { name: name.trim(), phone: req.body.phone, email: req.body.email, notes: req.body.notes },
+    });
+    res.json(client);
+  } catch (error) {
+    handlePrismaError(res, error, 'Error al actualizar cliente');
+  }
+});
+
+app.delete('/api/clients/:id', async (req, res) => {
+  try {
+    const existing = await prisma.client.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
+    if (!existing) return res.status(404).json({ error: 'Cliente no encontrado' });
+    await prisma.client.delete({ where: { id: req.params.id } });
+    res.status(204).send();
+  } catch (error) {
+    handlePrismaError(res, error, 'Error al eliminar cliente');
+  }
+});
+
+/* ─── Employees ─── */
+app.get('/api/employees', async (req, res) => {
+  try {
+    const employees = await prisma.employee.findMany({
+      where: ownerFilter(req),
+      include: { _count: { select: { activities: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+    res.json(employees);
+  } catch (error) {
+    handlePrismaError(res, error, 'Error al obtener empleados');
+  }
+});
+
+app.get('/api/employees/:id', async (req, res) => {
+  try {
+    const employee = await prisma.employee.findFirst({
+      where: { id: req.params.id, ...ownerFilter(req) },
+      include: { activities: { orderBy: { date: 'desc' }, take: 50 } },
+    });
+    if (!employee) return res.status(404).json({ error: 'Empleado no encontrado' });
+    res.json(employee);
+  } catch (error) {
+    handlePrismaError(res, error, 'Error al obtener empleado');
+  }
+});
+
+app.post('/api/employees', async (req, res) => {
+  const { name } = req.body;
+  if (!name?.trim()) return sendValidationError(res, ['El nombre del empleado es obligatorio']);
+  try {
+    const employee = await prisma.employee.create({
+      data: {
+        name: name.trim(),
+        phone: req.body.phone,
+        email: req.body.email,
+        role: req.body.role || 'Cocinero',
+        hourlyRate: Number(req.body.hourlyRate) || 0,
+        notes: req.body.notes,
+        ownerId: req.user?.id,
+      },
+    });
+    res.status(201).json(employee);
+  } catch (error) {
+    handlePrismaError(res, error, 'Error al crear empleado');
+  }
+});
+
+app.put('/api/employees/:id', async (req, res) => {
+  const { name } = req.body;
+  if (!name?.trim()) return sendValidationError(res, ['El nombre del empleado es obligatorio']);
+  try {
+    const existing = await prisma.employee.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
+    if (!existing) return res.status(404).json({ error: 'Empleado no encontrado' });
+    const employee = await prisma.employee.update({
+      where: { id: req.params.id },
+      data: {
+        name: name.trim(),
+        phone: req.body.phone,
+        email: req.body.email,
+        role: req.body.role,
+        hourlyRate: Number(req.body.hourlyRate),
+        notes: req.body.notes,
+        active: req.body.active !== undefined ? req.body.active : existing.active,
+      },
+    });
+    res.json(employee);
+  } catch (error) {
+    handlePrismaError(res, error, 'Error al actualizar empleado');
+  }
+});
+
+app.delete('/api/employees/:id', async (req, res) => {
+  try {
+    const existing = await prisma.employee.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
+    if (!existing) return res.status(404).json({ error: 'Empleado no encontrado' });
+    await prisma.employee.delete({ where: { id: req.params.id } });
+    res.status(204).send();
+  } catch (error) {
+    handlePrismaError(res, error, 'Error al eliminar empleado');
+  }
+});
+
+/* ─── Employee Activities ─── */
+app.get('/api/employee-activities', async (req, res) => {
+  try {
+    const activities = await prisma.employeeActivity.findMany({
+      where: ownerFilter(req),
+      include: { employee: { select: { name: true } }, event: { select: { title: true } } },
+      orderBy: { date: 'desc' },
+      take: 200,
+    });
+    res.json(activities);
+  } catch (error) {
+    handlePrismaError(res, error, 'Error al obtener actividades');
+  }
+});
+
+app.post('/api/employee-activities', async (req, res) => {
+  const { employeeId, hours } = req.body;
+  if (!employeeId) return sendValidationError(res, ['El empleado es obligatorio']);
+  if (!hours || Number(hours) <= 0) return sendValidationError(res, ['Las horas deben ser mayores a 0']);
+  try {
+    const activity = await prisma.employeeActivity.create({
+      data: {
+        employeeId,
+        date: req.body.date ? new Date(req.body.date) : new Date(),
+        hours: Number(hours),
+        description: req.body.description,
+        paymentType: req.body.paymentType || 'Por hora',
+        payment: Number(req.body.payment) || 0,
+        eventId: req.body.eventId || null,
+        ownerId: req.user?.id,
+      },
+    });
+    res.status(201).json(activity);
+  } catch (error) {
+    handlePrismaError(res, error, 'Error al registrar actividad');
+  }
+});
+
+app.delete('/api/employee-activities/:id', async (req, res) => {
+  try {
+    const existing = await prisma.employeeActivity.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
+    if (!existing) return res.status(404).json({ error: 'Actividad no encontrada' });
+    await prisma.employeeActivity.delete({ where: { id: req.params.id } });
+    res.status(204).send();
+  } catch (error) {
+    handlePrismaError(res, error, 'Error al eliminar actividad');
+  }
+});
+
 app.get('/api/recipes', async (req, res) => {
   try {
-    const recipes = await prisma.recipeCombo.findMany({ orderBy: { createdAt: 'desc' } });
+    const recipes = await prisma.recipeCombo.findMany({
+      where: ownerFilter(req),
+      orderBy: { createdAt: 'desc' },
+    });
     res.json(recipes.map(serializeRecipe));
   } catch (error) {
     handlePrismaError(res, error, 'Error al obtener recetas');
@@ -555,7 +790,7 @@ app.post('/api/recipes', async (req, res) => {
   if (errors.length) return sendValidationError(res, errors);
 
   try {
-    const recipe = await prisma.recipeCombo.create({ data });
+    const recipe = await prisma.recipeCombo.create({ data: { ...data, ownerId: req.user?.id } });
     res.status(201).json(serializeRecipe(recipe));
   } catch (error) {
     handlePrismaError(res, error, 'Error al crear receta');
@@ -567,6 +802,8 @@ app.put('/api/recipes/:id', async (req, res) => {
   if (errors.length) return sendValidationError(res, errors);
 
   try {
+    const existing = await prisma.recipeCombo.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
+    if (!existing) return res.status(404).json({ error: 'Receta no encontrada' });
     const recipe = await prisma.recipeCombo.update({
       where: { id: req.params.id },
       data,
@@ -579,6 +816,8 @@ app.put('/api/recipes/:id', async (req, res) => {
 
 app.delete('/api/recipes/:id', async (req, res) => {
   try {
+    const existing = await prisma.recipeCombo.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
+    if (!existing) return res.status(404).json({ error: 'Receta no encontrada' });
     await prisma.recipeCombo.delete({ where: { id: req.params.id } });
     res.status(204).send();
   } catch (error) {
@@ -589,11 +828,11 @@ app.delete('/api/recipes/:id', async (req, res) => {
 app.get('/api/operations/summary', async (req, res) => {
   try {
     const [events, purchases, inventory, providers, notes] = await Promise.all([
-      prisma.event.findMany({ include: { purchases: true, payments: true, tasks: true } }),
-      prisma.marketPurchase.findMany({ include: { items: true, provider: true, event: true } }),
-      prisma.catalogItem.findMany(),
-      prisma.provider.findMany(),
-      prisma.note.findMany({ where: { archived: false } }),
+      prisma.event.findMany({ where: ownerFilter(req), include: { purchases: true, payments: true, tasks: true } }),
+      prisma.marketPurchase.findMany({ where: ownerFilter(req), include: { items: true, provider: true, event: true } }),
+      prisma.catalogItem.findMany({ where: ownerFilter(req) }),
+      prisma.provider.findMany({ where: ownerFilter(req) }),
+      prisma.note.findMany({ where: { archived: false, ...ownerFilter(req) } }),
     ]);
 
     const billableEvents = events.filter(event => !['Cobrado', 'Cancelado'].includes(event.status));
@@ -629,9 +868,9 @@ app.get('/api/operations/summary', async (req, res) => {
   }
 });
 
-app.get('/api/alerts', async (_req, res) => {
+app.get('/api/alerts', async (req, res) => {
   try {
-    const alerts = await generateAlerts();
+    const alerts = await generateAlerts(req.user || null);
     res.json({ alerts, total: alerts.length, generatedAt: new Date().toISOString() });
   } catch (error) {
     handlePrismaError(res, error, 'Error al generar alertas');
@@ -639,7 +878,7 @@ app.get('/api/alerts', async (_req, res) => {
 });
 
 app.get('/api/market-purchases', async (req, res) => {
-  const where = {};
+  const where = { ...ownerFilter(req) };
   const start = req.query.start ? new Date(req.query.start) : null;
   const end = req.query.end ? new Date(req.query.end) : null;
 
@@ -682,8 +921,9 @@ app.post('/api/market-purchases', async (req, res) => {
         totalAmount: data.totalAmount,
         notes: data.notes,
         receiptPhotos: data.receiptPhotos,
+        ownerId: req.user?.id,
         items: {
-          create: data.items,
+          create: (data.items || []).map(i => ({ ...i, ownerId: req.user?.id })),
         },
       },
       include: { items: true, event: true, provider: true },
@@ -699,6 +939,8 @@ app.put('/api/market-purchases/:id', async (req, res) => {
   if (errors.length) return sendValidationError(res, errors);
 
   try {
+    const existing = await prisma.marketPurchase.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
+    if (!existing) return res.status(404).json({ error: 'Compra no encontrada' });
     const purchase = await prisma.marketPurchase.update({
       where: { id: req.params.id },
       data: {
@@ -714,7 +956,7 @@ app.put('/api/market-purchases/:id', async (req, res) => {
         receiptPhotos: data.receiptPhotos,
         items: {
           deleteMany: {},
-          create: data.items,
+          create: (data.items || []).map(i => ({ ...i, ownerId: req.user?.id })),
         },
       },
       include: { items: true, event: true, provider: true },
@@ -727,6 +969,8 @@ app.put('/api/market-purchases/:id', async (req, res) => {
 
 app.delete('/api/market-purchases/:id', async (req, res) => {
   try {
+    const existing = await prisma.marketPurchase.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
+    if (!existing) return res.status(404).json({ error: 'Compra no encontrada' });
     await prisma.marketPurchase.delete({ where: { id: req.params.id } });
     res.status(204).send();
   } catch (error) {
@@ -864,7 +1108,7 @@ app.get('/api/notes', async (req, res) => {
   try {
     const { status, priority, type, linkedType, due, archived } = req.query;
     const today = getTodayString();
-    const where = {};
+    const where = { ...ownerFilter(req) };
 
     if (archived === 'true') where.archived = true;
     else if (archived === 'false') where.archived = false;
@@ -895,7 +1139,7 @@ app.post('/api/notes', async (req, res) => {
   if (!req.body.title?.trim()) return res.status(400).json({ error: 'El título es requerido' });
   try {
     const note = await prisma.note.create({
-      data: buildNoteData(req.body),
+      data: { ...buildNoteData(req.body), ownerId: req.user?.id },
       include: { changelog: true },
     });
     res.status(201).json(serializeNote(note));
@@ -906,8 +1150,8 @@ app.post('/api/notes', async (req, res) => {
 
 app.get('/api/notes/:id', async (req, res) => {
   try {
-    const note = await prisma.note.findUnique({
-      where: { id: req.params.id },
+    const note = await prisma.note.findFirst({
+      where: { id: req.params.id, ...ownerFilter(req) },
       include: { changelog: { orderBy: { createdAt: 'desc' }, take: 50 } },
     });
     if (!note) return res.status(404).json({ error: 'Nota no encontrada' });
@@ -919,7 +1163,7 @@ app.get('/api/notes/:id', async (req, res) => {
 
 app.patch('/api/notes/:id', async (req, res) => {
   try {
-    const existing = await prisma.note.findUnique({ where: { id: req.params.id } });
+    const existing = await prisma.note.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
     if (!existing) return res.status(404).json({ error: 'Nota no encontrada' });
 
     const newData = buildNoteData(req.body, true);
@@ -954,6 +1198,7 @@ app.patch('/api/notes/:id', async (req, res) => {
           done: false,
           recurrence: note.recurrence,
           recurrenceParentId: note.id,
+          ownerId: req.user?.id,
         },
       });
     }
@@ -966,6 +1211,8 @@ app.patch('/api/notes/:id', async (req, res) => {
 
 app.delete('/api/notes/:id', async (req, res) => {
   try {
+    const existing = await prisma.note.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
+    if (!existing) return res.status(404).json({ error: 'Nota no encontrada' });
     await prisma.note.delete({ where: { id: req.params.id } });
     res.status(204).send();
   } catch (error) {
@@ -975,6 +1222,8 @@ app.delete('/api/notes/:id', async (req, res) => {
 
 app.post('/api/notes/:id/archive', async (req, res) => {
   try {
+    const existing = await prisma.note.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
+    if (!existing) return res.status(404).json({ error: 'Nota no encontrada' });
     const note = await prisma.note.update({
       where: { id: req.params.id },
       data: { archived: true },
@@ -988,6 +1237,8 @@ app.post('/api/notes/:id/archive', async (req, res) => {
 
 app.post('/api/notes/:id/restore', async (req, res) => {
   try {
+    const existing = await prisma.note.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
+    if (!existing) return res.status(404).json({ error: 'Nota no encontrada' });
     const note = await prisma.note.update({
       where: { id: req.params.id },
       data: { archived: false },
@@ -1021,6 +1272,7 @@ app.get('/api/notes-export', async (req, res) => {
   try {
     const format = req.query.format === 'csv' ? 'csv' : 'json';
     const notes = await prisma.note.findMany({
+      where: ownerFilter(req),
       orderBy: { createdAt: 'desc' },
       include: { changelog: true },
     });
@@ -1041,7 +1293,10 @@ app.get('/api/notes-export', async (req, res) => {
 // ── Quote templates ─────────────────────────────────────────────────────────
 app.get('/api/quote-templates', async (req, res) => {
   try {
-    const templates = await prisma.quoteTemplate.findMany({ orderBy: { createdAt: 'desc' } });
+    const templates = await prisma.quoteTemplate.findMany({
+      where: ownerFilter(req),
+      orderBy: { createdAt: 'desc' },
+    });
     res.json(templates.map(serializeQuoteTemplate));
   } catch (error) {
     handlePrismaError(res, error, 'Error al obtener plantillas');
@@ -1052,7 +1307,7 @@ app.post('/api/quote-templates', async (req, res) => {
   const { errors, data } = validateQuoteTemplatePayload(req.body);
   if (errors.length) return sendValidationError(res, errors);
   try {
-    const template = await prisma.quoteTemplate.create({ data });
+    const template = await prisma.quoteTemplate.create({ data: { ...data, ownerId: req.user?.id } });
     res.status(201).json(serializeQuoteTemplate(template));
   } catch (error) {
     handlePrismaError(res, error, 'Error al crear plantilla');
@@ -1063,6 +1318,8 @@ app.put('/api/quote-templates/:id', async (req, res) => {
   const { errors, data } = validateQuoteTemplatePayload(req.body);
   if (errors.length) return sendValidationError(res, errors);
   try {
+    const existing = await prisma.quoteTemplate.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
+    if (!existing) return res.status(404).json({ error: 'Plantilla no encontrada' });
     const template = await prisma.quoteTemplate.update({ where: { id: req.params.id }, data });
     res.json(serializeQuoteTemplate(template));
   } catch (error) {
@@ -1072,6 +1329,8 @@ app.put('/api/quote-templates/:id', async (req, res) => {
 
 app.delete('/api/quote-templates/:id', async (req, res) => {
   try {
+    const existing = await prisma.quoteTemplate.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
+    if (!existing) return res.status(404).json({ error: 'Plantilla no encontrada' });
     await prisma.quoteTemplate.delete({ where: { id: req.params.id } });
     res.status(204).send();
   } catch (error) {
@@ -1084,7 +1343,10 @@ const FIXED_COST_FREQUENCIES = ['Mensual', 'Anual', 'Por evento'];
 
 app.get('/api/fixed-costs', async (req, res) => {
   try {
-    const costs = await prisma.fixedCost.findMany({ orderBy: { createdAt: 'desc' } });
+    const costs = await prisma.fixedCost.findMany({
+      where: ownerFilter(req),
+      orderBy: { createdAt: 'desc' },
+    });
     res.json(costs);
   } catch (error) {
     handlePrismaError(res, error, 'Error al obtener gastos fijos');
@@ -1100,7 +1362,7 @@ app.post('/api/fixed-costs', async (req, res) => {
   if (!FIXED_COST_FREQUENCIES.includes(frequency)) return res.status(400).json({ error: `frequency debe ser: ${FIXED_COST_FREQUENCIES.join(', ')}` });
   try {
     const cost = await prisma.fixedCost.create({
-      data: { name, amount, frequency, category: req.body?.category?.trim() || null, notes: req.body?.notes?.trim() || null },
+      data: { name, amount, frequency, category: req.body?.category?.trim() || null, notes: req.body?.notes?.trim() || null, ownerId: req.user?.id },
     });
     res.status(201).json(cost);
   } catch (error) {
@@ -1116,6 +1378,8 @@ app.put('/api/fixed-costs/:id', async (req, res) => {
   if (!Number.isFinite(amount) || amount < 0) return res.status(400).json({ error: 'amount debe ser un número mayor o igual a 0' });
   if (!FIXED_COST_FREQUENCIES.includes(frequency)) return res.status(400).json({ error: `frequency debe ser: ${FIXED_COST_FREQUENCIES.join(', ')}` });
   try {
+    const existing = await prisma.fixedCost.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
+    if (!existing) return res.status(404).json({ error: 'Gasto fijo no encontrado' });
     const cost = await prisma.fixedCost.update({
       where: { id: req.params.id },
       data: { name, amount, frequency, category: req.body?.category?.trim() || null, notes: req.body?.notes?.trim() || null },
@@ -1128,6 +1392,8 @@ app.put('/api/fixed-costs/:id', async (req, res) => {
 
 app.delete('/api/fixed-costs/:id', async (req, res) => {
   try {
+    const existing = await prisma.fixedCost.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
+    if (!existing) return res.status(404).json({ error: 'Gasto fijo no encontrado' });
     await prisma.fixedCost.delete({ where: { id: req.params.id } });
     res.status(204).send();
   } catch (error) {
@@ -1145,21 +1411,21 @@ app.get('/api/search', async (req, res) => {
   try {
     await ensureFtsTable();
     const [events, providers, inventory, notes, templates] = await Promise.all([
-      ftsSearchEvents(query, 8),
+      ftsSearchEvents(query, 8, req.user?.role !== 'admin' ? req.user?.id : null),
       prisma.provider.findMany({
-        where: { OR: [{ name: { contains: query } }, { category: { contains: query } }] },
+        where: { ...ownerFilter(req), OR: [{ name: { contains: query } }, { category: { contains: query } }] },
         take: 5,
       }),
       prisma.catalogItem.findMany({
-        where: { name: { contains: query } },
+        where: { ...ownerFilter(req), name: { contains: query } },
         take: 5,
       }),
       prisma.note.findMany({
-        where: { OR: [{ title: { contains: query } }, { content: { contains: query } }] },
+        where: { ...ownerFilter(req), OR: [{ title: { contains: query } }, { content: { contains: query } }] },
         take: 5,
       }),
       prisma.quoteTemplate.findMany({
-        where: { name: { contains: query } },
+        where: { ...ownerFilter(req), name: { contains: query } },
         take: 5,
       }),
     ]);
@@ -1184,12 +1450,14 @@ app.get('/api/export', async (req, res) => {
     const payload = {};
     if (type === 'events' || type === 'all') {
       payload.events = await prisma.event.findMany({
+        where: ownerFilter(req),
         include: { insumos: true, payments: true },
         orderBy: { createdAt: 'desc' },
       });
     }
     if (type === 'purchases' || type === 'all') {
       payload.purchases = await prisma.marketPurchase.findMany({
+        where: ownerFilter(req),
         include: { items: true },
         orderBy: { purchasedAt: 'desc' },
       });
@@ -1296,6 +1564,8 @@ const MAX_PHOTO_SIZE = 5 * 1024 * 1024; // 5MB en base64
 
 app.get('/api/events/:id/photos', async (req, res) => {
   try {
+    const event = await prisma.event.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
+    if (!event) return res.status(404).json({ error: 'Evento no encontrado' });
     const photos = await prisma.eventPhoto.findMany({
       where: { eventId: req.params.id },
       orderBy: { createdAt: 'desc' },
@@ -1309,6 +1579,8 @@ app.get('/api/events/:id/photos', async (req, res) => {
 
 app.post('/api/events/:id/photos', async (req, res) => {
   try {
+    const event = await prisma.event.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
+    if (!event) return res.status(404).json({ error: 'Evento no encontrado' });
     const { filename, mimeType, data, caption } = req.body || {};
     if (!filename || !mimeType || !data) {
       return res.status(400).json({ error: 'filename, mimeType y data son requeridos' });
@@ -1328,6 +1600,7 @@ app.post('/api/events/:id/photos', async (req, res) => {
         size,
         caption: caption?.trim() || null,
         eventId: req.params.id,
+        ownerId: req.user?.id,
       },
       select: { id: true, filename: true, mimeType: true, size: true, caption: true, createdAt: true },
     });
@@ -1339,6 +1612,8 @@ app.post('/api/events/:id/photos', async (req, res) => {
 
 app.delete('/api/events/:eventId/photos/:photoId', async (req, res) => {
   try {
+    const event = await prisma.event.findFirst({ where: { id: req.params.eventId, ...ownerFilter(req) } });
+    if (!event) return res.status(404).json({ error: 'Evento no encontrado' });
     await prisma.eventPhoto.delete({ where: { id: req.params.photoId } });
     res.status(204).send();
   } catch (error) {

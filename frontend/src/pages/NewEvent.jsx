@@ -1,8 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Calculator as CalcIcon, ReceiptText, Users, Save, Calendar, Beef, ChevronLeft, ChevronRight, PartyPopper, MapPin, Clock, ShoppingCart } from 'lucide-react';
 import { ErrorState, LoadingState } from '@/components/feedback/ResourceState';
 import { AlertDialog } from '@/components/feedback/ConfirmDialog';
+import { FormField } from '@/components/ui/form-field';
+import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 import { useInventory } from '@/hooks/useInventory';
 import { currency } from '@/lib/finance';
 import { applyRecipeToForm, applyTemplateToForm } from '@/lib/eventQuote';
@@ -10,17 +13,13 @@ import { calculateQuote, getSelectedQuoteItems, toEventInsumos } from '@/lib/quo
 import { createEvent } from '@/services/eventsApi';
 import { getRecipes } from '@/services/recipesApi';
 import { getQuoteTemplates } from '@/services/quoteTemplatesApi';
-import './NewEvent.css';
+import { getClients } from '@/services/clientsApi';
 
 const steps = [
   { num: 1, label: 'Información Base', icon: Calendar },
   { num: 2, label: 'Planificación Menú', icon: Beef },
   { num: 3, label: 'Finalización Evento', icon: PartyPopper },
 ];
-
-const inputClass = 'w-full rounded-lg border border-border bg-card px-3.5 py-2.5 pr-8 text-sm text-foreground placeholder:text-muted-foreground transition-all duration-150 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/50';
-
-const selectClass = 'w-full appearance-none rounded-lg border border-border bg-card px-3.5 py-2.5 pr-8 text-sm text-foreground transition-all duration-150 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/50';
 
 export default function NewEvent() {
   const navigate = useNavigate();
@@ -40,6 +39,8 @@ export default function NewEvent() {
 
   const [eventName, setEventName] = useState('');
   const [clientName, setClientName] = useState('');
+  const [clientId, setClientId] = useState('');
+  const [clients, setClients] = useState([]);
   const [eventDate, setEventDate] = useState('');
   const [eventTime, setEventTime] = useState('');
   const [location, setLocation] = useState('');
@@ -52,6 +53,16 @@ export default function NewEvent() {
   const [profitMargin, setProfitMargin] = useState('');
   const [extraCosts, setExtraCosts] = useState('');
   const [selectedQuantities, setSelectedQuantities] = useState({});
+  const [touched, setTouched] = useState({});
+
+  const touch = (field) => () => setTouched(prev => ({ ...prev, [field]: true }));
+
+  const fieldErrors = useMemo(() => {
+    const errs = {};
+    if ((touched.eventName || touched.all) && !eventName?.trim()) errs.eventName = 'El nombre del evento es obligatorio';
+    if ((touched.eventDate || touched.all) && !eventDate) errs.eventDate = 'La fecha es obligatoria';
+    return errs;
+  }, [touched, eventName, eventDate]);
 
   useEffect(() => {
     getRecipes()
@@ -94,6 +105,10 @@ export default function NewEvent() {
       .catch(() => {});
   }, [routerLocation.state?.templateId, inventory]);
 
+  useEffect(() => {
+    getClients().then(data => setClients(Array.isArray(data) ? data : [])).catch(() => {});
+  }, []);
+
   const handleRecipeSelect = (recipeId) => {
     setSelectedRecipeId(recipeId);
     const recipe = recipes.find(r => r.id === recipeId);
@@ -121,7 +136,8 @@ export default function NewEvent() {
   const quote = calculateQuote({ items: summaryItems, extraCosts, profitMargin, guests });
 
   const handleSaveEvent = () => {
-    if (!eventName || !eventDate) {
+    setTouched(prev => ({ ...prev, all: true }));
+    if (!eventName?.trim() || !eventDate) {
       triggerAlert(
         "Información requerida",
         "Por favor, ingresa al menos el Nombre del Evento y la Fecha para poder guardar el presupuesto."
@@ -134,6 +150,7 @@ export default function NewEvent() {
     const newEvent = {
       title: eventName,
       client: clientName,
+      clientId: clientId || null,
       date: eventDate,
       time: eventTime,
       location: location,
@@ -194,7 +211,7 @@ export default function NewEvent() {
         ))}
       </div>
 
-      <div className="ne-grid">
+      <div className="grid grid-cols-[1.5fr_1fr] gap-6 items-start lg:grid-cols-1">
         <div className="space-y-4">
           {/* Step 1: Información Base */}
           {step === 1 && (
@@ -204,29 +221,39 @@ export default function NewEvent() {
                   <Calendar className="size-4.5 text-accent" /> Información General
                 </h2>
                 <div className="space-y-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Nombre del Evento *</label>
-                    <input type="text" className={inputClass} placeholder="Ej. Cumpleaños Juan" value={eventName} onChange={e => setEventName(e.target.value)} />
+                  <FormField label="Nombre del Evento" required error={fieldErrors.eventName}>
+                    <Input value={eventName} onChange={e => setEventName(e.target.value)} onBlur={touch('eventName')} placeholder="Ej. Cumpleaños Juan" />
+                  </FormField>
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField label="Contratante / Cliente">
+                      <Input
+                        value={clientName}
+                        onChange={e => {
+                          setClientName(e.target.value);
+                          setClientId('');
+                        }}
+                        onSelect={e => {
+                          const selected = clients.find(c => c.name === e.target.value);
+                          if (selected) setClientId(selected.id);
+                        }}
+                        placeholder="Nombre del cliente"
+                        list="client-list"
+                      />
+                      <datalist id="client-list">
+                        {clients.map(c => <option key={c.id} value={c.name} data-id={c.id} />)}
+                      </datalist>
+                    </FormField>
+                    <FormField label="Lugar del Evento">
+                      <Input value={location} onChange={e => setLocation(e.target.value)} placeholder="Ej. Salón Principal" />
+                    </FormField>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Contratante / Cliente</label>
-                      <input type="text" className={inputClass} placeholder="Nombre del cliente" value={clientName} onChange={e => setClientName(e.target.value)} />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Lugar del Evento</label>
-                      <input type="text" className={inputClass} placeholder="Ej. Salón Principal" value={location} onChange={e => setLocation(e.target.value)} />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Fecha *</label>
-                      <input type="date" className={inputClass} value={eventDate} onChange={e => setEventDate(e.target.value)} />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Hora</label>
-                      <input type="time" className={inputClass} value={eventTime} onChange={e => setEventTime(e.target.value)} />
-                    </div>
+                    <FormField label="Fecha" required error={fieldErrors.eventDate}>
+                      <Input type="date" value={eventDate} onChange={e => setEventDate(e.target.value)} onBlur={touch('eventDate')} />
+                    </FormField>
+                    <FormField label="Hora">
+                      <Input type="time" value={eventTime} onChange={e => setEventTime(e.target.value)} />
+                    </FormField>
                   </div>
                 </div>
               </div>
@@ -236,14 +263,12 @@ export default function NewEvent() {
                   <Users className="size-4.5 text-accent" /> Invitados
                 </h2>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Adultos</label>
-                    <input type="number" className={inputClass} placeholder="Ej. 20" value={adults} onChange={e => setAdults(e.target.value)} min="0" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Niños (Comen mitad)</label>
-                    <input type="number" className={inputClass} placeholder="Ej. 5" value={kids} onChange={e => setKids(e.target.value)} min="0" />
-                  </div>
+                  <FormField label="Adultos">
+                    <Input type="number" min="0" value={adults} onChange={e => setAdults(e.target.value)} placeholder="Ej. 20" />
+                  </FormField>
+                  <FormField label="Niños (Comen mitad)">
+                    <Input type="number" min="0" value={kids} onChange={e => setKids(e.target.value)} placeholder="Ej. 5" />
+                  </FormField>
                 </div>
               </div>
             </>
@@ -257,22 +282,17 @@ export default function NewEvent() {
                   <Beef className="size-4.5 text-accent" /> Menú y comidas especiales
                 </h2>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Receta / combo base</label>
-                    <div className="relative">
-                      <select className={selectClass} value={selectedRecipeId} onChange={e => handleRecipeSelect(e.target.value)}>
-                        <option value="">Sin combo predefinido</option>
-                        {recipes.map(recipe => (
-                          <option key={recipe.id} value={recipe.id}>{recipe.name}</option>
-                        ))}
-                      </select>
-                      <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/50">▾</div>
-                    </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Solicitud especial del cliente</label>
-                    <input type="text" className={inputClass} placeholder="Ej. sopa, arroz de cerdo, ensalada, yuca" value={menuNotes} onChange={e => setMenuNotes(e.target.value)} />
-                  </div>
+                  <FormField label="Receta / combo base">
+                    <Select value={selectedRecipeId} onChange={e => handleRecipeSelect(e.target.value)}>
+                      <option value="">Sin combo predefinido</option>
+                      {recipes.map(recipe => (
+                        <option key={recipe.id} value={recipe.id}>{recipe.name}</option>
+                      ))}
+                    </Select>
+                  </FormField>
+                  <FormField label="Solicitud especial del cliente">
+                    <Input value={menuNotes} onChange={e => setMenuNotes(e.target.value)} placeholder="Ej. sopa, arroz de cerdo, ensalada, yuca" />
+                  </FormField>
                 </div>
                 <p className="mt-3 text-xs text-muted-foreground/60">Usa este campo para dejar claro que se cotizó: sopas, arroz de cerdo, guarniciones, bebidas u otras comidas fuera del asado base.</p>
               </div>
@@ -282,7 +302,7 @@ export default function NewEvent() {
                   <ShoppingCart className="size-4.5 text-accent" /> Cantidades de Insumos
                 </h2>
                 <p className="mb-5 text-xs text-muted-foreground/60">Ingresa las cantidades para el evento basado en tu catálogo.</p>
-                <div className="insumos-grid">
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3">
                   {isInventoryLoading ? (
                     <LoadingState title="Cargando insumos" />
                   ) : inventoryError ? (
@@ -319,15 +339,12 @@ export default function NewEvent() {
                   <CalcIcon className="size-4.5 text-accent" /> Finanzas Adicionales
                 </h2>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Costos Extra ($)</label>
-                    <input type="number" className={inputClass} placeholder="Ej. 15000" value={extraCosts} onChange={e => setExtraCosts(e.target.value)} />
-                    <p className="text-[10px] text-muted-foreground/50">Mozos, traslado, etc.</p>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Margen de Ganancia (%)</label>
-                    <input type="number" className={inputClass} placeholder="Ej. 30" value={profitMargin} onChange={e => setProfitMargin(e.target.value)} />
-                  </div>
+                  <FormField label="Costos Extra ($)" hint="Mozos, traslado, etc.">
+                    <Input type="number" value={extraCosts} onChange={e => setExtraCosts(e.target.value)} placeholder="Ej. 15000" />
+                  </FormField>
+                  <FormField label="Margen de Ganancia (%)">
+                    <Input type="number" value={profitMargin} onChange={e => setProfitMargin(e.target.value)} placeholder="Ej. 30" />
+                  </FormField>
                 </div>
               </div>
 
@@ -386,7 +403,7 @@ export default function NewEvent() {
         </div>
 
         {/* Summary Panel */}
-        <div className="ne-summary-container">
+        <div className="flex flex-col gap-4">
           <div className="sticky top-6 rounded-xl border border-border bg-card">
             <div className="border-b border-[rgba(255,210,140,0.16)] px-6 py-4">
               <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">

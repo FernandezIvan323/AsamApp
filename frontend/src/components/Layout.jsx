@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { Beef, Building2, Calculator, Calendar, CalendarDays, ClipboardList, Command, Download, FileStack, Flame, LineChart, ListChecks, Menu, PanelLeftClose, ShoppingCart, StickyNote, Store, Utensils, X, Zap } from 'lucide-react';
+import { Beef, Building2, Calculator, Calendar, CalendarDays, ClipboardList, Command, Download, FileStack, Flame, LineChart, ListChecks, Menu, PanelLeftClose, ShoppingCart, StickyNote, Store, Utensils, Users, X, Zap } from 'lucide-react';
 
 import CommandPalette from '@/components/CommandPalette';
 import GlobalSearch from '@/components/GlobalSearch';
@@ -12,6 +12,7 @@ import { useEffect, useState } from 'react';
 import { ConfirmDialog } from '@/components/feedback/ConfirmDialog';
 import { LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ToastProvider } from '@/components/ui/toast';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const navGroups = [
@@ -21,6 +22,8 @@ const navGroups = [
       { to: '/', label: 'Inicio', icon: CalendarDays },
       { to: '/calendar', label: 'Calendario', icon: Calendar },
       { to: '/history', label: 'Historial', icon: Calculator },
+      { to: '/clients', label: 'Clientes', icon: Building2 },
+      { to: '/employees', label: 'Empleados', icon: Users },
     ],
   },
   {
@@ -147,6 +150,7 @@ export default function Layout() {
   };
 
   return (
+    <ToastProvider>
     <div className="min-h-svh bg-background text-foreground">
       {/* Mobile top bar */}
       <div className="sticky top-0 z-40 flex items-center justify-between gap-2 border-b border-border bg-card px-3 py-2 lg:hidden">
@@ -315,5 +319,6 @@ export default function Layout() {
         </main>
       </div>
     </div>
+    </ToastProvider>
   );
 }

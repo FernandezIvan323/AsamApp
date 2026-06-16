@@ -54,10 +54,14 @@ export async function ensureFtsTable() {
   }
 }
 
-export async function ftsSearchEvents(query, limit = 8) {
+export async function ftsSearchEvents(query, limit = 8, userId = null) {
   if (!query || query.length < 2) return [];
   const tokens = tokenize(query);
   if (!tokens) return [];
+
+  const ownerClause = userId
+    ? `AND (e.ownerId IS NULL OR e.ownerId = '${userId.replace(/'/g, "''")}')`
+    : '';
 
   try {
     await ensureFtsTable();
@@ -65,7 +69,7 @@ export async function ftsSearchEvents(query, limit = 8) {
       SELECT e.id, e.title, e.client, e.status, e.date
       FROM event_fts f
       JOIN Event e ON e.rowid = f.rowid
-      WHERE event_fts MATCH ?
+      WHERE event_fts MATCH ? ${ownerClause}
       ORDER BY rank
       LIMIT ?;
     `, tokens, limit);
@@ -74,6 +78,7 @@ export async function ftsSearchEvents(query, limit = 8) {
     console.error('FTS5 query failed, fallback to LIKE:', error.message);
     return prisma.event.findMany({
       where: {
+        ...(userId ? { ownerId: userId } : {}),
         OR: [
           { title: { contains: query } },
           { client: { contains: query } },

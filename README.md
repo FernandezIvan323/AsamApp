@@ -11,7 +11,7 @@ Aplicación web full-stack para gestionar eventos gastronómicos: cotización, p
 ![Issues](https://img.shields.io/github/issues/FernandezIvan323/ProyectoEventoAsados?style=flat-square)
 ![Stars](https://img.shields.io/github/stars/FernandezIvan323/ProyectoEventoAsados?style=flat-square)
 
-> **Estado:** v1.0.1 — production-ready local.
+> **Estado:** v2.1.0 — empleados, clientes, multi-tenant.
 > Ver [`CHANGELOG.md`](./CHANGELOG.md) para historial completo de versiones.
 
 
@@ -19,38 +19,39 @@ Aplicación web full-stack para gestionar eventos gastronómicos: cotización, p
 
 | Capa | Tecnología |
 |------|------------|
-| Frontend | React 19, Vite, Tailwind CSS 4, React Router, Recharts, i18next, framer-motion |
+| Frontend | React 19, Vite, Tailwind CSS 4, React Router, Recharts, i18next, framer-motion, Lucide React |
 | Backend | Node.js, Express 5, Prisma 5, JWT-like HMAC tokens, scrypt |
 | Base de datos | SQLite (local) con FTS5 (full-text search) |
 | Landing page | HTML + CSS + JS vanilla (sin framework) |
 | Documentación API | OpenAPI 3.0 + Swagger UI (`/api/docs`) |
 | CI/CD | GitHub Actions |
-| Tests | Vitest (frontend) + node:test (backend) + Playwright (E2E) |
-| PWA | manifest.json + service worker (offline) |
+| Tests | node:test (backend, 67 tests) + Playwright (E2E) |
+| PWA | manifest.json + service worker (offline, instalable) |
 
 ## Estructura
 
 ```text
 ProyectoAsado/
 ├── backend/                  # API REST + Prisma + SQLite
-│   ├── prisma/               # Schema y 14 migraciones versionadas
-│   ├── scripts/              # Utilidades (backup, reset-password)
+│   ├── prisma/               # Schema y 17 migraciones versionadas
+│   ├── scripts/              # Utilidades (backup, reset-password, migrate-to-mtr)
 │   ├── auth.js               # Login, registro, tokens HMAC
 │   ├── permissions.js        # Sistema de roles (admin/editor/viewer)
-│   ├── alerts.js             # Generador de alertas in-app
+│   ├── alerts.js             # Generador de alertas in-app (6 tipos)
 │   ├── search.js             # Busqueda FTS5 con fallback a LIKE
 │   ├── logger.js             # Logging estructurado JSON + handlers
 │   ├── validation.js         # Validadores de payloads
 │   ├── shoppingList.js       # Lista de compras consolidada
 │   ├── exportData.js         # Exportadores CSV
-│   └── server.js             # Servidor Express (1392 lineas)
+│   ├── isolation.test.js     # Tests de aislamiento multi-tenant
+│   └── server.js             # Servidor Express (~1670 lineas)
 ├── frontend/                 # SPA React
 │   ├── src/
-│   │   ├── pages/            # 17 paginas con lazy loading
-│   │   ├── components/       # Layout, AuthGate, CommandPalette, etc.
+│   │   ├── pages/            # 19 paginas con lazy loading
+│   │   ├── components/       # Layout, AuthGate, CommandPalette, FormField, Select, Toast
 │   │   ├── hooks/            # useEvents, useInventory, useMarketPurchases
-│   │   ├── services/         # 10 modulos API
-│   │   └── lib/              # utils, finance, quote, i18n, locales
+│   │   ├── services/         # 12 modulos API (incl. clientsApi, employeesApi)
+│   │   └── lib/              # utils, finance, quote, i18n, locales, validators
 │   ├── e2e/                  # Tests E2E con Playwright
 │   ├── public/               # PWA manifest + service worker
 │   └── vite.config.js
@@ -114,14 +115,20 @@ URLs:
 - **Rentabilidad real** — ganancia neta por evento considerando todos los gastos
 - **Reportes mensuales/anuales** — graficos con Recharts
 
+### Personas
+- **Clientes** — agenda completa con nombre, teléfono, email y notas. Vista de eventos asociados a cada cliente. Búsqueda y vinculación desde los formularios de evento.
+- **Empleados** — gestión de personal con rol (Cocinero, Ayudante, Mesero, Chofer, Otro), tarifa por hora, contacto. Registro de actividades con horas trabajadas, tipo de pago (Por hora / Por evento / Fijo) y cálculo automático de costo. Vinculación a eventos.
+
 ### Operaciones
-- **Alertas inteligentes in-app** — bell icon en la topbar con badge, popover, descarte
+- **Alertas inteligentes in-app** — 6 tipos de alerta (proveedores sin uso, stock bajo, eventos próximos, compras sin evento, presupuestos sin margen, eventos sin precio) con severidades info/warn/error
 - **Notas y recordatorios** — checklist, prioridades, tipos, fechas, etiquetas, recurrencia
 - **Busqueda global full-text (FTS5)** — indexa eventos por titulo/cliente/lugar/menu
 - **Historial de cambios** — cada modificacion queda registrada con fecha y valor anterior
 - **Exportar datos** — JSON o CSV para respaldo o analisis externo
 
 ### Multi-usuario y roles
+- **Multi-tenant (v2.0.0)**: cada usuario ve solo sus propios datos (eventos, notas, inventario, compras, etc.); el admin ve todo
+- **Aislamiento verificado**: tests de integración que confirman que el Usuario A no puede acceder, modificar ni eliminar datos del Usuario B
 - **Roles**: `admin` (todo), `editor` (CRUD sin borrar usuarios), `viewer` (solo lectura)
 - **JWT-like tokens** firmados con HMAC-SHA256, TTL 7 dias
 - **Passwords** hasheados con scrypt + salt aleatorio de 16 bytes
@@ -131,7 +138,7 @@ URLs:
 ## Caracteristicas tecnicas
 
 ### Code Splitting
-La app React usa `React.lazy` + `Suspense` para carga diferida de las 17 paginas, reduciendo el bundle principal de 1,181 kB a 399 kB.
+La app React usa `React.lazy` + `Suspense` para carga diferida de las 19 paginas, reduciendo el bundle principal de 1,181 kB a 399 kB.
 
 ### PWA (Progressive Web App)
 - `manifest.json` con iconos, shortcuts (Nuevo evento, Cotizador, Notas) y theme color naranja
@@ -193,6 +200,17 @@ npm start
 ### Primer usuario
 Al no haber usuarios, el primer registro se crea como `admin` automaticamente. Registros adicionales quedan deshabilitados (debe hacerlo un admin desde la UI o via API).
 
+### Migración multi-tenant (v1.x → v2.0.0)
+```bash
+cd backend
+node scripts/migrate-to-mtr.js
+```
+El script:
+1. Crea un backup automático de la base de datos
+2. Busca el primer admin activo como "dueño fundador"
+3. Asigna todos los registros huérfanos (`ownerId IS NULL`) a ese admin
+4. Es **idempotente**: si se ejecuta múltiples veces, solo procesa registros aún no asignados
+
 ### Endpoints de auth
 ```bash
 # Registrar primer usuario (solo si no hay usuarios)
@@ -228,6 +246,8 @@ npm run reset-password -- Ivanferpe MiPass123 admin
 | Auth | `POST /api/auth/{login,register}` · `GET /api/auth/{config,me}` |
 | Events | `GET/POST /api/events` · `GET/PUT/DELETE /api/events/:id` · `POST /api/events/:id/duplicate` · `GET /api/events/:id/financials` · `POST /api/events/:id/payments` · `GET/POST /api/events/:id/photos` · `DELETE /api/events/:eventId/photos/:photoId` |
 | Tasks | `POST /api/events/:id/tasks` · `PUT /api/events/:eventId/tasks/:taskId` |
+| Employees | `GET/POST /api/employees` · `PUT/DELETE /api/employees/:id` · `GET/POST /api/employees/:id/activities` · `PUT/DELETE /api/activities/:activityId` |
+| Clients | `GET/POST /api/clients` · `PUT/DELETE /api/clients/:id` (existente desde v1.x) |
 | Inventory | `GET/POST /api/inventory` · `PUT/DELETE /api/inventory/:id` · `GET/POST /api/inventory/:id/stock-movements` |
 | Providers | `GET/POST /api/providers` · `PUT/DELETE /api/providers/:id` |
 | Recipes | `GET/POST /api/recipes` · `PUT/DELETE /api/recipes/:id` |
@@ -241,14 +261,14 @@ npm run reset-password -- Ivanferpe MiPass123 admin
 ## Tests
 
 ```bash
-# Backend - tests unitarios (validacion, auth, logger, quote, shoppingList)
+# Backend - todos los tests (unitarios + integracion + aislamiento multi-tenant)
+cd backend && npm test
+
+# Backend - tests unitarios (validacion, auth, logger, quote, shoppingList, permisos, busqueda, alertas)
 cd backend && npm run test:unit
 
-# Backend - tests de integracion (con DB temporal)
+# Backend - tests de integracion + aislamiento multi-tenant (con DB temporal)
 cd backend && npm run test:integration
-
-# Frontend - tests unitarios (quote, finance, i18n)
-cd frontend && npm test
 
 # E2E con Playwright (smoke tests de la API y la landing)
 cd frontend && npm run test:e2e:install   # Solo la primera vez
@@ -259,8 +279,8 @@ cd frontend && npm run test:e2e
 
 GitHub Actions ejecuta en cada push/PR a `main`, `master` o `develop`:
 
-- **Backend**: syntax check (parse only) de 11 archivos, prisma generate, tests unit + integration
-- **Frontend**: lint (bloqueante), build, tests
+- **Backend**: syntax check (parse only) de 11 archivos, prisma generate, tests unit + integration + aislamiento (67 tests)
+- **Frontend**: lint (bloqueante), build
 
 Ver `.github/workflows/ci.yml`.
 
@@ -273,7 +293,8 @@ Ver `.github/workflows/ci.yml`.
 | `CORS_ORIGIN` | (vacio) | Origenes CORS permitidos (CSV) |
 | `SERVE_FRONTEND` | `false` | Servir `frontend/dist` + landing desde el API |
 | `AUTH_ENABLED` | `true` | Habilitar autenticacion |
-| `AUTH_SECRET` | `asamapp-dev-secret-change-me` | Secreto para firmar tokens. ⚠️ **Requerido en producción** — el server rechaza arrancar si queda con el valor por defecto cuando `NODE_ENV=production` |
+| `AUTH_SECRET` | `asamapp-dev-secret-change-me` | Secreto para firmar tokens. ⚠️ **Requerido en producción** |
+| `NODE_ENV` | (vacio) | `production` activa validación estricta de `AUTH_SECRET` |
 | `LOG_LEVEL` | `info` | `debug` \| `info` \| `warn` \| `error` |
 | `LOG_TO_FILE` | `true` | Escribir logs a `backend/logs/` |
 | `BACKUP_DIR` | `../backups/database` | Carpeta de backups |
@@ -293,3 +314,10 @@ Ver `.github/workflows/ci.yml`.
 ## Licencia
 
 MIT — ver [`LICENSE`](./LICENSE).
+
+## Estadisticas del proyecto
+
+- **Backend**: ~1670 líneas de código, 67 tests (todos pasando)
+- **Frontend**: 19 páginas con lazy loading, 12 servicios API
+- **Base de datos**: 17 modelos Prisma, 17 migraciones versionadas
+- **Cobertura de tests**: validación, auth, logger, permisos (12 tests), búsqueda FTS5 (8 tests), alertas (5 tests), integración multi-tenant (10 tests)

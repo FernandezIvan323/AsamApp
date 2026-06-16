@@ -116,6 +116,7 @@ export function validateEventPayload(payload) {
     data: errors.length ? null : {
       title,
       client: optionalText(payload?.client),
+      clientId: optionalText(payload?.clientId) || null,
       date,
       time,
       location: optionalText(payload?.location),

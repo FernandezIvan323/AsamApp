@@ -5,13 +5,15 @@ import { Calculator, Plus, Zap } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { FormField } from '@/components/ui/form-field';
+import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 import { useInventory } from '@/hooks/useInventory';
 import { applyRecipeToForm, applyTemplateToForm } from '@/lib/eventQuote';
 import { currency } from '@/lib/finance';
 import { calculateQuote, getSelectedQuoteItems } from '@/lib/quote';
 import { getRecipes } from '@/services/recipesApi';
 import { getQuoteTemplates } from '@/services/quoteTemplatesApi';
-import './NewEvent.css';
 
 export default function QuickQuote() {
   const navigate = useNavigate();
@@ -84,7 +86,7 @@ export default function QuickQuote() {
         </div>
       </div>
 
-      <div className="ne-grid">
+      <div className="grid grid-cols-[1.5fr_1fr] gap-6 items-start lg:grid-cols-1">
         <div className="space-y-4">
 
           <Card>
@@ -96,34 +98,18 @@ export default function QuickQuote() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Plantilla</label>
-                  <div className="relative">
-                    <select
-                      value={selectedTemplateId}
-                      onChange={e => handleTemplateSelect(e.target.value)}
-                      className="w-full appearance-none rounded-lg border border-border bg-card px-3.5 py-2.5 pr-8 text-sm text-foreground transition-all duration-150 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/50"
-                    >
-                      <option value="">Sin plantilla</option>
-                      {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                    </select>
-                    <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/50">▾</div>
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Receta / combo</label>
-                  <div className="relative">
-                    <select
-                      value={selectedRecipeId}
-                      onChange={e => handleRecipeSelect(e.target.value)}
-                      className="w-full appearance-none rounded-lg border border-border bg-card px-3.5 py-2.5 pr-8 text-sm text-foreground transition-all duration-150 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/50"
-                    >
-                      <option value="">Sin receta</option>
-                      {recipes.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-                    </select>
-                    <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/50">▾</div>
-                  </div>
-                </div>
+                <FormField label="Plantilla">
+                  <Select value={selectedTemplateId} onChange={e => handleTemplateSelect(e.target.value)}>
+                    <option value="">Sin plantilla</option>
+                    {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                  </Select>
+                </FormField>
+                <FormField label="Receta / combo">
+                  <Select value={selectedRecipeId} onChange={e => handleRecipeSelect(e.target.value)}>
+                    <option value="">Sin receta</option>
+                    {recipes.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                  </Select>
+                </FormField>
               </div>
             </CardContent>
           </Card>
@@ -137,39 +123,15 @@ export default function QuickQuote() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Invitados</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={guests}
-                    onChange={e => setGuests(e.target.value)}
-                    placeholder="30"
-                    className="w-full rounded-lg border border-border bg-card px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground transition-all duration-150 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/50"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Costos extra ($)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={extraCosts}
-                    onChange={e => setExtraCosts(e.target.value)}
-                    placeholder="0"
-                    className="w-full rounded-lg border border-border bg-card px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground transition-all duration-150 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/50"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Margen (%)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={profitMargin}
-                    onChange={e => setProfitMargin(e.target.value)}
-                    placeholder="30"
-                    className="w-full rounded-lg border border-border bg-card px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground transition-all duration-150 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/50"
-                  />
-                </div>
+                <FormField label="Invitados">
+                  <Input type="number" min="1" value={guests} onChange={e => setGuests(e.target.value)} placeholder="30" />
+                </FormField>
+                <FormField label="Costos extra ($)">
+                  <Input type="number" min="0" value={extraCosts} onChange={e => setExtraCosts(e.target.value)} placeholder="0" />
+                </FormField>
+                <FormField label="Margen (%)">
+                  <Input type="number" min="0" value={profitMargin} onChange={e => setProfitMargin(e.target.value)} placeholder="30" />
+                </FormField>
               </div>
             </CardContent>
           </Card>
@@ -181,30 +143,25 @@ export default function QuickQuote() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="insumos-grid">
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3">
                 {inventory.map(item => (
-                  <div key={item.id} className="flex flex-col gap-1.5 rounded-lg border border-border bg-secondary p-3">
-                    <label className="flex justify-between text-[11px] font-medium text-muted-foreground">
-                      <span>{item.name}</span>
-                      <span>${currency(item.price)} / {item.unit}</span>
-                    </label>
-                    <input
+                  <FormField key={item.id} label={`${item.name} — $${currency(item.price)} / ${item.unit}`}>
+                    <Input
                       type="number"
                       min="0"
                       step="0.1"
                       value={selectedQuantities[item.id] || ''}
                       placeholder="0"
                       onChange={e => setSelectedQuantities(prev => ({ ...prev, [item.id]: Number(e.target.value) }))}
-                      className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground transition-all duration-150 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/50"
                     />
-                  </div>
+                  </FormField>
                 ))}
               </div>
             </CardContent>
           </Card>
         </div>
 
-        <div className="ne-summary-container">
+        <div className="flex flex-col gap-4">
           <Card className="sticky top-6 space-y-4">
             <CardHeader className="border-b border-[rgba(255,210,140,0.16)] pb-4">
               <CardTitle className="flex items-center gap-2 text-base">

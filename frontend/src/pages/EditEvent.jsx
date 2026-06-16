@@ -5,6 +5,9 @@ import { ArrowLeft, Beef, Calculator as CalcIcon, Calendar, ReceiptText, Save, U
 import { AlertDialog } from '@/components/feedback/ConfirmDialog';
 import { ErrorState, LoadingState } from '@/components/feedback/ResourceState';
 import { Button } from '@/components/ui/button';
+import { FormField } from '@/components/ui/form-field';
+import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 import { useInventory } from '@/hooks/useInventory';
 import { getAllowedStatuses } from '@/lib/eventStatus';
 import { applyRecipeToForm, insumosToSelectedQuantities } from '@/lib/eventQuote';
@@ -12,7 +15,7 @@ import { currency } from '@/lib/finance';
 import { calculateQuote, getSelectedQuoteItems, toEventInsumos } from '@/lib/quote';
 import { getEvent, updateEvent } from '@/services/eventsApi';
 import { getRecipes } from '@/services/recipesApi';
-import './NewEvent.css';
+import { getClients } from '@/services/clientsApi';
 
 export default function EditEvent() {
   const { id } = useParams();
@@ -30,6 +33,8 @@ export default function EditEvent() {
 
   const [eventName, setEventName] = useState('');
   const [clientName, setClientName] = useState('');
+  const [clientId, setClientId] = useState('');
+  const [clients, setClients] = useState([]);
   const [eventDate, setEventDate] = useState('');
   const [eventTime, setEventTime] = useState('');
   const [location, setLocation] = useState('');
@@ -52,6 +57,7 @@ export default function EditEvent() {
 
   useEffect(() => {
     getRecipes().then(data => setRecipes(Array.isArray(data) ? data : [])).catch(() => setRecipes([]));
+    getClients().then(data => setClients(Array.isArray(data) ? data : [])).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -64,6 +70,7 @@ export default function EditEvent() {
         setOriginalPrice(event.totalPrice);
         setEventName(event.title || '');
         setClientName(event.client || '');
+        setClientId(event.clientRef?.id || '');
         setEventDate(event.date || '');
         setEventTime(event.time || '');
         setLocation(event.location || '');
@@ -125,6 +132,7 @@ export default function EditEvent() {
     updateEvent(id, {
       title: eventName,
       client: clientName,
+      clientId: clientId || null,
       date: eventDate,
       time: eventTime,
       location,
@@ -155,143 +163,155 @@ export default function EditEvent() {
   }
 
   return (
-    <div className="new-event-page">
-      <div className="ne-header">
-        <div className="flex flex-wrap items-center gap-3">
-          <Button variant="ghost" asChild>
-            <Link to={`/history/${id}`}><ArrowLeft className="size-4" /> Volver al evento</Link>
-          </Button>
-          <div>
-            <h1>Editar presupuesto</h1>
-            <p>Modifica cantidades, costos y datos del evento. Los pagos registrados se conservan.</p>
-          </div>
+    <div className="mx-auto max-w-5xl space-y-6 p-4 sm:p-6">
+      <div className="flex flex-wrap items-center gap-3">
+        <Button variant="ghost" asChild>
+          <Link to={`/history/${id}`}><ArrowLeft className="size-4" /> Volver al evento</Link>
+        </Button>
+        <div>
+          <h1 className="text-xl font-bold text-foreground">Editar presupuesto</h1>
+          <p className="text-sm text-muted-foreground">Modifica cantidades, costos y datos del evento. Los pagos registrados se conservan.</p>
         </div>
       </div>
 
-      <div className="ne-grid">
-        <div className="ne-form-container">
-          <div className="card ne-section">
-            <h2 className="section-title"><Calendar size={20} /> Información general</h2>
-            <div className="form-group">
-              <label className="form-label">Nombre del evento *</label>
-              <input type="text" className="form-input" value={eventName} onChange={e => setEventName(e.target.value)} />
-            </div>
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Cliente</label>
-                <input type="text" className="form-input" value={clientName} onChange={e => setClientName(e.target.value)} />
+      <div className="grid grid-cols-[1.5fr_1fr] gap-6 items-start lg:grid-cols-1">
+        <div className="space-y-4">
+          <div className="rounded-xl border border-border bg-card p-6">
+            <h2 className="mb-5 flex items-center gap-2 text-base font-semibold text-foreground">
+              <Calendar className="size-4.5 text-accent" /> Información general
+            </h2>
+            <div className="space-y-4">
+              <FormField label="Nombre del evento *">
+                <Input value={eventName} onChange={e => setEventName(e.target.value)} />
+              </FormField>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField label="Cliente">
+                  <Input
+                    value={clientName}
+                    onChange={e => { setClientName(e.target.value); setClientId(''); }}
+                    onSelect={e => {
+                      const selected = clients.find(c => c.name === e.target.value);
+                      if (selected) setClientId(selected.id);
+                    }}
+                    list="edit-client-list"
+                  />
+                  <datalist id="edit-client-list">
+                    {clients.map(c => <option key={c.id} value={c.name} data-id={c.id} />)}
+                  </datalist>
+                </FormField>
+                <FormField label="Lugar">
+                  <Input value={location} onChange={e => setLocation(e.target.value)} />
+                </FormField>
               </div>
-              <div className="form-group">
-                <label className="form-label">Lugar</label>
-                <input type="text" className="form-input" value={location} onChange={e => setLocation(e.target.value)} />
-              </div>
-            </div>
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Fecha *</label>
-                <input type="date" className="form-input" value={eventDate} onChange={e => setEventDate(e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Hora</label>
-                <input type="time" className="form-input" value={eventTime} onChange={e => setEventTime(e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Estado</label>
-                <select className="form-input" value={eventStatus} onChange={e => setEventStatus(e.target.value)}>
-                  {getAllowedStatuses(originalStatus).map(status => (
-                    <option key={status} value={status}>{status}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <div className="card ne-section">
-            <h2 className="section-title"><Users size={20} /> Invitados</h2>
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Total invitados</label>
-                <input type="number" className="form-input" min="0" value={adults} onChange={e => setAdults(e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Niños (opcional)</label>
-                <input type="number" className="form-input" min="0" value={kids} onChange={e => setKids(e.target.value)} />
+              <div className="grid grid-cols-3 gap-4">
+                <FormField label="Fecha *">
+                  <Input type="date" value={eventDate} onChange={e => setEventDate(e.target.value)} />
+                </FormField>
+                <FormField label="Hora">
+                  <Input type="time" value={eventTime} onChange={e => setEventTime(e.target.value)} />
+                </FormField>
+                <FormField label="Estado">
+                  <Select value={eventStatus} onChange={e => setEventStatus(e.target.value)}>
+                    {getAllowedStatuses(originalStatus).map(status => (
+                      <option key={status} value={status}>{status}</option>
+                    ))}
+                  </Select>
+                </FormField>
               </div>
             </div>
           </div>
 
-          <div className="card ne-section">
-            <h2 className="section-title"><Beef size={20} /> Menú</h2>
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Receta / combo</label>
-                <select className="form-input" value={selectedRecipeId} onChange={e => handleRecipeSelect(e.target.value)}>
+          <div className="rounded-xl border border-border bg-card p-6">
+            <h2 className="mb-5 flex items-center gap-2 text-base font-semibold text-foreground">
+              <Users className="size-4.5 text-accent" /> Invitados
+            </h2>
+            <div className="grid grid-cols-2 gap-4">
+              <FormField label="Total invitados">
+                <Input type="number" min="0" value={adults} onChange={e => setAdults(e.target.value)} />
+              </FormField>
+              <FormField label="Niños (opcional)">
+                <Input type="number" min="0" value={kids} onChange={e => setKids(e.target.value)} />
+              </FormField>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-border bg-card p-6">
+            <h2 className="mb-5 flex items-center gap-2 text-base font-semibold text-foreground">
+              <Beef className="size-4.5 text-accent" /> Menú
+            </h2>
+            <div className="grid grid-cols-2 gap-4">
+              <FormField label="Receta / combo">
+                <Select value={selectedRecipeId} onChange={e => handleRecipeSelect(e.target.value)}>
                   <option value="">Sin combo</option>
                   {recipes.map(recipe => (
                     <option key={recipe.id} value={recipe.id}>{recipe.name}</option>
                   ))}
-                </select>
-              </div>
-              <div className="form-group">
-                <label className="form-label">Notas de menú</label>
-                <input type="text" className="form-input" value={menuNotes} onChange={e => setMenuNotes(e.target.value)} />
-              </div>
+                </Select>
+              </FormField>
+              <FormField label="Notas de menú">
+                <Input value={menuNotes} onChange={e => setMenuNotes(e.target.value)} />
+              </FormField>
             </div>
           </div>
 
-          <div className="card ne-section">
-            <h2 className="section-title"><Beef size={20} /> Cantidades de insumos</h2>
-            <div className="insumos-grid">
+          <div className="rounded-xl border border-border bg-card p-6">
+            <h2 className="mb-5 flex items-center gap-2 text-base font-semibold text-foreground">
+              <Beef className="size-4.5 text-accent" /> Cantidades de insumos
+            </h2>
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3">
               {inventory.map(item => (
-                <div key={item.id} className="insumo-input-group">
-                  <label className="insumo-label">{item.name} ({item.unit})</label>
-                  <input
+                <FormField key={item.id} label={`${item.name} (${item.unit})`}>
+                  <Input
                     type="number"
-                    className="form-input"
                     min="0"
                     step="0.1"
                     value={selectedQuantities[item.id] || ''}
                     placeholder="0"
                     onChange={e => handleQuantityChange(item.id, e.target.value)}
                   />
-                </div>
+                </FormField>
               ))}
             </div>
           </div>
 
-          <div className="card ne-section">
-            <h2 className="section-title"><CalcIcon size={20} /> Finanzas</h2>
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Costos extra ($)</label>
-                <input type="number" className="form-input" value={extraCosts} onChange={e => setExtraCosts(e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Margen (%)</label>
-                <input type="number" className="form-input" value={profitMargin} onChange={e => setProfitMargin(e.target.value)} />
-              </div>
+          <div className="rounded-xl border border-border bg-card p-6">
+            <h2 className="mb-5 flex items-center gap-2 text-base font-semibold text-foreground">
+              <CalcIcon className="size-4.5 text-accent" /> Finanzas
+            </h2>
+            <div className="grid grid-cols-2 gap-4">
+              <FormField label="Costos extra ($)">
+                <Input type="number" value={extraCosts} onChange={e => setExtraCosts(e.target.value)} />
+              </FormField>
+              <FormField label="Margen (%)">
+                <Input type="number" value={profitMargin} onChange={e => setProfitMargin(e.target.value)} />
+              </FormField>
             </div>
           </div>
         </div>
 
-        <div className="ne-summary-container">
-          <div className="card summary-sticky">
-            <h2 className="section-title"><ReceiptText size={20} /> Resumen</h2>
-            <div className="summary-list">
+        <div className="flex flex-col gap-4">
+          <div className="rounded-xl border border-border bg-card p-6 lg:sticky lg:top-4">
+            <h2 className="mb-5 flex items-center gap-2 text-base font-semibold text-foreground">
+              <ReceiptText className="size-4.5 text-accent" /> Resumen
+            </h2>
+            <div className="space-y-2">
               {summaryItems.map(item => (
-                <div key={item.id} className="summary-item">
-                  <span>{item.name}</span>
-                  <span>{item.quantity} {item.unit}</span>
+                <div key={item.id} className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">{item.name}</span>
+                  <span className="font-medium text-foreground">{item.quantity} {item.unit}</span>
                 </div>
               ))}
             </div>
-            <div className="summary-financials">
-              <div className="fin-row"><span>Total:</span><span>${currency(quote.finalPrice)}</span></div>
+            <div className="mt-4 space-y-1 border-t border-border pt-4">
+              <div className="flex justify-between text-sm font-semibold">
+                <span className="text-foreground">Total:</span>
+                <span className="text-foreground">${currency(quote.finalPrice)}</span>
+              </div>
             </div>
-            <button className="btn btn-primary btn-full" onClick={handleSave} style={{ marginTop: '1.5rem' }}>
-              <Save size={18} /> Guardar cambios
-            </button>
-            {saveError && <p style={{ color: 'var(--destructive)', fontSize: '0.85rem', textAlign: 'center' }}>{saveError.message}</p>}
+            <Button onClick={handleSave} className="mt-6 w-full">
+              <Save className="size-4" /> Guardar cambios
+            </Button>
+            {saveError && <p className="mt-2 text-center text-sm text-destructive">{saveError.message}</p>}
           </div>
         </div>
       </div>

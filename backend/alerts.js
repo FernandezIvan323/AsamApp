@@ -23,11 +23,13 @@ function daysAgo(date, days) {
   return d.toISOString().slice(0, 10);
 }
 
-export async function generateAlerts() {
+export async function generateAlerts(user = null) {
   const today = getToday();
   const alerts = [];
+  const ownerFilter = user && user.role !== 'admin' ? { ownerId: user.id } : {};
 
   const events = await prisma.event.findMany({
+    where: ownerFilter,
     include: { payments: true },
   });
   for (const event of events) {
@@ -59,7 +61,7 @@ export async function generateAlerts() {
     }
   }
 
-  const inventory = await prisma.catalogItem.findMany();
+  const inventory = await prisma.catalogItem.findMany({ where: ownerFilter });
   for (const item of inventory) {
     if (Number(item.stock || 0) <= Number(item.minStock || 0)) {
       alerts.push({
@@ -73,7 +75,9 @@ export async function generateAlerts() {
     }
   }
 
-  const notes = await prisma.note.findMany({ where: { archived: false, status: { not: 'Realizada' } } });
+  const notes = await prisma.note.findMany({
+    where: { archived: false, status: { not: 'Realizada' }, ...ownerFilter },
+  });
   for (const note of notes) {
     if (!note.dueDate) continue;
     if (note.dueDate < today) {
@@ -97,8 +101,12 @@ export async function generateAlerts() {
     }
   }
 
+  const taskWhere = { done: false };
+  if (user && user.role !== 'admin') {
+    taskWhere.event = { ownerId: user.id };
+  }
   const tasks = await prisma.eventTask.findMany({
-    where: { done: false },
+    where: taskWhere,
     include: { event: true },
   });
   for (const task of tasks) {
