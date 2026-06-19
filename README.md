@@ -55,10 +55,6 @@ ProyectoAsado/
 │   ├── e2e/                  # Tests E2E con Playwright
 │   ├── public/               # PWA manifest + service worker
 │   └── vite.config.js
-├── landing/                  # Landing page estatica
-│   ├── index.html            # Hero, nicho, features, workflow, FAQ
-│   ├── features.html         # Detalle completo de las 18 funciones
-│   └── styles.css
 ├── docs/                     # Documentacion tecnica
 │   └── openapi.yaml          # Especificacion OpenAPI 3.0
 ├── .github/workflows/        # CI/CD (backend + frontend)
