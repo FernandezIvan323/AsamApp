@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useToast } from '@/components/ui/toast';
+import { useToast } from '@/components/ui/use-toast';
 import { getClients, createClient, updateClient, deleteClient, getClient } from '@/services/clientsApi';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -16,7 +16,6 @@ import { currency } from '@/lib/finance';
 const EMPTY_FORM = { name: '', phone: '', email: '', notes: '' };
 
 function ClientDetail({ id, onBack }) {
-  const toast = useToast();
   const [client, setClient] = useState(null);
   const [loading, setLoading] = useState(true);
 

@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Check, Pencil, Plus, Trash2, Utensils, X } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Check, Plus, Trash2, Utensils, X } from 'lucide-react';
 
-import { EmptyState, ErrorState, LoadingState } from '@/components/feedback/ResourceState';
+import { ErrorState, LoadingState } from '@/components/feedback/ResourceState';
 import { ConfirmDialog } from '@/components/feedback/ConfirmDialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';

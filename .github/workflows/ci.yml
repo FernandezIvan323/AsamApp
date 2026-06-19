@@ -26,6 +26,8 @@ jobs:
         run: node --check server.js && node --check auth.js && node --check validation.js && node --check logger.js && node --check shoppingList.js && node --check exportData.js && node --check permissions.js && node --check alerts.js && node --check search.js && node --check scripts/backup-db.js && node --check scripts/reset-password.js
       - name: Prisma generate
         run: npx prisma generate
+      - name: Initialize database
+        run: npx prisma db push
       - name: Run unit tests
         run: npm run test:unit
       - name: Run integration tests

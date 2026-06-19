@@ -1,17 +1,15 @@
-import { createContext, useCallback, useContext, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { X } from 'lucide-react';
-
-const ToastContext = createContext(null);
-
-const VARIANTS = {
-  success: 'border-green-500/40 bg-green-500/10 text-green-400',
-  error: 'border-destructive/40 bg-destructive/10 text-destructive',
-  info: 'border-blue-500/40 bg-blue-500/10 text-blue-400',
-  warning: 'border-yellow-500/40 bg-yellow-500/10 text-yellow-400',
-};
+import { ToastContext } from './toast-context';
 
 function ToastItem({ id, message, variant = 'success', onDismiss }) {
+  const VARIANTS = {
+    success: 'border-green-500/40 bg-green-500/10 text-green-400',
+    error: 'border-destructive/40 bg-destructive/10 text-destructive',
+    info: 'border-blue-500/40 bg-blue-500/10 text-blue-400',
+    warning: 'border-yellow-500/40 bg-yellow-500/10 text-yellow-400',
+  };
   return (
     <div
       className={cn(
@@ -61,8 +59,4 @@ export function ToastProvider({ children }) {
   );
 }
 
-export function useToast() {
-  const ctx = useContext(ToastContext);
-  if (!ctx) throw new Error('useToast must be used within ToastProvider');
-  return ctx;
-}
+

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Pencil, Plus, Trash2, Users, Clock, DollarSign, Search, Calendar } from 'lucide-react';
+import { Pencil, Plus, Trash2, Users, Clock, Search } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,7 +7,7 @@ import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useToast } from '@/components/ui/toast';
+import { useToast } from '@/components/ui/use-toast';
 import { getEmployees, createEmployee, updateEmployee, deleteEmployee, getEmployeeActivities, createEmployeeActivity, deleteEmployeeActivity } from '@/services/employeesApi';
 import { getEvents } from '@/services/eventsApi';
 import { format } from 'date-fns';

@@ -1,9 +1,9 @@
 import { motion } from 'framer-motion';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { 
   Flame, Beef, Calendar, TrendingUp, Users, ShieldCheck, Mail, MapPin, Phone, 
-  User, CheckCircle2, ChevronRight, LayoutDashboard, Utensils, ClipboardList, 
-  Store, Calculator, FileStack, Download, StickyNote, Globe, Share2, 
+  CheckCircle2, ChevronRight, ClipboardList, 
+  Store, Calculator, FileStack, Download, StickyNote,
   Cpu, Server, Code, Database
 } from 'lucide-react';
 import { useState } from 'react';
