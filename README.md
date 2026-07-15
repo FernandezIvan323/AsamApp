@@ -2,9 +2,9 @@
 
 Aplicación web full-stack para gestionar **catering a las brasas**: cotización, presupuestos, inventario, compras de mercado, finanzas, equipo, notas y multi-usuario. Pensada para asadores, comida costeña y emprendedores gastronómicos.
 
-![License](https://img.shields.io/github/license/FernandezIvan323/ProyectoEventoAsados?style=flat-square)
-![Version](https://img.shields.io/github/v/release/FernandezIvan323/ProyectoEventoAsados?style=flat-square)
-![CI](https://img.shields.io/github/actions/workflow/status/FernandezIvan323/ProyectoEventoAsados/ci.yml?style=flat-square&label=CI)
+![License](https://img.shields.io/github/license/FernandezIvan323/AsamApp?style=flat-square)
+![Version](https://img.shields.io/github/v/release/FernandezIvan323/AsamApp?style=flat-square)
+![CI](https://img.shields.io/github/actions/workflow/status/FernandezIvan323/AsamApp/ci.yml?style=flat-square&label=CI)
 ![Node](https://img.shields.io/badge/node-%3E%3D20-339933?style=flat-square&logo=node.js&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black)
 
