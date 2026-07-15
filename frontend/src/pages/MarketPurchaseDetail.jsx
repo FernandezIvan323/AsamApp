@@ -71,10 +71,10 @@ export default function MarketPurchaseDetail() {
 
   const items = purchase?.items || [];
   const photos = Array.isArray(purchase?.receiptPhotos) ? purchase.receiptPhotos : [];
-  const totalUnits = useMemo(() => itemUnits(items), [items]);
+  const totalUnits = useMemo(() => itemUnits(purchase?.items || []), [purchase]);
   const itemsSubtotal = useMemo(
-    () => items.reduce((sum, item) => sum + Number(item.subtotal || 0), 0),
-    [items],
+    () => (purchase?.items || []).reduce((sum, item) => sum + Number(item.subtotal || 0), 0),
+    [purchase],
   );
 
   const handleDelete = async () => {

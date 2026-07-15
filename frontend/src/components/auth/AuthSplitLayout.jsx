@@ -217,26 +217,3 @@ export default function AuthSplitLayout({
     </div>
   );
 }
-
-/** Shared dark form field styles for auth pages */
-export function authInputClassName(extra = '') {
-  return [
-    'w-full rounded-lg border border-white/10 bg-[#0A1428] px-4 py-3 text-sm text-white',
-    'placeholder:text-white/25 focus:border-[#E8834A] focus:outline-none focus:ring-1 focus:ring-[#E8834A]/40',
-    'transition-colors duration-200',
-    extra,
-  ]
-    .filter(Boolean)
-    .join(' ');
-}
-
-export function AuthLabel({ htmlFor, children }) {
-  return (
-    <label
-      htmlFor={htmlFor}
-      className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-[#8BA0B0]"
-    >
-      {children}
-    </label>
-  );
-}

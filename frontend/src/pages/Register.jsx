@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Check, Eye, EyeOff, UserPlus } from 'lucide-react';
-import AuthSplitLayout, { AuthLabel, authInputClassName } from '@/components/auth/AuthSplitLayout';
+import AuthSplitLayout from '@/components/auth/AuthSplitLayout';
+import { AuthLabel } from '@/components/auth/AuthLabel';
+import { authInputClassName } from '@/components/auth/authInputClassName';
 import { setStoredToken, setStoredUser } from '@/lib/auth';
 import { apiRequest } from '@/lib/api';
 
