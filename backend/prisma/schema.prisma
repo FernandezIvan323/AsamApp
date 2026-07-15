@@ -98,8 +98,10 @@ model Event {
   date         String?
   time         String?
   location     String?
-  guests       Int      @default(0)
-  status       String   @default("Pendiente")
+  guests       Int      @default(0) // raciones efectivas = ceil(adults + kids*0.5)
+  adults       Int      @default(0)
+  kids         Int      @default(0)
+  status       String   @default("Cotizado")
   menuNotes    String?
   recipeName   String?
   extraCosts   Float    @default(0)

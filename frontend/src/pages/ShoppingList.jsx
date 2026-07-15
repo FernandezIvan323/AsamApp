@@ -74,7 +74,9 @@ export default function ShoppingList() {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Lista de compras</h1>
-            <p className="mt-2 text-muted-foreground">Insumos consolidados de eventos aprobados o con compras pendientes.</p>
+            <p className="mt-2 text-muted-foreground">
+              Suma los insumos de los eventos que ya están aprobados o en compras. Imprimí o pasá directo a registrar el gasto en el mercado.
+            </p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={handlePrint}><Printer className="size-4" /> Imprimir</Button>
@@ -83,17 +85,22 @@ export default function ShoppingList() {
             </Button>
           </div>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {EVENT_STATUSES.filter(s => !['Cancelado', 'Cobrado'].includes(s)).map(status => (
-            <Button
-              key={status}
-              size="sm"
-              variant={selectedStatuses.includes(status) ? 'default' : 'outline'}
-              onClick={() => toggleStatus(status)}
-            >
-              {status}
-            </Button>
-          ))}
+        <div>
+          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Incluir eventos en estado
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {EVENT_STATUSES.filter(s => !['Cancelado', 'Cobrado'].includes(s)).map(status => (
+              <Button
+                key={status}
+                size="sm"
+                variant={selectedStatuses.includes(status) ? 'default' : 'outline'}
+                onClick={() => toggleStatus(status)}
+              >
+                {status}
+              </Button>
+            ))}
+          </div>
         </div>
       </div>
 

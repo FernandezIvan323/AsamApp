@@ -1,22 +1,147 @@
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Flame, Beef, Calendar, TrendingUp, Users, ShieldCheck, Mail, MapPin, Phone, 
-  CheckCircle2, ChevronRight, ClipboardList, 
-  Store, Calculator, FileStack, Download, StickyNote,
-  Cpu, Server, Code, Database
+import {
+  Flame,
+  Beef,
+  Calendar,
+  TrendingUp,
+  Users,
+  Mail,
+  MapPin,
+  Phone,
+  CheckCircle2,
+  ChevronRight,
+  ClipboardList,
+  Store,
+  Calculator,
+  FileStack,
+  Download,
+  StickyNote,
+  Fish,
+  UtensilsCrossed,
+  Soup,
+  Building2,
+  ShoppingCart,
+  FileText,
 } from 'lucide-react';
 import { useState } from 'react';
+
+const PAD = 'px-6 md:px-10 xl:px-16';
+const CONTAINER = 'mx-auto w-full max-w-screen-2xl';
+
+const specialties = [
+  {
+    title: 'Asado de tira y vacío',
+    desc: 'Controlá los kilos de carne por invitado y evitá sobras o faltantes en la parrilla.',
+    icon: Beef,
+    tag: 'Brasas',
+    image: '/specialties/asado-tira.jpg',
+  },
+  {
+    title: 'Mix parrillero',
+    desc: 'Achuras, chorizo, pollo y más: armá la lista de compra del evento en minutos.',
+    icon: Flame,
+    tag: 'Parrilla',
+    image: '/specialties/mix-parrillero.jpg',
+  },
+  {
+    title: 'Sancocho y olla costeña',
+    desc: 'Porciones de adultos y niños para platos de olla típicos de la costa.',
+    icon: Soup,
+    tag: 'Costeño',
+    image: '/specialties/sancocho.jpg',
+  },
+  {
+    title: 'Pescado y mariscos',
+    desc: 'Costos de pesca o mercado y margen real cuando el menú es de mar.',
+    icon: Fish,
+    tag: 'Costa',
+    image: '/specialties/pescado.jpg',
+  },
+  {
+    title: 'Acompañamientos',
+    desc: 'Arroz de coco, yuca, ensaladas e insumos: inventario y compras juntos.',
+    icon: UtensilsCrossed,
+    tag: 'Mesa',
+    image: '/specialties/acompanamientos.jpg',
+  },
+  {
+    title: 'Eventos corporativos',
+    desc: 'Cotización en PDF, equipo y cobros para empresas, bodas y fiestas familiares.',
+    icon: Building2,
+    tag: 'Catering',
+    image: '/specialties/evento.jpg',
+  },
+];
+
+const featuresRow1 = [
+  { title: 'Cálculo de insumos', desc: 'Kilos de carne, embutidos y carbón.', icon: Beef },
+  { title: 'Calendario de eventos', desc: 'Fechas sin solapamientos.', icon: Calendar },
+  { title: 'Cotizador veloz', desc: 'Presupuestos listos en PDF.', icon: Calculator },
+  { title: 'Plantillas', desc: 'Reutilizá ofertas frecuentes.', icon: FileStack },
+  { title: 'Logística', desc: 'Tareas y tiempos del evento.', icon: ClipboardList },
+  { title: 'Clientes', desc: 'Historial corporativo y privado.', icon: Users },
+];
+
+const featuresRow2 = [
+  { title: 'Lista de compras', desc: 'Mercado consolidado por eventos.', icon: ShoppingCart },
+  { title: 'Inventario', desc: 'Existencias e insumos en vivo.', icon: Store },
+  { title: 'Finanzas', desc: 'Ganancia neta por evento.', icon: TrendingUp },
+  { title: 'Costos fijos', desc: 'Alquiler, leña y servicios.', icon: FileText },
+  { title: 'Notas', desc: 'Recordatorios del cliente.', icon: StickyNote },
+  { title: 'Exportación', desc: 'Reportes Excel y PDF.', icon: Download },
+];
+
+const steps = [
+  {
+    n: '01',
+    title: 'Cotizá el evento',
+    desc: 'Invitados, menú e insumos → presupuesto en PDF listo para el cliente.',
+    benefit: 'Cerrás el trato sin Excel eterno',
+    icon: FileText,
+  },
+  {
+    n: '02',
+    title: 'Comprá y organizá',
+    desc: 'Mercado, kilos, equipo y tareas del día del asado en un solo flujo.',
+    benefit: 'Kilos y costos reales, sin sobras ni faltantes',
+    icon: ShoppingCart,
+  },
+  {
+    n: '03',
+    title: 'Cobrás y medís',
+    desc: 'Pagos, costos fijos y margen del evento: cobrado menos lo que salió.',
+    benefit: 'Sabés si el asado dejó plata de verdad',
+    icon: TrendingUp,
+  },
+];
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.12, delayChildren: 0.08 },
+  },
+};
+
+const itemVariants = {
+  hidden: { y: 24, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: { type: 'spring', stiffness: 100, damping: 16 },
+  },
+};
 
 export default function Landing() {
   const navigate = useNavigate();
   const [formSubmitted, setFormSubmitted] = useState(false);
-  const [formData, setFormData] = useState({ 
-    name: '', 
-    email: '', 
-    location: '', 
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    location: '',
     referrer: 'Búsqueda en Google',
-    message: '' 
+    message: '',
   });
 
   const handleInputChange = (e) => {
@@ -29,56 +154,19 @@ export default function Landing() {
       setFormSubmitted(true);
       setTimeout(() => {
         setFormSubmitted(false);
-        setFormData({ 
-          name: '', 
-          email: '', 
-          location: '', 
+        setFormData({
+          name: '',
+          email: '',
+          location: '',
           referrer: 'Búsqueda en Google',
-          message: '' 
+          message: '',
         });
       }, 5000);
     }
   };
 
-  // 12 compact features for the 2-row train carousel
-  const featuresRow1 = [
-    { title: "Cálculo de Insumos", desc: "Kilos exactos de carne, embutidos y carbón.", icon: Beef },
-    { title: "Calendario de Eventos", desc: "Control de fechas de catering y asados sin solapamientos.", icon: Calendar },
-    { title: "Cotizador Veloz", desc: "Generación de presupuestos listos en PDF.", icon: Calculator },
-    { title: "Plantillas de Cotización", desc: "Reutiliza plantillas para agilizar ofertas.", icon: FileStack },
-    { title: "Logística y Tiempos", desc: "Cronograma preciso para encendido y despacho.", icon: ClipboardList },
-    { title: "Gestión de Clientes", desc: "Historial completo de clientes corporativos y privados.", icon: Users },
-  ];
-
-  const featuresRow2 = [
-    { title: "Lista de Compras", desc: "Consolidación de compras automáticas del mercado.", icon: ClipboardList },
-    { title: "Control de Inventario", desc: "Gestión de existencias e insumos en tiempo real.", icon: Store },
-    { title: "Métricas Financieras", desc: "Reportes visuales de ganancias netas por evento.", icon: TrendingUp },
-    { title: "Control de Costos Fijos", desc: "Administración de alquileres, leña y servicios.", icon: ShieldCheck },
-    { title: "Gestión de Notas", desc: "Notas rápidas y recordatorios específicos del cliente.", icon: StickyNote },
-    { title: "Exportación de Datos", desc: "Descarga de reportes financieros en Excel y PDF.", icon: Download },
-  ];
-
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.15, delayChildren: 0.1 }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { y: 30, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: { type: 'spring', stiffness: 100, damping: 15 }
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-[#0A1428] text-white selection:bg-[#E8834A] selection:text-[#0A1428] overflow-x-hidden font-sans relative">
-      {/* Decorative CSS Styles for train-like infinite marquee animations */}
+    <div className="min-h-svh w-full bg-[#0A1428] text-white selection:bg-[#E8834A] selection:text-[#0A1428] overflow-x-hidden font-sans">
       <style>{`
         @keyframes marquee {
           0% { transform: translateX(0%); }
@@ -87,145 +175,144 @@ export default function Landing() {
         .animate-marquee-left {
           display: flex;
           width: max-content;
-          animation: marquee 25s linear infinite;
+          animation: marquee 28s linear infinite;
         }
-        .animate-marquee-left:hover {
-          animation-play-state: paused;
-        }
+        .animate-marquee-left:hover { animation-play-state: paused; }
         .animate-marquee-left-slow {
           display: flex;
           width: max-content;
-          animation: marquee 35s linear infinite;
+          animation: marquee 38s linear infinite;
         }
-        .animate-marquee-left-slow:hover {
-          animation-play-state: paused;
-        }
+        .animate-marquee-left-slow:hover { animation-play-state: paused; }
       `}</style>
 
-      {/* Decorative fire-like glowing gradients in background */}
-      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-[#E8834A]/5 rounded-full blur-[150px] pointer-events-none" />
-      <div className="absolute bottom-[20%] right-[-10%] w-[45%] h-[45%] bg-[#E8834A]/5 rounded-full blur-[180px] pointer-events-none" />
-
-      {/* NAVBAR */}
-      <header className="sticky top-0 z-50 w-full border-b border-white/5 bg-[#0A1428]/80 backdrop-blur-md transition-all duration-300">
-        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
+      {/* ── NAVBAR full-bleed ── */}
+      <header className="sticky top-0 z-50 w-full border-b border-white/5 bg-[#0A1428]/85 backdrop-blur-md">
+        <div className={`${PAD} ${CONTAINER} flex h-16 sm:h-20 items-center justify-between`}>
           <div className="flex items-center gap-2.5">
-            <span className="flex size-10 items-center justify-center rounded-xl bg-[#E8834A]/10 shadow-[0_0_20px_rgba(232,131,74,0.15)] border border-[#E8834A]/20">
-              <Flame className="size-6 text-[#E8834A] animate-pulse" />
+            <span className="flex size-10 items-center justify-center rounded-xl border border-[#E8834A]/20 bg-[#E8834A]/10 shadow-[0_0_20px_rgba(232,131,74,0.15)]">
+              <Flame className="size-6 text-[#E8834A]" />
             </span>
             <span className="text-xl font-bold tracking-tight bg-gradient-to-r from-white via-white to-[#E8834A] bg-clip-text text-transparent">
               AsamApp
             </span>
           </div>
-
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <button
+              type="button"
               onClick={() => navigate('/login')}
-              className="px-5 py-2.5 text-sm font-medium text-white/80 hover:text-white transition-colors duration-200"
+              className="px-4 py-2 text-sm font-medium text-white/80 hover:text-white transition-colors"
             >
               Ingresar
             </button>
             <button
+              type="button"
               onClick={() => navigate('/register')}
-              className="relative inline-flex items-center justify-center p-0.5 overflow-hidden text-sm font-medium text-white rounded-lg group bg-gradient-to-br from-[#E8834A] to-[#D4733A] hover:text-[#0A1428] focus:ring-4 focus:outline-none focus:ring-[#E8834A]/30 transition-all duration-300"
+              className="rounded-lg bg-[#E8834A] px-4 py-2.5 text-sm font-bold text-[#0A1428] hover:bg-[#D4733A] transition-colors shadow-[0_4px_16px_rgba(232,131,74,0.25)]"
             >
-              <span className="relative px-5 py-2.5 transition-all ease-in duration-200 bg-[#0A1428] rounded-md group-hover:bg-opacity-0 font-semibold block">
-                Registrarse
-              </span>
+              Registrarse
             </button>
           </div>
         </div>
       </header>
 
-      {/* HERO SECTION */}
-      <section className="relative pt-12 pb-20 md:pt-20 md:pb-28 px-6">
-        <div className="mx-auto max-w-7xl">
+      {/* ── HERO full viewport ── */}
+      <section className="relative w-full min-h-[calc(100svh-4rem)] sm:min-h-[calc(100svh-5rem)] flex items-center">
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: "url('/hero-asado.jpg')" }}
+          aria-hidden
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0A1428] via-[#0A1428]/90 to-[#0A1428]/55" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0A1428] via-transparent to-[#0A1428]/40" />
+        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#0A1428] to-transparent" />
+
+        <div className={`relative z-10 w-full ${PAD} ${CONTAINER} py-16 md:py-20`}>
           <motion.div
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="grid grid-cols-1 gap-16 lg:grid-cols-12 lg:items-center"
+            className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:items-center lg:gap-10"
           >
-            <div className="lg:col-span-7 flex flex-col justify-center space-y-8">
-              <motion.div variants={itemVariants} className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E8834A]/10 border border-[#E8834A]/20 w-fit">
-                <span className="flex size-2 rounded-full bg-[#E8834A] animate-ping" />
-                <span className="text-xs font-semibold uppercase tracking-wider text-[#E8834A]">
-                  Exclusivo para Catering y Asadores Premium
+            <div className="lg:col-span-7 flex flex-col justify-center space-y-7">
+              <motion.div
+                variants={itemVariants}
+                className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E8834A]/15 border border-[#E8834A]/30 w-fit"
+              >
+                <span className="flex size-2 rounded-full bg-[#E8834A] animate-pulse" />
+                <span className="text-sm font-semibold uppercase tracking-wider text-[#E8834A]">
+                  Asados · Comida costeña · Catering
                 </span>
               </motion.div>
 
               <motion.h1
                 variants={itemVariants}
-                className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-[1.1]"
+                className="text-4xl sm:text-5xl xl:text-6xl font-extrabold tracking-tight text-white leading-[1.08]"
               >
-                El arte del fuego bajo un <span className="bg-gradient-to-r from-[#E8834A] to-amber-500 bg-clip-text text-transparent">control absoluto</span>
+                El arte del fuego bajo un{' '}
+                <span className="bg-gradient-to-r from-[#E8834A] to-amber-400 bg-clip-text text-transparent">
+                  control absoluto
+                </span>
               </motion.h1>
 
               <motion.p
                 variants={itemVariants}
-                className="text-lg sm:text-xl text-[#8BA0B0] max-w-2xl font-light leading-relaxed"
+                className="text-lg sm:text-xl text-[#B8C5D0] max-w-2xl font-light leading-relaxed"
               >
-                AsamApp está diseñado específicamente para organizadores de eventos gastronómicos a las brasas. Olvídate de los cálculos a ojo: optimiza las compras de cortes de carne, gestiona tus costos fijos y el personal en tiempo real.
+                AsamApp es para quien vive de la parrilla y la mesa costeña: cotizá eventos, controlá kilos y compras,
+                y conocé el margen real de cada asado — sin Excel eterno.
               </motion.p>
 
-              <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 pt-4">
+              <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-3 pt-2">
                 <button
+                  type="button"
                   onClick={() => navigate('/register')}
-                  className="flex items-center justify-center gap-2 bg-[#E8834A] text-[#0A1428] hover:bg-[#D4733A] font-bold px-8 py-4 rounded-xl shadow-[0_4px_20px_rgba(232,131,74,0.3)] hover:shadow-[0_4px_25px_rgba(232,131,74,0.4)] transition-all duration-300 transform hover:-translate-y-0.5"
+                  className="flex items-center justify-center gap-2 bg-[#E8834A] text-[#0A1428] hover:bg-[#D4733A] font-bold px-8 py-4 rounded-xl shadow-[0_4px_24px_rgba(232,131,74,0.35)] transition-all hover:-translate-y-0.5"
                 >
-                  Probar Gratis
+                  Probar gratis
                   <ChevronRight className="size-5" />
                 </button>
                 <a
-                  href="#contacto"
-                  className="flex items-center justify-center gap-2 bg-[#0F1B33] hover:bg-[#132240] text-white border border-white/5 font-semibold px-8 py-4 rounded-xl transition-all duration-300"
+                  href="#especialidades"
+                  className="flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white border border-white/15 font-semibold px-8 py-4 rounded-xl transition-all backdrop-blur-sm"
                 >
-                  Solicitar Asesoría
+                  Ver especialidades
                 </a>
               </motion.div>
             </div>
 
-            <motion.div
-              variants={itemVariants}
-              className="lg:col-span-5 relative flex justify-center"
-            >
-              {/* Custom CSS/HTML Interactive Dashboard Mockup */}
-              <div className="w-full max-w-md bg-[#0F1B33] border border-white/10 rounded-2xl p-5 shadow-[0_20px_50px_rgba(0,0,0,0.5)] relative overflow-hidden backdrop-blur-md">
-                <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-[#E8834A] to-amber-500" />
-                
-                {/* Header Mockup */}
+            {/* Mock presupuesto */}
+            <motion.div variants={itemVariants} className="lg:col-span-5 relative flex justify-center lg:justify-end">
+              <div className="w-full max-w-md bg-[#0F1B33]/90 border border-white/10 rounded-2xl p-5 shadow-[0_20px_60px_rgba(0,0,0,0.55)] backdrop-blur-md">
+                <div className="absolute top-0 left-0 w-full h-[3px] rounded-t-2xl bg-gradient-to-r from-[#E8834A] to-amber-400" />
                 <div className="flex items-center justify-between pb-4 border-b border-white/5">
-                  <div className="flex items-center gap-2">
-                    <div className="size-3 rounded-full bg-red-500/80" />
-                    <div className="size-3 rounded-full bg-yellow-500/80" />
-                    <div className="size-3 rounded-full bg-green-500/80" />
-                    <span className="text-[11px] text-[#8BA0B0] ml-2 tracking-wider uppercase font-semibold">PRESUPUESTO ACTIVO</span>
-                  </div>
-                  <span className="text-[12px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">Rentable</span>
+                  <span className="text-sm text-[#8BA0B0] tracking-wider uppercase font-semibold">
+                    Presupuesto activo
+                  </span>
+                  <span className="text-sm px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">
+                    Rentable
+                  </span>
                 </div>
-
-                {/* Dashboard Stats */}
                 <div className="py-4 space-y-4">
                   <div>
-                    <span className="text-[11px] text-[#8BA0B0] uppercase block">Asado Corporativo - 120 Invitados</span>
-                    <span className="text-xl font-bold tracking-tight text-white mt-1">$4,850 USD</span>
+                    <span className="text-sm text-[#8BA0B0] uppercase block">
+                      Asado corporativo · 120 invitados
+                    </span>
+                    <span className="text-2xl font-bold tracking-tight text-white mt-1 block">$4.850.000</span>
                   </div>
-
-                  <div className="grid grid-cols-2 gap-3 pt-2">
-                    <div className="bg-[#132240] p-3 rounded-xl border border-white/5">
-                      <span className="text-[10px] text-[#8BA0B0] uppercase block">Insumos (Carne/Carbón)</span>
-                      <span className="text-sm font-semibold text-white mt-1">54.5 kg calculados</span>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-[#132240]/80 p-3 rounded-xl border border-white/5">
+                      <span className="text-xs text-[#8BA0B0] uppercase block">Carne / carbón</span>
+                      <span className="text-base font-semibold text-white mt-1 block">54,5 kg</span>
                     </div>
-                    <div className="bg-[#132240] p-3 rounded-xl border border-white/5">
-                      <span className="text-[10px] text-[#8BA0B0] uppercase block">Personal Requerido</span>
-                      <span className="text-sm font-semibold text-white mt-1">2 Parrilleros, 4 Mozos</span>
+                    <div className="bg-[#132240]/80 p-3 rounded-xl border border-white/5">
+                      <span className="text-xs text-[#8BA0B0] uppercase block">Equipo</span>
+                      <span className="text-base font-semibold text-white mt-1 block">2 parrilleros</span>
                     </div>
                   </div>
-
-                  {/* Visual scale indicator */}
-                  <div className="pt-2">
-                    <div className="flex justify-between text-[11px] text-[#8BA0B0] mb-1">
-                      <span>Costo de Materia Prima</span>
+                  <div>
+                    <div className="flex justify-between text-sm text-[#8BA0B0] mb-1">
+                      <span>Materia prima</span>
                       <span className="font-semibold text-white">35% del total</span>
                     </div>
                     <div className="w-full h-2 bg-[#0A1428] rounded-full overflow-hidden">
@@ -233,20 +320,18 @@ export default function Landing() {
                     </div>
                   </div>
                 </div>
-
-                {/* Simulated list of items */}
-                <div className="mt-2 space-y-2 border-t border-white/5 pt-4">
-                  <div className="flex justify-between text-xs py-1">
-                    <span className="text-[#8BA0B0]">Vacío / Asado de Tira</span>
-                    <span className="text-white font-medium">36.0 kg</span>
+                <div className="space-y-2 border-t border-white/5 pt-4 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-[#8BA0B0]">Vacío / asado de tira</span>
+                    <span className="text-white font-medium">36 kg</span>
                   </div>
-                  <div className="flex justify-between text-xs py-1">
-                    <span className="text-[#8BA0B0]">Leña / Carbón Quebracho</span>
+                  <div className="flex justify-between">
+                    <span className="text-[#8BA0B0]">Carbón quebracho</span>
                     <span className="text-white font-medium">4 bolsas</span>
                   </div>
-                  <div className="flex justify-between text-xs py-1">
-                    <span className="text-[#8BA0B0]">Logística & Traslado</span>
-                    <span className="text-emerald-400 font-medium">Optimizado</span>
+                  <div className="flex justify-between">
+                    <span className="text-[#8BA0B0]">Compras registradas</span>
+                    <span className="text-emerald-400 font-medium">Al día</span>
                   </div>
                 </div>
               </div>
@@ -255,104 +340,196 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* HOW IT HELPS (IMPORTANCIA) */}
-      <section className="py-20 bg-[#0F1B33]/40 border-y border-white/5 px-6">
-        <div className="mx-auto max-w-7xl">
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-white mb-4">
-              ¿Por qué automatizar tu gestión gastronómica?
+      {/* ── ESPECIALIDADES ── */}
+      <section id="especialidades" className={`w-full py-12 md:py-16 bg-[#0A1428] ${PAD}`}>
+        <div className={CONTAINER}>
+          <div className="max-w-3xl mb-8">
+            <span className="text-sm font-bold text-[#E8834A] uppercase tracking-widest">Especialidades</span>
+            <h2 className="mt-2 text-3xl sm:text-4xl font-bold tracking-tight text-white">
+              De la parrilla a la mesa costeña
             </h2>
-            <p className="text-lg text-[#8BA0B0] font-light">
-              Organizar catering a las brasas sin un control exacto de insumos devora el margen de ganancia. AsamApp profesionaliza tu operación.
+            <p className="mt-3 text-lg text-[#8BA0B0] font-light leading-relaxed">
+              Un mismo sistema para asados de carne, olla costeña y eventos grandes: kilos, compras y cobros sin perder el hilo.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-[#0F1B33] border border-white/5 p-8 rounded-2xl hover:border-[#E8834A]/30 transition-all duration-300">
-              <div className="size-12 rounded-xl bg-red-500/10 flex items-center justify-center mb-6">
-                <Beef className="size-6 text-red-400" />
-              </div>
-              <h3 className="text-xl font-semibold mb-3">Merma Cero en Carnes</h3>
-              <p className="text-[#8BA0B0] leading-relaxed text-sm font-light">
-                Los algoritmos de cálculo estiman de forma milimétrica la cantidad necesaria de carne, achuras y acompañamientos según el perfil de los invitados, evitando compras excesivas o faltantes críticos.
-              </p>
-            </div>
-
-            <div className="bg-[#0F1B33] border border-white/5 p-8 rounded-2xl hover:border-[#E8834A]/30 transition-all duration-300">
-              <div className="size-12 rounded-xl bg-[#E8834A]/10 flex items-center justify-center mb-6">
-                <Flame className="size-6 text-[#E8834A]" />
-              </div>
-              <h3 className="text-xl font-semibold mb-3">Costos Fijos Controlados</h3>
-              <p className="text-[#8BA0B0] leading-relaxed text-sm font-light">
-                No descuides la leña, el hielo, los mozos ni el flete. Añade cada costo operativo a tu cotización para asegurar una rentabilidad neta real por evento.
-              </p>
-            </div>
-
-            <div className="bg-[#0F1B33] border border-white/5 p-8 rounded-2xl hover:border-[#E8834A]/30 transition-all duration-300">
-              <div className="size-12 rounded-xl bg-emerald-500/10 flex items-center justify-center mb-6">
-                <TrendingUp className="size-6 text-emerald-400" />
-              </div>
-              <h3 className="text-xl font-semibold mb-3">Cotizaciones Profesionales</h3>
-              <p className="text-[#8BA0B0] leading-relaxed text-sm font-light">
-                Genera presupuestos exportables en PDF de inmediato. Cierra tratos comerciales rápidamente sin esperar horas haciendo cálculos manuales en Excel.
-              </p>
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {specialties.map((s) => {
+              const Icon = s.icon;
+              return (
+                <article
+                  key={s.title}
+                  className="group relative overflow-hidden rounded-2xl border border-white/8 bg-[#0F1B33] transition-all duration-300 hover:border-[#E8834A]/40 hover:-translate-y-0.5 hover:shadow-[0_12px_40px_rgba(232,131,74,0.1)]"
+                >
+                  {s.image && (
+                    <div className="relative h-36 sm:h-40 overflow-hidden">
+                      <img
+                        src={s.image}
+                        alt={s.title}
+                        className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        loading="lazy"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#0F1B33] via-[#0F1B33]/40 to-transparent" />
+                      <span className="absolute top-3 right-3 text-xs font-bold uppercase tracking-wider text-white bg-[#0A1428]/70 border border-white/10 backdrop-blur-sm px-2.5 py-1 rounded-md">
+                        {s.tag}
+                      </span>
+                    </div>
+                  )}
+                  <div className="p-4 sm:p-5 pt-3">
+                    <div className="flex items-center gap-2.5 mb-2">
+                      <div className="size-9 rounded-lg bg-[#E8834A]/10 border border-[#E8834A]/15 flex items-center justify-center shrink-0">
+                        <Icon className="size-4 text-[#E8834A]" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-white leading-snug">{s.title}</h3>
+                    </div>
+                    <p className="text-[15px] text-[#8BA0B0] font-light leading-relaxed">{s.desc}</p>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* CORE FEATURES (TRAIN CAROUSEL) */}
-      <section className="py-20 overflow-hidden bg-[#0A1428]">
-        <div className="mx-auto max-w-7xl px-6 mb-12">
-          <div className="max-w-2xl">
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-white mb-4">
-              El control de todo el evento en un solo lugar
+      {/* ── CÓMO FUNCIONA (pasos + beneficios unificados) ── */}
+      <section
+        id="como-funciona"
+        className={`w-full py-12 md:py-16 bg-[#0F1B33]/40 border-y border-white/5 ${PAD}`}
+      >
+        <div className={CONTAINER}>
+          <div className="max-w-2xl mb-8 md:mb-10">
+            <span className="text-sm font-bold text-[#E8834A] uppercase tracking-widest">
+              Cómo funciona
+            </span>
+            <h2 className="mt-2 text-3xl sm:text-4xl font-bold tracking-tight text-white">
+              Del presupuesto al cobro, con el margen claro
             </h2>
-            <p className="text-[#8BA0B0] text-lg font-light">
-              Módulos diseñados meticulosamente y de manera compacta para maximizar la velocidad de carga y facilitar la administración en el terreno.
+            <p className="mt-3 text-lg text-[#8BA0B0] font-light leading-relaxed">
+              Un solo flujo: cotizás, comprás y cobrás — sin Excel eterno ni margen a ciegas.
             </p>
           </div>
+
+          {/* Desktop: 3 steps · Mobile: vertical timeline */}
+          <ol className="grid grid-cols-1 gap-0 md:grid-cols-3 md:gap-5">
+            {steps.map((step, index) => {
+              const Icon = step.icon;
+              const isLast = index === steps.length - 1;
+              return (
+                <li key={step.n} className="relative flex gap-4 md:flex-col md:gap-0">
+                  {/* Mobile vertical connector */}
+                  {!isLast && (
+                    <div
+                      className="absolute left-[1.15rem] top-11 bottom-0 w-px bg-[#E8834A]/25 md:hidden"
+                      aria-hidden
+                    />
+                  )}
+
+                  {/* Step header: number + optional arrow */}
+                  <div className="relative z-10 flex shrink-0 items-center gap-2 md:mb-4">
+                    <span className="flex size-10 items-center justify-center rounded-full border-2 border-[#E8834A]/50 bg-[#0A1428] text-sm font-bold tabular-nums text-[#E8834A] shadow-[0_0_20px_rgba(232,131,74,0.15)] md:size-11 md:text-[15px]">
+                      {step.n}
+                    </span>
+                    {!isLast && (
+                      <div
+                        className="ml-1 hidden h-px flex-1 bg-gradient-to-r from-[#E8834A]/50 to-[#E8834A]/10 md:block"
+                        aria-hidden
+                      />
+                    )}
+                    {!isLast && (
+                      <ChevronRight className="hidden size-4 shrink-0 text-[#E8834A]/45 md:block" aria-hidden />
+                    )}
+                  </div>
+
+                  {/* Card */}
+                  <div className="min-w-0 flex-1 pb-7 last:pb-0 md:pb-0">
+                    <div className="h-full rounded-2xl border border-white/8 bg-[#0F1B33] p-5 transition-colors hover:border-[#E8834A]/30 md:p-5">
+                      <div className="mb-2.5 flex items-center gap-2.5">
+                        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-[#E8834A]/15 bg-[#E8834A]/10">
+                          <Icon className="size-4 text-[#E8834A]" />
+                        </span>
+                        <h3 className="text-lg font-semibold leading-snug text-white">
+                          {step.title}
+                        </h3>
+                      </div>
+                      <p className="text-[15px] font-light leading-relaxed text-[#8BA0B0]">
+                        {step.desc}
+                      </p>
+                      <div className="mt-3 rounded-lg border border-[#E8834A]/20 bg-[#E8834A]/[0.07] px-3 py-2.5">
+                        <p className="text-xs font-bold uppercase tracking-wide text-[#E8834A]">
+                          Por qué importa
+                        </p>
+                        <p className="mt-1 text-[15px] leading-snug text-white/90">
+                          {step.benefit}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+
+          {/* CTA footer */}
+          <div className="mt-8 md:mt-10 flex justify-center border-t border-white/5 pt-8">
+            <button
+              type="button"
+              onClick={() => navigate('/register')}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#E8834A] px-8 py-3.5 text-base font-bold text-[#0A1428] shadow-[0_4px_20px_rgba(232,131,74,0.3)] transition-all hover:bg-[#D4733A]"
+            >
+              Probar gratis
+              <ChevronRight className="size-5" />
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* ── FEATURES MARQUEE full width ── */}
+      <section className="w-full py-12 md:py-14 overflow-hidden bg-[#0F1B33]/30 border-y border-white/5">
+        <div className={`${PAD} ${CONTAINER} mb-6`}>
+          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-white mb-2">
+            Todo el evento en un solo lugar
+          </h2>
+          <p className="text-[#8BA0B0] text-lg font-light max-w-2xl">
+            Módulos pensados para trabajar rápido el día del mercado y el día del asado.
+          </p>
         </div>
 
-        {/* Carousel Row 1 - Right to Left */}
-        <div className="relative w-full flex items-center overflow-hidden py-3">
+        <div className="relative w-full overflow-hidden py-3">
           <div className="animate-marquee-left flex gap-4">
             {[...featuresRow1, ...featuresRow1].map((f, idx) => {
               const Icon = f.icon;
               return (
-                <div 
-                  key={`row1-${idx}`} 
-                  className="w-72 shrink-0 bg-[#0F1B33] border border-white/5 rounded-xl p-4 flex items-center gap-3.5 hover:border-[#E8834A]/30 transition-all duration-200"
+                <div
+                  key={`r1-${idx}`}
+                  className="w-80 shrink-0 bg-[#0F1B33] border border-white/5 rounded-xl p-4 flex items-center gap-3.5 hover:border-[#E8834A]/30 transition-all"
                 >
                   <div className="size-10 rounded-lg bg-[#E8834A]/10 flex items-center justify-center shrink-0 border border-[#E8834A]/10">
                     <Icon className="size-5 text-[#E8834A]" />
                   </div>
                   <div className="min-w-0">
-                    <h4 className="text-sm font-semibold text-white truncate">{f.title}</h4>
-                    <p className="text-xs text-[#8BA0B0] truncate mt-0.5 font-light">{f.desc}</p>
+                    <h4 className="text-base font-semibold text-white truncate">{f.title}</h4>
+                    <p className="text-sm text-[#8BA0B0] truncate mt-0.5 font-light">{f.desc}</p>
                   </div>
                 </div>
               );
             })}
           </div>
         </div>
-
-        {/* Carousel Row 2 - Right to Left (Slower speed for parallax effect) */}
-        <div className="relative w-full flex items-center overflow-hidden py-3 mt-2">
+        <div className="relative w-full overflow-hidden py-3 mt-2">
           <div className="animate-marquee-left-slow flex gap-4">
             {[...featuresRow2, ...featuresRow2].map((f, idx) => {
               const Icon = f.icon;
               return (
-                <div 
-                  key={`row2-${idx}`} 
-                  className="w-72 shrink-0 bg-[#0F1B33] border border-white/5 rounded-xl p-4 flex items-center gap-3.5 hover:border-[#E8834A]/30 transition-all duration-200"
+                <div
+                  key={`r2-${idx}`}
+                  className="w-80 shrink-0 bg-[#0F1B33] border border-white/5 rounded-xl p-4 flex items-center gap-3.5 hover:border-[#E8834A]/30 transition-all"
                 >
                   <div className="size-10 rounded-lg bg-[#E8834A]/10 flex items-center justify-center shrink-0 border border-[#E8834A]/10">
                     <Icon className="size-5 text-[#E8834A]" />
                   </div>
                   <div className="min-w-0">
-                    <h4 className="text-sm font-semibold text-white truncate">{f.title}</h4>
-                    <p className="text-xs text-[#8BA0B0] truncate mt-0.5 font-light">{f.desc}</p>
+                    <h4 className="text-base font-semibold text-white truncate">{f.title}</h4>
+                    <p className="text-sm text-[#8BA0B0] truncate mt-0.5 font-light">{f.desc}</p>
                   </div>
                 </div>
               );
@@ -361,165 +538,64 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* TECH STACK SHOWCASE */}
-      <section className="py-16 bg-[#0F1B33]/20 border-t border-white/5 px-6">
-        <div className="mx-auto max-w-7xl text-center">
-          <span className="text-xs font-bold text-[#E8834A] uppercase tracking-widest block mb-4">
-            Nuestra Tecnología
-          </span>
-          <h3 className="text-xl sm:text-2xl font-bold mb-10 text-white/90">
-            Construido sobre una pila tecnológica moderna y robusta
-          </h3>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
-            <div className="bg-[#0F1B33] border border-white/5 rounded-xl p-5 flex flex-col items-center justify-center">
-              <Code className="size-8 text-[#E8834A] mb-3" />
-              <span className="text-sm font-semibold">React 19 & Vite</span>
-              <span className="text-xs text-[#8BA0B0] mt-1 font-light">Interfaz reactiva veloz</span>
-            </div>
-            <div className="bg-[#0F1B33] border border-white/5 rounded-xl p-5 flex flex-col items-center justify-center">
-              <Cpu className="size-8 text-[#E8834A] mb-3" />
-              <span className="text-sm font-semibold">Tailwind CSS v4</span>
-              <span className="text-xs text-[#8BA0B0] mt-1 font-light">Estilos y animaciones fluidos</span>
-            </div>
-            <div className="bg-[#0F1B33] border border-white/5 rounded-xl p-5 flex flex-col items-center justify-center">
-              <Server className="size-8 text-[#E8834A] mb-3" />
-              <span className="text-sm font-semibold">Node.js / Express</span>
-              <span className="text-xs text-[#8BA0B0] mt-1 font-light">API segura y escalable</span>
-            </div>
-            <div className="bg-[#0F1B33] border border-white/5 rounded-xl p-5 flex flex-col items-center justify-center">
-              <Database className="size-8 text-[#E8834A] mb-3" />
-              <span className="text-sm font-semibold">Base de datos</span>
-              <span className="text-xs text-[#8BA0B0] mt-1 font-light">Almacenamiento persistente</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CONTACT & FOUNDER INFO */}
-      <section id="contacto" className="py-20 bg-[#0F1B33]/40 border-t border-white/5 px-6">
-        <div className="mx-auto max-w-7xl">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
-            
-            {/* Contact details and Founder */}
+      {/* ── CONTACTO full-bleed ── */}
+      <section id="contacto" className={`w-full py-12 md:py-16 bg-[#0F1B33]/40 ${PAD}`}>
+        <div className={CONTAINER}>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 xl:gap-12 items-start">
             <div className="lg:col-span-5 space-y-8">
               <div>
                 <h2 className="text-3xl font-bold tracking-tight text-white mb-4">
                   Conversemos sobre tu negocio
                 </h2>
-                <p className="text-[#8BA0B0] font-light leading-relaxed">
-                  ¿Tienes alguna consulta comercial o necesitas soporte para implementar AsamApp en tu empresa de banquetes? Ponte en contacto directamente con nosotros.
+                <p className="text-base text-[#8BA0B0] font-light leading-relaxed">
+                  ¿Consultas comerciales o ayuda para usar AsamApp en tu catering? Escribinos por el formulario o por correo.
                 </p>
               </div>
 
-              {/* Founder Profile Card */}
               <div className="bg-[#0F1B33] border border-white/5 rounded-2xl p-6 relative overflow-hidden">
                 <div className="absolute top-0 right-0 size-24 bg-[#E8834A]/5 rounded-full blur-xl" />
-                <span className="text-[10px] font-bold text-[#E8834A] uppercase tracking-wider block mb-3">Desarrollo y Soporte</span>
+                <span className="text-xs font-bold text-[#E8834A] uppercase tracking-wider block mb-3">
+                  Desarrollo y soporte
+                </span>
                 <h4 className="text-lg font-semibold text-white">Iván Fernández Peñates</h4>
-                <p className="text-sm text-[#8BA0B0] mt-1">Fundador & Desarrollador Principal</p>
-                
+                <p className="text-base text-[#8BA0B0] mt-1">Fundador & desarrollador principal</p>
                 <div className="mt-5 space-y-3.5 border-t border-white/5 pt-4">
-                  <div className="flex items-center gap-3 text-sm text-[#8BA0B0]">
+                  <div className="flex items-center gap-3 text-base text-[#8BA0B0]">
                     <MapPin className="size-4 text-[#E8834A] shrink-0" />
-                    <span>Sampués - Sucre, Colombia</span>
+                    <span>Sampués · Sucre, Colombia</span>
                   </div>
-                  <div className="flex items-center gap-3 text-sm text-[#8BA0B0]">
+                  <div className="flex items-center gap-3 text-base text-[#8BA0B0]">
                     <Mail className="size-4 text-[#E8834A] shrink-0" />
                     <span>contacto@asamapp.com</span>
                   </div>
-                  <div className="flex items-center gap-3 text-sm text-[#8BA0B0]">
+                  <div className="flex items-center gap-3 text-base text-[#8BA0B0]">
                     <Phone className="size-4 text-[#E8834A] shrink-0" />
-                    <span>+57 3216624399</span>
-                  </div>
-                </div>
-
-                {/* Social Networks Connect */}
-                <div className="mt-6 pt-4 border-t border-white/5">
-                  <span className="text-[10px] font-bold text-[#8BA0B0] uppercase tracking-wider block mb-3">Conéctate en Redes</span>
-                  <div className="flex gap-4">
-                    <a 
-                      href="https://github.com" 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="size-9 rounded-lg bg-[#0A1428] hover:bg-[#E8834A]/20 hover:text-[#E8834A] border border-white/5 flex items-center justify-center transition-all duration-200 text-white"
-                      title="GitHub"
-                    >
-                      <svg className="size-4 fill-current" viewBox="0 0 24 24">
-                        <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/>
-                      </svg>
-                    </a>
-                    <a 
-                      href="https://linkedin.com" 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="size-9 rounded-lg bg-[#0A1428] hover:bg-[#E8834A]/20 hover:text-[#E8834A] border border-white/5 flex items-center justify-center transition-all duration-200 text-white"
-                      title="LinkedIn"
-                    >
-                      <svg className="size-4 fill-current" viewBox="0 0 24 24">
-                        <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.779-1.75-1.75s.784-1.75 1.75-1.75 1.75.779 1.75 1.75-.784 1.75-1.75 1.75zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
-                      </svg>
-                    </a>
-                    <a 
-                      href="https://instagram.com" 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="size-9 rounded-lg bg-[#0A1428] hover:bg-[#E8834A]/20 hover:text-[#E8834A] border border-white/5 flex items-center justify-center transition-all duration-200 text-white"
-                      title="Instagram"
-                    >
-                      <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
-                        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
-                        <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
-                      </svg>
-                    </a>
-                    <a 
-                      href="https://twitter.com" 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="size-9 rounded-lg bg-[#0A1428] hover:bg-[#E8834A]/20 hover:text-[#E8834A] border border-white/5 flex items-center justify-center transition-all duration-200 text-white"
-                      title="X (Twitter)"
-                    >
-                      <svg className="size-4 fill-current" viewBox="0 0 24 24">
-                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                      </svg>
-                    </a>
-                    <a 
-                      href="https://facebook.com" 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="size-9 rounded-lg bg-[#0A1428] hover:bg-[#E8834A]/20 hover:text-[#E8834A] border border-white/5 flex items-center justify-center transition-all duration-200 text-white"
-                      title="Facebook"
-                    >
-                      <svg className="size-4 fill-current" viewBox="0 0 24 24">
-                        <path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1v2h3v3h-3v6.95c4.56-.93 8-4.96 8-9.85z"/>
-                      </svg>
-                    </a>
+                    <span>+57 321 662 4399</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Contact Form */}
-            <div className="lg:col-span-7 bg-[#0F1B33] border border-white/10 rounded-2xl p-8 shadow-[0_20px_40px_rgba(0,0,0,0.3)] relative">
+            <div className="lg:col-span-7 bg-[#0F1B33] border border-white/10 rounded-2xl p-6 sm:p-8 shadow-[0_20px_40px_rgba(0,0,0,0.3)]">
               {formSubmitted ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
                   <div className="size-16 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
                     <CheckCircle2 className="size-8 text-emerald-400" />
                   </div>
-                  <h3 className="text-xl font-semibold text-white">¡Mensaje recibido con éxito!</h3>
+                  <h3 className="text-xl font-semibold text-white">¡Mensaje recibido!</h3>
                   <p className="text-sm text-[#8BA0B0] max-w-sm">
-                    Muchas gracias por escribirnos. Iván Fernández se comunicará contigo a la brevedad.
+                    Gracias por escribirnos. Nos pondremos en contacto a la brevedad.
                   </p>
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-5">
-                  <h3 className="text-xl font-semibold text-white mb-2 border-b border-white/5 pb-3">Escríbenos un mensaje</h3>
-                  
+                  <h3 className="text-xl font-semibold text-white mb-2 border-b border-white/5 pb-3">
+                    Escribinos un mensaje
+                  </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <label htmlFor="name" className="text-[10px] font-bold text-[#8BA0B0] uppercase tracking-wider block">
-                        Nombre Completo
+                      <label htmlFor="name" className="text-xs font-bold text-[#8BA0B0] uppercase tracking-wider block">
+                        Nombre completo
                       </label>
                       <input
                         type="text"
@@ -529,13 +605,12 @@ export default function Landing() {
                         onChange={handleInputChange}
                         required
                         placeholder="Ej. Juan Pérez"
-                        className="w-full bg-[#0A1428] border border-white/5 rounded-lg px-4 py-2.5 text-sm text-white placeholder-white/20 focus:border-[#E8834A] focus:outline-none transition-colors duration-200"
+                        className="w-full bg-[#0A1428] border border-white/5 rounded-lg px-4 py-3 text-base text-white placeholder-white/20 focus:border-[#E8834A] focus:outline-none transition-colors"
                       />
                     </div>
-
                     <div className="space-y-1.5">
-                      <label htmlFor="email" className="text-[10px] font-bold text-[#8BA0B0] uppercase tracking-wider block">
-                        Correo Electrónico
+                      <label htmlFor="email" className="text-xs font-bold text-[#8BA0B0] uppercase tracking-wider block">
+                        Correo electrónico
                       </label>
                       <input
                         type="email"
@@ -545,15 +620,14 @@ export default function Landing() {
                         onChange={handleInputChange}
                         required
                         placeholder="juan@ejemplo.com"
-                        className="w-full bg-[#0A1428] border border-white/5 rounded-lg px-4 py-2.5 text-sm text-white placeholder-white/20 focus:border-[#E8834A] focus:outline-none transition-colors duration-200"
+                        className="w-full bg-[#0A1428] border border-white/5 rounded-lg px-4 py-3 text-base text-white placeholder-white/20 focus:border-[#E8834A] focus:outline-none transition-colors"
                       />
                     </div>
                   </div>
-
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <label htmlFor="location" className="text-[10px] font-bold text-[#8BA0B0] uppercase tracking-wider block">
-                        ¿De dónde nos escribes? (Ubicación)
+                      <label htmlFor="location" className="text-xs font-bold text-[#8BA0B0] uppercase tracking-wider block">
+                        ¿De dónde escribís?
                       </label>
                       <input
                         type="text"
@@ -563,12 +637,11 @@ export default function Landing() {
                         onChange={handleInputChange}
                         required
                         placeholder="Ej. Sincelejo, Sucre"
-                        className="w-full bg-[#0A1428] border border-white/5 rounded-lg px-4 py-2.5 text-sm text-white placeholder-white/20 focus:border-[#E8834A] focus:outline-none transition-colors duration-200"
+                        className="w-full bg-[#0A1428] border border-white/5 rounded-lg px-4 py-3 text-base text-white placeholder-white/20 focus:border-[#E8834A] focus:outline-none transition-colors"
                       />
                     </div>
-
                     <div className="space-y-1.5">
-                      <label htmlFor="referrer" className="text-[10px] font-bold text-[#8BA0B0] uppercase tracking-wider block">
+                      <label htmlFor="referrer" className="text-xs font-bold text-[#8BA0B0] uppercase tracking-wider block">
                         ¿Cómo nos encontraste?
                       </label>
                       <select
@@ -576,19 +649,18 @@ export default function Landing() {
                         name="referrer"
                         value={formData.referrer}
                         onChange={handleInputChange}
-                        className="w-full bg-[#0A1428] border border-white/5 rounded-lg px-4 py-2.5 text-sm text-white placeholder-white/20 focus:border-[#E8834A] focus:outline-none transition-colors duration-200"
+                        className="w-full bg-[#0A1428] border border-white/5 rounded-lg px-4 py-3 text-base text-white focus:border-[#E8834A] focus:outline-none transition-colors"
                       >
                         <option value="Búsqueda en Google">Búsqueda en Google</option>
-                        <option value="Recomendación">Recomendación o Amigo</option>
-                        <option value="Redes Sociales">Redes Sociales</option>
+                        <option value="Recomendación">Recomendación o amigo</option>
+                        <option value="Redes Sociales">Redes sociales</option>
                         <option value="Otro">Otro</option>
                       </select>
                     </div>
                   </div>
-
                   <div className="space-y-1.5">
-                    <label htmlFor="message" className="text-[10px] font-bold text-[#8BA0B0] uppercase tracking-wider block">
-                      Tu Mensaje / Consulta
+                    <label htmlFor="message" className="text-xs font-bold text-[#8BA0B0] uppercase tracking-wider block">
+                      Mensaje
                     </label>
                     <textarea
                       id="message"
@@ -597,31 +669,30 @@ export default function Landing() {
                       onChange={handleInputChange}
                       required
                       rows={4}
-                      placeholder="Cuéntanos un poco sobre tu negocio de eventos gastronómicos..."
-                      className="w-full bg-[#0A1428] border border-white/5 rounded-lg px-4 py-2.5 text-sm text-white placeholder-white/20 focus:border-[#E8834A] focus:outline-none transition-colors duration-200 resize-none"
+                      placeholder="Contanos sobre tu negocio de asados o catering..."
+                      className="w-full bg-[#0A1428] border border-white/5 rounded-lg px-4 py-3 text-base text-white placeholder-white/20 focus:border-[#E8834A] focus:outline-none transition-colors resize-none"
                     />
                   </div>
-
                   <button
                     type="submit"
-                    className="w-full bg-[#E8834A] hover:bg-[#D4733A] text-[#0A1428] font-bold py-3 px-6 rounded-lg shadow-[0_4px_15px_rgba(232,131,74,0.25)] transition-all duration-300"
+                    className="w-full bg-[#E8834A] hover:bg-[#D4733A] text-[#0A1428] font-bold py-3.5 px-6 rounded-lg text-base shadow-[0_4px_15px_rgba(232,131,74,0.25)] transition-all"
                   >
-                    Enviar Mensaje
+                    Enviar mensaje
                   </button>
                 </form>
               )}
             </div>
-
           </div>
         </div>
       </section>
 
-      {/* FOOTER */}
-      <footer className="border-t border-white/5 bg-[#0A1428] py-8 text-center text-xs text-[#8BA0B0] px-6">
-        <div className="mx-auto max-w-7xl flex flex-col sm:flex-row items-center justify-between gap-4">
+      {/* ── FOOTER full-bleed ── */}
+      <footer className={`w-full border-t border-white/5 bg-[#0A1428] py-8 ${PAD}`}>
+        <div className={`${CONTAINER} flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-[#8BA0B0]`}>
           <div className="flex items-center gap-2">
             <Flame className="size-4 text-[#E8834A]" />
             <span className="font-semibold text-white">AsamApp</span>
+            <span className="hidden sm:inline">· Catering a las brasas</span>
           </div>
           <span>&copy; {new Date().getFullYear()} AsamApp. Todos los derechos reservados.</span>
         </div>

@@ -598,18 +598,130 @@ function NoteViewModal({ note, onClose, onEdit, onDelete, onArchive, onRestore, 
 }
 
 function NoteFormModal({ note, draft, setDraft, onClose, onSave, onDelete, onPin, onToggleDone, onPostpone, saving, isCreating, options }) {
+  const [showMore, setShowMore] = useState(false);
   if (!note && !isCreating) return null;
 
   const handleChange = (field) => (e) => setDraft(prev => ({ ...prev, [field]: e.target.value }));
   const handleSelect = (field) => (value) => setDraft(prev => ({ ...prev, [field]: value }));
 
+  const hasAdvanced =
+    (draft.recurrence && draft.recurrence !== 'none')
+    || (draft.tags && String(draft.tags).trim())
+    || (draft.linkedType && draft.linkedType !== 'general')
+    || draft.linkedId;
+
   return (
     <ModalShell onClose={onClose}>
       <form onSubmit={onSave} className="flex h-full flex-col">
-        <ModalHeader
-          onClose={onClose}
-          action={
-            note && (
+        <ModalHeader onClose={onClose}>
+          <p className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
+            {isCreating ? 'Nueva nota' : 'Editar nota'}
+          </p>
+          <h2 className="mt-1 flex items-center gap-2 text-xl font-semibold text-foreground">
+            {isCreating ? <Plus className="size-5 text-primary" /> : <TypeIcon type={draft.type} className="size-5 text-primary" />}
+            {isCreating ? 'Crear nota' : 'Editar nota'}
+          </h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Completá lo esencial. Las opciones avanzadas están abajo, plegadas.
+          </p>
+        </ModalHeader>
+
+        <div className="flex-1 space-y-5 overflow-y-auto px-6 py-5">
+          <div className="space-y-4 rounded-xl border border-border/60 bg-secondary/10 p-4">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-primary">1 · Lo principal</p>
+            <div className="space-y-2">
+              <FieldLabel>Título *</FieldLabel>
+              <Input
+                value={draft.title}
+                onChange={handleChange('title')}
+                placeholder="Ej. Llamar al cliente / Comprar carbón"
+                required
+                autoFocus={isCreating}
+              />
+            </div>
+            <div className="space-y-2">
+              <FieldLabel>Contenido</FieldLabel>
+              <Textarea
+                value={draft.content}
+                onChange={handleChange('content')}
+                placeholder="Detalle del pendiente, acuerdo o llamada…"
+                rows={4}
+              />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <FieldLabel>Vencimiento</FieldLabel>
+                <Input type="date" value={draft.dueDate} onChange={handleChange('dueDate')} />
+              </div>
+              <div className="space-y-2">
+                <FieldLabel>Prioridad</FieldLabel>
+                <SelectField value={draft.priority} onChange={handleSelect('priority')}>
+                  {PRIORITIES.map(p => <option key={p}>{p}</option>)}
+                </SelectField>
+              </div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <FieldLabel>Tipo</FieldLabel>
+                <SelectField value={draft.type} onChange={handleSelect('type')}>
+                  {TYPES.map(t => <option key={t}>{t}</option>)}
+                </SelectField>
+              </div>
+              {!isCreating && (
+                <div className="space-y-2">
+                  <FieldLabel>Estado</FieldLabel>
+                  <SelectField value={draft.status} onChange={handleSelect('status')}>
+                    <option>Pendiente</option>
+                    <option>Realizada</option>
+                  </SelectField>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="overflow-hidden rounded-xl border border-border/50">
+            <button
+              type="button"
+              onClick={() => setShowMore(v => !v)}
+              className="flex w-full items-center justify-between gap-2 bg-secondary/20 px-4 py-3 text-left text-sm font-medium text-foreground hover:bg-secondary/40"
+            >
+              <span>
+                2 · Más opciones
+                {hasAdvanced && !showMore && (
+                  <span className="ml-2 text-xs font-normal text-primary">(hay opciones configuradas)</span>
+                )}
+              </span>
+              <span className="text-xs text-muted-foreground">{showMore ? 'Ocultar' : 'Mostrar'}</span>
+            </button>
+            {(showMore || (!isCreating && hasAdvanced)) && (
+              <div className="space-y-4 border-t border-border/40 px-4 py-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <FieldLabel hint="Se repite al completarla">Repetir</FieldLabel>
+                    <SelectField value={draft.recurrence} onChange={handleSelect('recurrence')}>
+                      {RECURRENCE.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                    </SelectField>
+                  </div>
+                  <div className="space-y-2">
+                    <FieldLabel>Etiquetas</FieldLabel>
+                    <Input value={draft.tags} onChange={handleChange('tags')} placeholder="Separadas por coma" />
+                  </div>
+                </div>
+                <LinkedEntityField
+                  linkedType={draft.linkedType}
+                  linkedId={draft.linkedId}
+                  onChangeType={handleSelect('linkedType')}
+                  onChangeId={handleSelect('linkedId')}
+                  options={options}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3 border-t border-[rgba(255,255,255,0.06)] px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap gap-2">
+            {!isCreating && note && (
               <>
                 <Button type="button" variant="outline" size="sm" onClick={() => onPin(note)}>
                   {note.pinned ? <PinOff className="size-4" /> : <Pin className="size-4" />}
@@ -619,109 +731,6 @@ function NoteFormModal({ note, draft, setDraft, onClose, onSave, onDelete, onPin
                   {note.status === 'Realizada' ? <RotateCcw className="size-4" /> : <CheckCircle2 className="size-4" />}
                   {note.status === 'Realizada' ? 'Reabrir' : 'Realizada'}
                 </Button>
-              </>
-            )
-          }
-        >
-          <p className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
-            {isCreating ? 'Nueva nota' : 'Detalle editable'}
-          </p>
-          <h2 className="mt-1 flex items-center gap-2 text-xl font-semibold text-foreground">
-            {isCreating ? <Plus className="size-5 text-primary" /> : <TypeIcon type={draft.type} className="size-5 text-primary" />}
-            {isCreating ? 'Crear nota' : 'Editar nota'}
-          </h2>
-        </ModalHeader>
-
-        <div className="flex-1 space-y-5 overflow-y-auto px-6 py-5">
-          <div className="space-y-2">
-            <FieldLabel>Título</FieldLabel>
-            <Input
-              value={draft.title}
-              onChange={handleChange('title')}
-              placeholder="Título de la nota"
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <FieldLabel>Contenido</FieldLabel>
-            <Textarea
-              value={draft.content}
-              onChange={handleChange('content')}
-              placeholder="Detalle del pendiente, acuerdo o llamada..."
-              rows={5}
-            />
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <div className="space-y-2">
-              <FieldLabel>Estado</FieldLabel>
-              <SelectField value={draft.status} onChange={handleSelect('status')}>
-                <option>Pendiente</option>
-                <option>Realizada</option>
-              </SelectField>
-            </div>
-            <div className="space-y-2">
-              <FieldLabel>Prioridad</FieldLabel>
-              <SelectField value={draft.priority} onChange={handleSelect('priority')}>
-                {PRIORITIES.map(p => <option key={p}>{p}</option>)}
-              </SelectField>
-            </div>
-            <div className="space-y-2">
-              <FieldLabel>Tipo</FieldLabel>
-              <SelectField value={draft.type} onChange={handleSelect('type')}>
-                {TYPES.map(t => <option key={t}>{t}</option>)}
-              </SelectField>
-            </div>
-            <div className="space-y-2">
-              <FieldLabel>Vencimiento</FieldLabel>
-              <Input type="date" value={draft.dueDate} onChange={handleChange('dueDate')} />
-            </div>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <FieldLabel hint="Se repite al completarla">Repetir</FieldLabel>
-              <SelectField value={draft.recurrence} onChange={handleSelect('recurrence')}>
-                {RECURRENCE.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
-              </SelectField>
-            </div>
-            <div className="space-y-2">
-              <FieldLabel>Etiquetas</FieldLabel>
-              <Input value={draft.tags} onChange={handleChange('tags')} placeholder="Separadas por coma" />
-            </div>
-          </div>
-
-          <LinkedEntityField
-            linkedType={draft.linkedType}
-            linkedId={draft.linkedId}
-            onChangeType={handleSelect('linkedType')}
-            onChangeId={handleSelect('linkedId')}
-            options={options}
-          />
-        </div>
-
-        <div className="flex flex-col gap-3 border-t border-[rgba(255,255,255,0.06)] px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-wrap gap-2">
-            {note && isOverdue(note) && (
-              <span className="inline-flex items-center rounded-full border border-destructive/40 bg-destructive/10 px-2.5 py-1 text-[11px] font-semibold text-destructive">
-                Vencida
-              </span>
-            )}
-            {note && note.priority === 'Alta' && (
-              <span className="inline-flex items-center rounded-full border border-primary/40 bg-primary/10 px-2.5 py-1 text-[11px] font-semibold text-primary">
-                Prioridad alta
-              </span>
-            )}
-            {note && note.status === 'Realizada' && (
-              <span className="inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-300">
-                Realizada
-              </span>
-            )}
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {note && (
-              <>
                 <Button type="button" variant="outline" size="sm" onClick={() => onPostpone(note)}>
                   <Clock className="size-4" /> Posponer
                 </Button>
@@ -730,9 +739,14 @@ function NoteFormModal({ note, draft, setDraft, onClose, onSave, onDelete, onPin
                 </Button>
               </>
             )}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={onClose}>
+              Cancelar
+            </Button>
             <Button type="submit" size="sm" disabled={saving || !draft.title.trim()}>
               <Save className="size-4" />
-              {saving ? 'Guardando...' : 'Guardar cambios'}
+              {saving ? 'Guardando…' : isCreating ? 'Crear nota' : 'Guardar cambios'}
             </Button>
           </div>
         </div>

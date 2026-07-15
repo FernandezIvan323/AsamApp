@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { Beef, Building2, Calculator, Calendar, CalendarDays, ClipboardList, Command, Download, FileStack, Flame, LineChart, ListChecks, Menu, PanelLeftClose, ShoppingCart, StickyNote, Store, Utensils, Users, X, Zap } from 'lucide-react';
+import { Beef, Building2, Calculator, Calendar, CalendarDays, ClipboardList, Command, Download, FileStack, Flame, LineChart, ListChecks, Menu, PanelLeftClose, PlusCircle, ShoppingCart, StickyNote, Store, Utensils, Users, X, Zap } from 'lucide-react';
 
 import CommandPalette from '@/components/CommandPalette';
 import GlobalSearch from '@/components/GlobalSearch';
@@ -17,44 +17,40 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const navGroups = [
   {
-    label: 'GESTIÓN',
+    label: 'PRINCIPAL',
     items: [
       { to: '/', label: 'Inicio', icon: CalendarDays },
       { to: '/calendar', label: 'Calendario', icon: Calendar },
-      { to: '/history', label: 'Historial', icon: Calculator },
-      { to: '/clients', label: 'Clientes', icon: Building2 },
-      { to: '/employees', label: 'Empleados', icon: Users },
+      { to: '/history', label: 'Eventos', icon: Calculator },
+      { to: '/new-event', label: 'Nuevo presupuesto', icon: PlusCircle, emphasize: true },
     ],
   },
   {
-    label: 'COTIZACIONES',
+    label: 'OPERAR',
+    items: [
+      { to: '/weekly-expenses', label: 'Compras', icon: ShoppingCart },
+      { to: '/shopping-list', label: 'Lista compras', icon: ListChecks },
+      { to: '/inventory', label: 'Inventario', icon: Beef },
+      { to: '/employees', label: 'Equipo', icon: Users },
+    ],
+  },
+  {
+    label: 'GESTIÓN',
+    items: [
+      { to: '/clients', label: 'Clientes', icon: Building2 },
+      { to: '/finance', label: 'Finanzas', icon: LineChart },
+    ],
+  },
+  {
+    label: 'MÁS',
     items: [
       { to: '/quick-quote', label: 'Cotizador rápido', icon: Zap },
       { to: '/templates', label: 'Plantillas', icon: FileStack },
-    ],
-  },
-  {
-    label: 'INVENTARIO',
-    items: [
-      { to: '/inventory', label: 'Insumos', icon: Beef },
       { to: '/recipes', label: 'Recetas', icon: Utensils },
       { to: '/providers', label: 'Proveedores', icon: Store },
-    ],
-  },
-  {
-    label: 'FINANZAS',
-    items: [
-      { to: '/weekly-expenses', label: 'Gastos Mercado', icon: ShoppingCart },
-      { to: '/shopping-list', label: 'Lista compras', icon: ListChecks },
-      { to: '/operations', label: 'Operaciones', icon: ClipboardList },
-      { to: '/finance', label: 'Finanzas', icon: LineChart },
       { to: '/fixed-costs', label: 'Gastos fijos', icon: Building2 },
-    ],
-  },
-  {
-    label: 'OTROS',
-    items: [
       { to: '/notes', label: 'Notas', icon: StickyNote },
+      { to: '/operations', label: 'Operaciones', icon: ClipboardList },
       { to: '/export', label: 'Exportar', icon: Download },
     ],
   },
@@ -65,7 +61,7 @@ function SidebarNav({ collapsed, onNavigate }) {
     <nav className={cn(
       "flex-1 min-h-0 transition-all duration-300",
       collapsed
-        ? "gap-1 px-2 py-3 flex-col items-center overflow-y-auto flex"
+        ? "gap-1.5 px-1.5 py-3 flex-col items-center overflow-y-auto flex"
         : "overflow-y-auto py-2",
     )}>
       {collapsed ? (
@@ -76,40 +72,45 @@ function SidebarNav({ collapsed, onNavigate }) {
             end={to === '/'}
             onClick={onNavigate}
             className={({ isActive }) => cn(
-              'relative flex size-10 items-center justify-center rounded-lg text-sm font-medium transition-all duration-200 [&_svg]:text-[#A89880] hover:bg-[rgba(255,220,160,0.05)]',
-              isActive && '[&_svg]:!text-[#E8834A]',
+              'relative flex size-11 items-center justify-center rounded-lg font-medium transition-all duration-200 [&_svg]:text-[#A89880] hover:bg-[rgba(255,220,160,0.05)]',
+              isActive && '[&_svg]:!text-[#E8834A] bg-[var(--primary-glow)]',
             )}
             title={label}
           >
-            <Icon className="size-4 shrink-0" />
+            <Icon className="size-5 shrink-0" />
           </NavLink>
         ))
       ) : (
         navGroups.map(group => (
           <div key={group.label}>
-            <p className="px-4 pb-1 pt-4 text-[10px] font-semibold uppercase tracking-widest select-none text-muted-foreground">
+            <p className="px-4 pb-1.5 pt-5 text-[11px] font-semibold uppercase tracking-widest select-none text-muted-foreground">
               {group.label}
             </p>
-            {group.items.map(({ to, label, icon: Icon }) => (
+            {group.items.map(({ to, label, icon: Icon, emphasize }) => (
               <NavLink
                 key={to}
                 to={to}
                 end={to === '/'}
                 onClick={onNavigate}
                 className={() => cn(
-                  'relative flex items-center text-sm font-medium transition-all duration-200 hover:bg-muted/10',
+                  'relative flex items-center text-[15px] font-medium transition-all duration-200 hover:bg-muted/10',
+                  emphasize && 'font-semibold',
                 )}
                 style={({ isActive }) => ({
-                  padding: '8px 16px',
-                  gap: '10px',
-                  background: isActive ? 'var(--primary-glow)' : 'transparent',
-                  color: isActive ? 'var(--primary)' : 'var(--muted-foreground)',
+                  padding: '10px 16px',
+                  gap: '12px',
+                  background: isActive
+                    ? 'var(--primary-glow)'
+                    : emphasize
+                      ? 'rgba(232, 131, 74, 0.08)'
+                      : 'transparent',
+                  color: isActive || emphasize ? 'var(--primary)' : 'var(--muted-foreground)',
                   borderLeft: isActive ? '2px solid var(--primary)' : '2px solid transparent',
                   borderRadius: isActive ? '0 6px 6px 0' : '6px',
                   paddingLeft: isActive ? '14px' : '16px',
                 })}
               >
-                <Icon className="size-4 shrink-0" />
+                <Icon className="size-5 shrink-0" />
                 <span className="truncate">{label}</span>
               </NavLink>
             ))}
@@ -175,8 +176,8 @@ export default function Layout() {
       </div>
 
       <div
-        className="app-grid grid min-h-svh"
-        style={{ gridTemplateColumns: collapsed ? '4rem 1fr' : '17rem 1fr' }}
+        className="app-grid grid min-h-svh w-full"
+        style={{ gridTemplateColumns: collapsed ? '4.5rem 1fr' : '17.5rem 1fr' }}
       >
         <style>{`
           @media (max-width: 1023px) {
@@ -186,13 +187,13 @@ export default function Layout() {
         `}</style>
 
         {/* Desktop sidebar */}
-        <aside className="app-aside lg:sticky lg:top-0 lg:h-svh lg:border-r transition-all duration-300 ease-out bg-card border-border">
-          <div className="flex h-full flex-col">
+        <aside className="app-aside w-full min-w-0 overflow-hidden lg:sticky lg:top-0 lg:h-svh lg:border-r transition-all duration-300 ease-out bg-card border-border">
+          <div className="flex h-full min-w-0 flex-col overflow-hidden">
             <div className={cn(
               "flex items-center border-b transition-all duration-300",
-              collapsed ? "justify-center px-2 py-4" : "gap-3 px-5 py-5",
+              collapsed ? "justify-center px-1.5 py-4" : "gap-3 px-5 py-5",
             )} style={{ borderColor: 'var(--border)' }}>
-              <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
                 <Flame className="size-5 text-primary" />
               </span>
               <AnimatePresence>
@@ -203,8 +204,8 @@ export default function Layout() {
                     exit={{ opacity: 0, width: 0 }}
                     className="overflow-hidden"
                   >
-                    <h1 className="text-lg font-bold leading-none tracking-tight whitespace-nowrap text-foreground">AsamApp</h1>
-                    <p className="mt-0.5 whitespace-nowrap text-muted-foreground text-[11px]">Eventos y presupuestos</p>
+                    <h1 className="text-xl font-bold leading-none tracking-tight whitespace-nowrap text-foreground">AsamApp</h1>
+                    <p className="mt-1 whitespace-nowrap text-muted-foreground text-xs">Eventos y presupuestos</p>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -212,29 +213,40 @@ export default function Layout() {
 
             <SidebarNav collapsed={collapsed} />
 
-            <div className="mt-auto hidden border-t lg:block space-y-2 p-4 border-border">
+            <div className={cn(
+              "mt-auto hidden border-t lg:block space-y-2 border-border",
+              collapsed ? "p-2" : "p-4",
+            )}>
               <Button
                 variant="ghost"
                 size="sm"
-                className="w-full justify-center text-muted-foreground"
+                className={cn(
+                  "w-full text-[15px] text-muted-foreground",
+                  collapsed ? "justify-center px-0" : "justify-start",
+                )}
                 onClick={() => setPaletteOpen(true)}
+                title="Buscar"
               >
-                <Command className="size-4" />
-                {!collapsed && <span className="flex-1 text-left text-muted-foreground">Buscar…</span>}
-                {!collapsed && <kbd className="rounded border px-1.5 py-0.5 text-[10px] border-border bg-muted text-muted-foreground">⌘K</kbd>}
+                <Command className="size-5" />
+                {!collapsed && <span className="flex-1 text-left">Buscar…</span>}
+                {!collapsed && <kbd className="rounded border px-1.5 py-0.5 text-[11px] border-border bg-muted text-muted-foreground">⌘K</kbd>}
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
-                className="w-full justify-center text-muted-foreground"
+                className={cn(
+                  "w-full text-[15px] text-muted-foreground",
+                  collapsed ? "justify-center px-0" : "justify-start",
+                )}
                 onClick={() => setCollapsed(!collapsed)}
+                title={collapsed ? 'Expandir menú' : 'Colapsar menú'}
               >
-                <PanelLeftClose className="size-4" style={{ transform: collapsed ? 'rotate(180deg)' : 'none' }} />
-                {!collapsed && <span className="text-muted-foreground">Colapsar menú</span>}
+                <PanelLeftClose className="size-5" style={{ transform: collapsed ? 'rotate(180deg)' : 'none' }} />
+                {!collapsed && <span>Colapsar menú</span>}
               </Button>
               {!collapsed && authEnabled && (
-                <Button variant="outline" size="sm" className="w-full" onClick={handleLogout}>
-                  <LogOut className="size-4" /> Cerrar sesión
+                <Button variant="outline" size="sm" className="w-full text-[15px]" onClick={handleLogout}>
+                  <LogOut className="size-5" /> Cerrar sesión
                 </Button>
               )}
             </div>
@@ -261,12 +273,12 @@ export default function Layout() {
               >
                 <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
                   <div className="flex items-center gap-2">
-                    <span className="flex size-8 items-center justify-center rounded-lg bg-primary/10">
+                    <span className="flex size-9 items-center justify-center rounded-lg bg-primary/10">
                       <Flame className="size-5 text-primary" />
                     </span>
                     <div>
-                      <h1 className="text-lg font-bold leading-none tracking-tight text-foreground">AsamApp</h1>
-                      <p className="mt-0.5 text-[11px] text-muted-foreground">Eventos y presupuestos</p>
+                      <h1 className="text-xl font-bold leading-none tracking-tight text-foreground">AsamApp</h1>
+                      <p className="mt-1 text-xs text-muted-foreground">Eventos y presupuestos</p>
                     </div>
                   </div>
                   <button
@@ -281,8 +293,8 @@ export default function Layout() {
                 <SidebarNav collapsed={false} onNavigate={() => setMobileOpen(false)} />
                 {authEnabled && (
                   <div className="border-t border-border p-4">
-                    <Button variant="outline" size="sm" className="w-full" onClick={handleLogout}>
-                      <LogOut className="size-4" /> Cerrar sesión
+                    <Button variant="outline" size="sm" className="w-full text-[15px]" onClick={handleLogout}>
+                      <LogOut className="size-5" /> Cerrar sesión
                     </Button>
                   </div>
                 )}
@@ -303,13 +315,13 @@ export default function Layout() {
           onCancel={() => setShowLogoutConfirm(false)}
         />
 
-        <main className="min-w-0 p-4 sm:p-6 lg:p-8 bg-background">
-          <div className="mx-auto w-full max-w-7xl">
+        <main className="min-w-0 w-full p-4 sm:p-6 lg:p-8 bg-background">
+          <div className="w-full max-w-none">
             <div className="mb-4 hidden items-center gap-3 lg:flex">
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <GlobalSearch />
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex shrink-0 items-center gap-2">
                 <LocaleSwitcher />
                 <NotificationsBell />
               </div>

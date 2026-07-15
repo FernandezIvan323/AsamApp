@@ -1,5 +1,14 @@
-export const ALLOWED_STATUSES = ['Cotizado', 'Aprobado', 'Compras pendientes', 'En preparacion', 'Realizado', 'Cobrado', 'Cancelado', 'Pendiente'];
+import { EVENT_STATUSES } from './eventStatus.js';
+
+export const ALLOWED_STATUSES = [...EVENT_STATUSES];
 export const PAYMENT_METHODS = ['Efectivo', 'Tarjeta', 'Transferencia', 'Otro'];
+
+/** Raciones efectivas: adultos 1 + niños ½, entero ceil. */
+export function effectiveGuests(adults, kids) {
+  const a = Math.max(0, Number(adults) || 0);
+  const k = Math.max(0, Number(kids) || 0);
+  return Math.ceil(a + k * 0.5);
+}
 
 function normalizeText(value) {
   return typeof value === 'string' ? value.trim() : '';
@@ -79,7 +88,15 @@ export function validateCatalogPayload(payload) {
 export function validateEventPayload(payload) {
   const errors = [];
   const title = normalizeText(payload?.title);
-  const guests = nonNegativeNumber(payload?.guests, 'guests', errors);
+  const adults = Math.round(nonNegativeNumber(payload?.adults ?? payload?.guests ?? 0, 'adults', errors));
+  const kids = Math.round(nonNegativeNumber(payload?.kids ?? 0, 'kids', errors));
+  // Si mandan adults/kids, guests se recalcula; si solo guests (legacy), se usa y se copia a adults
+  const hasBreakdown = payload?.adults !== undefined || payload?.kids !== undefined;
+  const guests = hasBreakdown
+    ? effectiveGuests(adults, kids)
+    : Math.round(nonNegativeNumber(payload?.guests, 'guests', errors));
+  const resolvedAdults = hasBreakdown ? adults : guests;
+  const resolvedKids = hasBreakdown ? kids : 0;
   const extraCosts = nonNegativeNumber(payload?.extraCosts ?? 0, 'extraCosts', errors);
   const profitMargin = nonNegativeNumber(payload?.profitMargin ?? 0, 'profitMargin', errors);
   const amountPaid = nonNegativeNumber(payload?.amountPaid ?? 0, 'amountPaid', errors);
@@ -121,6 +138,8 @@ export function validateEventPayload(payload) {
       time,
       location: optionalText(payload?.location),
       guests,
+      adults: resolvedAdults,
+      kids: resolvedKids,
       status: ALLOWED_STATUSES.includes(normalizeText(payload?.status)) ? normalizeText(payload?.status) : 'Cotizado',
       menuNotes: optionalText(payload?.menuNotes),
       recipeName: optionalText(payload?.recipeName),

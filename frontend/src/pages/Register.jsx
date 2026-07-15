@@ -1,19 +1,24 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { UserPlus, Flame } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { FormField } from '@/components/ui/form-field';
+import { Check, Eye, EyeOff, UserPlus } from 'lucide-react';
+import AuthSplitLayout, { AuthLabel, authInputClassName } from '@/components/auth/AuthSplitLayout';
 import { setStoredToken, setStoredUser } from '@/lib/auth';
 import { apiRequest } from '@/lib/api';
+
+const BENEFITS = [
+  'Cotizá eventos y exportá PDF',
+  'Registrá compras del mercado',
+  'Mirá el margen real por asado',
+];
 
 export default function Register({ onAuthSuccess }) {
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: '', username: '', password: '', confirm: '' });
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleChange = (field) => (e) => setForm(prev => ({ ...prev, [field]: e.target.value }));
+  const handleChange = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -29,7 +34,11 @@ export default function Register({ onAuthSuccess }) {
     try {
       const data = await apiRequest('/api/auth/register', {
         method: 'POST',
-        body: JSON.stringify({ email: form.email, username: form.username, password: form.password }),
+        body: JSON.stringify({
+          email: form.email,
+          username: form.username,
+          password: form.password,
+        }),
       });
       setStoredToken(data.token);
       setStoredUser(data.user);
@@ -43,53 +52,115 @@ export default function Register({ onAuthSuccess }) {
   };
 
   return (
-    <div className="relative flex min-h-svh items-center justify-center bg-background p-4 overflow-hidden">
-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(148,163,184,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,0.5) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
-      <div className="relative w-full max-w-sm">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-primary/10 mb-4">
-            <Flame className="w-6 h-6 text-primary" />
-          </div>
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent">Crear cuenta</h1>
-          <p className="text-muted-foreground text-sm mt-1">Registrate para usar AsamApp</p>
-        </div>
-
-        <div className="rounded-xl border border-border bg-card p-6">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <FormField label="Email">
-              <Input id="email" type="email" value={form.email} onChange={handleChange('email')} autoComplete="email" required placeholder="tu@email.com" />
-            </FormField>
-            <FormField label="Usuario">
-              <Input id="username" value={form.username} onChange={handleChange('username')} autoComplete="username" required placeholder="Tu nombre de usuario" />
-            </FormField>
-            <FormField label="Contraseña">
-              <Input id="password" type="password" value={form.password} onChange={handleChange('password')} autoComplete="new-password" required placeholder="Mínimo 4 caracteres" />
-            </FormField>
-            <FormField label="Confirmar contraseña">
-              <Input id="confirm" type="password" value={form.confirm} onChange={handleChange('confirm')} autoComplete="new-password" required placeholder="Repetí la contraseña" />
-            </FormField>
-            {error && <p className="text-sm text-destructive">{error.message || error}</p>}
-            <Button type="submit" className="w-full h-10" disabled={isLoading}>
-              <UserPlus className="w-4 h-4" />
-              {isLoading ? 'Creando cuenta…' : 'Crear cuenta'}
-            </Button>
-          </form>
-        </div>
-
-        <p className="text-center mt-6 text-muted-foreground text-sm">
+    <AuthSplitLayout
+      title="Crear cuenta"
+      subtitle="Registrate para empezar a cotizar asados, controlar compras y ver la rentabilidad real."
+      badge="Nueva cuenta"
+      footer={
+        <>
           ¿Ya tenés cuenta?{' '}
-          <Link to="/login" className="text-primary hover:text-primary/80 font-medium transition-colors">Iniciá sesión</Link>
-        </p>
-        <p className="text-center mt-4 text-[11px] text-[var(--text-hint)] leading-relaxed px-4">
-          App familiar compartida: todos los usuarios ven y editan los mismos eventos, notas y compras.
-        </p>
-        <div className="text-center mt-6 pt-4 border-t border-border">
-          <Link to="/" className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-border bg-card/50 hover:bg-[var(--surface2)] text-muted-foreground hover:text-foreground text-xs font-medium transition-all duration-200 hover:border-[var(--border2)]">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-            Volver al inicio
+          <Link to="/login" className="font-semibold text-[#E8834A] hover:text-[#D4733A] transition-colors">
+            Iniciá sesión
           </Link>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-3.5 pt-1">
+        <ul className="mb-1 space-y-1.5 rounded-xl border border-white/5 bg-[#0A1428]/50 px-3 py-2.5">
+          {BENEFITS.map((text) => (
+            <li key={text} className="flex items-center gap-2 text-[12px] text-[#8BA0B0]">
+              <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-[#E8834A]/15">
+                <Check className="size-2.5 text-[#E8834A]" />
+              </span>
+              {text}
+            </li>
+          ))}
+        </ul>
+
+        <div>
+          <AuthLabel htmlFor="email">Email</AuthLabel>
+          <input
+            id="email"
+            type="email"
+            value={form.email}
+            onChange={handleChange('email')}
+            autoComplete="email"
+            required
+            placeholder="tu@email.com"
+            className={authInputClassName()}
+          />
         </div>
-      </div>
-    </div>
+
+        <div>
+          <AuthLabel htmlFor="username">Usuario</AuthLabel>
+          <input
+            id="username"
+            value={form.username}
+            onChange={handleChange('username')}
+            autoComplete="username"
+            required
+            placeholder="Tu nombre de usuario"
+            className={authInputClassName()}
+          />
+        </div>
+
+        <div>
+          <AuthLabel htmlFor="password">Contraseña</AuthLabel>
+          <div className="relative">
+            <input
+              id="password"
+              type={showPassword ? 'text' : 'password'}
+              value={form.password}
+              onChange={handleChange('password')}
+              autoComplete="new-password"
+              required
+              placeholder="Mínimo 4 caracteres"
+              className={authInputClassName('pr-11')}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8BA0B0] hover:text-white transition-colors"
+              aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+            >
+              {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <AuthLabel htmlFor="confirm">Confirmar contraseña</AuthLabel>
+          <input
+            id="confirm"
+            type={showPassword ? 'text' : 'password'}
+            value={form.confirm}
+            onChange={handleChange('confirm')}
+            autoComplete="new-password"
+            required
+            placeholder="Repetí la contraseña"
+            className={authInputClassName()}
+          />
+        </div>
+
+        {error && (
+          <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+            {typeof error === 'string' ? error : error.message || String(error)}
+          </div>
+        )}
+
+        <button
+          type="submit"
+          disabled={isLoading}
+          className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#E8834A] px-4 py-3.5 text-sm font-bold text-[#0A1428] shadow-[0_4px_20px_rgba(232,131,74,0.3)] transition-all hover:bg-[#D4733A] disabled:opacity-60"
+        >
+          <UserPlus className="size-4" />
+          {isLoading ? 'Creando cuenta…' : 'Crear cuenta'}
+        </button>
+
+        <p className="text-center text-[11px] leading-relaxed text-[#8BA0B0]/80 pt-0.5">
+          App familiar compartida: todos ven y editan los mismos eventos, notas y compras.
+        </p>
+      </form>
+    </AuthSplitLayout>
   );
 }

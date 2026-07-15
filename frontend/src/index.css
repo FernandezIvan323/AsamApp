@@ -228,3 +228,35 @@ select option {
   color: var(--foreground);
 }
 
+/* ─── Print / PDF (EventDetail, History ticket, ShoppingList) ─── */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .print-area,
+  .print-area * {
+    visibility: visible;
+  }
+
+  .print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 1rem;
+    box-shadow: none;
+    background: transparent;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .ticket-financials {
+    background-color: transparent !important;
+    border: 1px solid #ccc;
+  }
+}
+

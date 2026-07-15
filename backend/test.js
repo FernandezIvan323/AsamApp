@@ -175,4 +175,32 @@ test('getEventFinancialSummary calcula margen real', () => {
   assert.equal(summary.quotedCost, 50000);
   assert.equal(summary.realProfit, 35000);
   assert.equal(summary.costVariance, -5000);
+  assert.equal(summary.laborCost, 0);
+});
+
+test('getEventFinancialSummary resta mano de obra', () => {
+  const summary = getEventFinancialSummary({
+    totalPrice: 100000,
+    extraCosts: 0,
+    amountPaid: 100000,
+    insumos: [{ totalCost: 40000 }],
+    purchases: [{ totalAmount: 30000 }],
+    employeeActivities: [{ payment: 10000 }],
+  });
+  assert.equal(summary.laborCost, 10000);
+  assert.equal(summary.realProfit, 60000);
+});
+
+test('validateEventPayload calcula guests desde adults y kids', () => {
+  const result = validateEventPayload({
+    title: 'Asado',
+    date: '2026-07-20',
+    adults: 20,
+    kids: 4,
+    insumos: [],
+  });
+  assert.deepEqual(result.errors, []);
+  assert.equal(result.data.guests, 22); // ceil(20 + 2)
+  assert.equal(result.data.adults, 20);
+  assert.equal(result.data.kids, 4);
 });

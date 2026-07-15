@@ -42,9 +42,11 @@ export function getEventFinancialSummary(event) {
     + Number(event.extraCosts || 0);
   const quotedPrice = Number(event.totalPrice || 0);
   const purchaseTotal = (event.purchases || []).reduce((sum, purchase) => sum + Number(purchase.totalAmount || 0), 0);
+  const laborCost = (event.employeeActivities || []).reduce((sum, a) => sum + Number(a.payment || 0), 0);
   const amountPaid = Number(event.amountPaid || 0);
   const quotedProfit = quotedPrice - quotedCost;
-  const realProfit = amountPaid - purchaseTotal;
+  const realCost = purchaseTotal + laborCost;
+  const realProfit = amountPaid - realCost;
   const projectedMargin = quotedPrice > 0 ? ((realProfit / quotedPrice) * 100) : 0;
 
   return {
@@ -52,9 +54,11 @@ export function getEventFinancialSummary(event) {
     quotedPrice,
     quotedProfit,
     purchaseTotal,
+    laborCost,
     amountPaid,
     pending: Math.max(0, quotedPrice - amountPaid),
     realProfit,
+    realCost,
     projectedMargin,
     costVariance: purchaseTotal - quotedCost,
   };

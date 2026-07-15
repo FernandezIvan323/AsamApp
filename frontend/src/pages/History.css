@@ -1,179 +1,29 @@
-.history-page {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-}
+/* Estilos de ticket/modal e impresión del historial de presupuestos.
+   El resto de la UI usa tokens Tailwind del theme. */
 
-.history-header h1 {
-  font-size: 1.8rem;
-  margin-bottom: 0.25rem;
-}
-
-.history-toolbar {
-  margin-bottom: 1.5rem;
-  display: flex;
-  justify-content: flex-start;
-}
-
-.search-box {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background-color: var(--input-bg);
-  padding: 0.5rem 1rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border-color);
-  width: 100%;
-  max-width: 400px;
-}
-
-.search-box input {
-  background: transparent;
-  border: none;
-  outline: none;
-  color: var(--text-main);
-  width: 100%;
-  font-family: inherit;
-}
-
-.table-responsive {
-  overflow-x: auto;
-}
-
-.history-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.history-table th, .history-table td {
-  padding: 1rem;
-  text-align: left;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.history-table th {
-  color: var(--text-muted);
-  font-weight: 600;
-  font-size: 0.9rem;
-  text-transform: uppercase;
-}
-
-.history-table tr:last-child td {
-  border-bottom: none;
-}
-
-.history-table tbody tr {
-  transition: var(--transition);
-}
-
-.history-table tbody tr:hover {
-  background-color: var(--hover-bg);
-}
-
-.btn-sm {
-  padding: 0.4rem 0.8rem;
-  font-size: 0.85rem;
-}
-
-/* Custom Status Dropdown Styles */
-.custom-status-dropdown {
-  position: relative;
-  display: inline-block;
-  min-width: 125px;
-}
-
-.status-select {
-  padding: 0.4rem 0.8rem;
-  border-radius: 50px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  border: 1px solid var(--border-color);
-  cursor: pointer;
-  outline: none;
-  text-align: center;
-  font-family: inherit;
-  transition: var(--transition);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  user-select: none;
-}
-
-.dropdown-arrow {
-  transition: transform 0.3s ease;
-}
-
-.dropdown-arrow.open {
-  transform: rotate(180deg);
-}
-
-.dropdown-menu-portal {
-  position: absolute;
-  background-color: var(--card-bg);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-lg);
-  z-index: 9999;
-  overflow: hidden;
-  animation: fadeIn 0.2s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-5px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.dropdown-item {
-  padding: 0.5rem 0.8rem;
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: var(--text-main);
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-  text-align: left;
-}
-
-.dropdown-item:hover {
-  background-color: var(--hover-bg);
-}
-
-.dropdown-item.selected {
-  background-color: rgba(255, 255, 255, 0.05);
-  color: var(--primary-color);
-  border-left: 3px solid var(--primary-color);
-  padding-left: calc(0.8rem - 3px);
-}
-
-.status-select.pendiente { background-color: var(--warning-bg); color: var(--warning-color); border-color: transparent; }
-.status-select.aprobado { background-color: rgba(232, 131, 74, 0.2); color: #E8834A; border-color: transparent; }
-.status-select.realizado { background-color: var(--success-bg); color: var(--success-color); border-color: transparent; }
-.status-select.cancelado { background-color: rgba(239, 68, 68, 0.2); color: #EF4444; border-color: transparent; }
-
-/* Modal Styles */
 .modal-overlay {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.85); /* Fondo un poco más oscuro */
+  inset: 0;
+  z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
   padding: 1rem;
-  backdrop-filter: blur(4px); /* Efecto cristalino moderno */
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(4px);
 }
 
 .modal-content {
-  background: var(--card-bg);
-  padding: 2.5rem;
-  border-radius: var(--radius-lg);
+  position: relative;
   width: 100%;
   max-width: 600px;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); /* Sombra más premium */
-  position: relative;
-  border: 1px solid rgba(255, 255, 255, 0.05); /* Borde sutil */
+  padding: 2.5rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  background: var(--card-bg);
+  box-shadow: var(--shadow-lg);
 }
 
 .ticket-header {
@@ -198,9 +48,10 @@
   font-size: 0.95rem;
 }
 
-.ticket-table th, .ticket-table td {
+.ticket-table th,
+.ticket-table td {
   padding: 0.75rem 0.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--border-color);
   color: var(--text-main);
 }
 
@@ -216,10 +67,10 @@
 }
 
 .ticket-financials {
-  background-color: rgba(255, 255, 255, 0.03);
   padding: 1.5rem;
   border-radius: var(--radius-md);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+  background-color: color-mix(in srgb, var(--card-bg) 90%, white 3%);
 }
 
 .ticket-row {
@@ -236,36 +87,4 @@
   font-size: 1.4rem;
   font-weight: 700;
   color: var(--primary-color);
-}
-
-/* Reglas de Impresión para Exportar PDF */
-@media print {
-  body * {
-    visibility: hidden;
-  }
-  
-  .print-area, .print-area * {
-    visibility: visible;
-  }
-  
-  .print-area {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    margin: 0;
-    padding: 1rem;
-    box-shadow: none;
-    background: transparent;
-  }
-  
-  .no-print {
-    display: none !important;
-  }
-  
-  /* Ajustar colores para impresión por si usan papel blanco */
-  .ticket-financials {
-    background-color: transparent !important;
-    border: 1px solid #ccc;
-  }
 }

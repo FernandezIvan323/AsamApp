@@ -37,22 +37,30 @@ export function getEventPurchaseTotal(event) {
   return (event.purchases || []).reduce((sum, purchase) => sum + Number(purchase.totalAmount || 0), 0);
 }
 
+export function getEventLaborCost(event) {
+  return (event.employeeActivities || []).reduce((sum, a) => sum + Number(a.payment || 0), 0);
+}
+
 export function getEventRealFinancials(event) {
   const quotedCost = getEventSubtotal(event);
   const quotedPrice = Number(event.totalPrice || 0);
   const purchaseTotal = getEventPurchaseTotal(event);
+  const laborCost = getEventLaborCost(event);
   const amountPaid = Number(event.amountPaid || 0);
   const quotedProfit = quotedPrice - quotedCost;
-  const realProfit = amountPaid - purchaseTotal;
+  const realCost = purchaseTotal + laborCost;
+  const realProfit = amountPaid - realCost;
 
   return {
     quotedCost,
     quotedPrice,
     quotedProfit,
     purchaseTotal,
+    laborCost,
     amountPaid,
     pending: Math.max(0, quotedPrice - amountPaid),
     realProfit,
+    realCost,
     costVariance: purchaseTotal - quotedCost,
     isClosed: event.status === 'Cobrado',
   };
@@ -105,11 +113,20 @@ export function getMonthlyFinance(events, year) {
   });
 }
 
+const OPEN_STATUSES = new Set([
+  'Cotizado',
+  'Pendiente', // legacy
+  'Aprobado',
+  'Compras pendientes',
+  'En preparacion',
+  'Realizado',
+]);
+
 export function getDashboardSummary(events) {
   return {
     totalEvents: events.length,
     totalGuests: events.reduce((total, event) => total + Number(event.guests || 0), 0),
-    pendingEvents: events.filter(event => event.status === 'Pendiente').length,
-    closedEvents: events.filter(event => event.status === 'Aprobado' || event.status === 'Realizado').length,
+    pendingEvents: events.filter(event => OPEN_STATUSES.has(event.status) && event.status !== 'Realizado').length,
+    closedEvents: events.filter(event => event.status === 'Cobrado').length,
   };
 }

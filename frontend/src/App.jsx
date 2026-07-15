@@ -12,6 +12,7 @@ const Inventory = lazy(() => import('./pages/Inventory'));
 const Finance = lazy(() => import('./pages/Finance'));
 const WeeklyExpenses = lazy(() => import('./pages/WeeklyExpenses'));
 const NewMarketPurchase = lazy(() => import('./pages/NewMarketPurchase'));
+const MarketPurchaseDetail = lazy(() => import('./pages/MarketPurchaseDetail'));
 const Operations = lazy(() => import('./pages/Operations'));
 const Recipes = lazy(() => import('./pages/Recipes'));
 const Providers = lazy(() => import('./pages/Providers'));
@@ -21,6 +22,7 @@ const Templates = lazy(() => import('./pages/Templates'));
 const ExportData = lazy(() => import('./pages/ExportData'));
 const QuickQuote = lazy(() => import('./pages/QuickQuote'));
 const FixedCosts = lazy(() => import('./pages/FixedCosts'));
+const FixedCostForm = lazy(() => import('./pages/FixedCostForm'));
 const Clients = lazy(() => import('./pages/Clients'));
 const Employees = lazy(() => import('./pages/Employees'));
 
@@ -50,6 +52,7 @@ function App() {
         <Route path="providers" element={<Suspense fallback={<PageLoader />}><Providers /></Suspense>} />
         <Route path="weekly-expenses" element={<Suspense fallback={<PageLoader />}><WeeklyExpenses /></Suspense>} />
         <Route path="weekly-expenses/new" element={<Suspense fallback={<PageLoader />}><NewMarketPurchase /></Suspense>} />
+        <Route path="weekly-expenses/:id" element={<Suspense fallback={<PageLoader />}><MarketPurchaseDetail /></Suspense>} />
         <Route path="operations" element={<Suspense fallback={<PageLoader />}><Operations /></Suspense>} />
         <Route path="finance" element={<Suspense fallback={<PageLoader />}><Finance /></Suspense>} />
         <Route path="notes" element={<Suspense fallback={<PageLoader />}><Notes /></Suspense>} />
@@ -57,6 +60,8 @@ function App() {
         <Route path="templates" element={<Suspense fallback={<PageLoader />}><Templates /></Suspense>} />
         <Route path="quick-quote" element={<Suspense fallback={<PageLoader />}><QuickQuote /></Suspense>} />
         <Route path="fixed-costs" element={<Suspense fallback={<PageLoader />}><FixedCosts /></Suspense>} />
+        <Route path="fixed-costs/new" element={<Suspense fallback={<PageLoader />}><FixedCostForm /></Suspense>} />
+        <Route path="fixed-costs/:id/edit" element={<Suspense fallback={<PageLoader />}><FixedCostForm /></Suspense>} />
         <Route path="clients" element={<Suspense fallback={<PageLoader />}><Clients /></Suspense>} />
         <Route path="clients/:id" element={<Suspense fallback={<PageLoader />}><Clients /></Suspense>} />
         <Route path="employees" element={<Suspense fallback={<PageLoader />}><Employees /></Suspense>} />

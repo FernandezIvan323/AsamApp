@@ -142,7 +142,10 @@ export default function Recipes() {
         <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary">Recetas y combos</Badge>
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Menús, recetas y combos</h1>
-          <p className="mt-2 text-muted-foreground">Registrá combos reutilizables y aplicalos al crear un presupuesto.</p>
+          <p className="mt-2 text-muted-foreground">
+            Catálogo de menús reutilizables (asado + guarniciones, etc.). Ideal para cargar rápido en un presupuesto.
+            Las cantidades exactas de kilos se definen al cotizar o en las plantillas.
+          </p>
         </div>
       </div>
 

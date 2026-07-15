@@ -9,6 +9,10 @@ export function getMarketPurchases({ start, end } = {}) {
   return apiRequest(`/api/market-purchases${query ? `?${query}` : ''}`);
 }
 
+export function getMarketPurchase(id) {
+  return apiRequest(`/api/market-purchases/${id}`);
+}
+
 export function createMarketPurchase(purchase) {
   return apiRequest('/api/market-purchases', {
     method: 'POST',

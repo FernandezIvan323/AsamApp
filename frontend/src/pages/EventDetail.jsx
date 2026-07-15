@@ -4,6 +4,7 @@ import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
   ArrowLeft,
+  ArrowRight,
   Check,
   ClipboardList,
   DollarSign,
@@ -21,6 +22,7 @@ import {
   AlertCircle,
   ListChecks,
   ReceiptText,
+  Users,
 } from 'lucide-react';
 import { generateEventPdf } from '@/lib/generatePdf';
 
@@ -28,9 +30,12 @@ import { EmptyState, ErrorState, LoadingState } from '@/components/feedback/Reso
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { FormField } from '@/components/ui/form-field';
+import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { StaggerContainer, StaggerItem } from '@/components/PageTransition';
-import { getAllowedStatuses, getStatusVariant } from '@/lib/eventStatus';
+import { getAllowedStatuses, getNextStep, getStatusVariant } from '@/lib/eventStatus';
 import { currency, getEventFinancials, getEventRealFinancials, getEventSubtotal } from '@/lib/finance';
 import { PAYMENT_METHODS } from '@/lib/paymentMethods';
 import {
@@ -41,10 +46,6 @@ import {
   updateEventStatus,
   updateEventTask,
 } from '@/services/eventsApi';
-
-const inputClass = 'w-full rounded-lg border border-border bg-card px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground transition-all duration-150 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/50';
-
-const selectClass = 'w-full appearance-none rounded-lg border border-border bg-card px-3.5 py-2.5 pr-8 text-sm text-foreground transition-all duration-150 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/50';
 
 export default function EventDetail() {
   const { id } = useParams();
@@ -70,11 +71,53 @@ export default function EventDetail() {
   useEffect(() => { loadEvent(); }, [loadEvent]);
 
   const handleStatusChange = async (newStatus) => {
+    if (newStatus === 'Cobrado' && event) {
+      const pending = Math.max(0, Number(event.totalPrice || 0) - Number(event.amountPaid || 0));
+      if (pending > 0.01) {
+        const ok = window.confirm(
+          `Todavía hay saldo pendiente ($${currency(pending)}). ¿Marcar como Cobrado de todas formas?`,
+        );
+        if (!ok) return;
+      }
+    }
     try {
       setMutationError(null);
       const updated = await updateEventStatus(id, newStatus);
       setEvent(updated);
     } catch (err) { setMutationError(err); }
+  };
+
+  const runNextStepAction = (action) => {
+    if (!action) return;
+    if (action.startsWith('status:')) {
+      handleStatusChange(action.slice(7));
+      return;
+    }
+    if (action === 'payment') {
+      document.getElementById('event-payments')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    if (action === 'task') {
+      document.getElementById('event-tasks')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    if (action === 'labor') {
+      document.getElementById('event-team')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    if (action === 'purchase') {
+      navigate('/weekly-expenses/new', {
+        state: { purchaseDraft: { eventId: id, notes: `Compra para: ${event?.title || ''}`, items: [] } },
+      });
+      return;
+    }
+    if (action === 'shopping-list') {
+      navigate('/shopping-list');
+      return;
+    }
+    if (action === 'finance') {
+      navigate('/finance');
+    }
   };
 
   const handleAddTask = async (e) => {
@@ -133,6 +176,7 @@ export default function EventDetail() {
   const financials = getEventFinancials(event);
   const real = getEventRealFinancials(event);
   const paidPercent = event.totalPrice > 0 ? Math.min(100, (event.amountPaid / event.totalPrice) * 100) : 0;
+  const nextStep = getNextStep(event);
 
   return (
     <div className="space-y-6">
@@ -167,36 +211,53 @@ export default function EventDetail() {
               {event.date && ` · ${format(parseISO(event.date), 'dd MMM yyyy', { locale: es })}`}
               {event.time && ` ${event.time}`}
               {event.location && ` · ${event.location}`}
+              {event.guests != null && ` · ${event.guests} raciones`}
+              {(event.adults > 0 || event.kids > 0) && ` (${event.adults || 0} ad. / ${event.kids || 0} niñ.)`}
             </p>
           </div>
           <div className="no-print space-y-1.5">
             <label className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Estado del evento</label>
-            <select
-              className={`rounded-lg border px-4 py-2.5 text-sm font-medium transition-all duration-150 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/50 ${
-                event.status === 'Cobrado' || event.status === 'Aprobado' || event.status === 'Realizado'
-                  ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
-                  : event.status === 'Cotizado'
-                  ? 'border-sky-500/30 bg-sky-500/10 text-sky-300'
-                  : event.status === 'Pendiente'
-                  ? 'border-amber-500/30 bg-amber-500/10 text-amber-300'
-                  : event.status === 'Cancelado'
-                  ? 'border-red-500/30 bg-red-500/10 text-red-300'
-                  : 'border-border bg-card text-foreground'
-              }`}
+            <Select
               value={event.status}
               onChange={(e) => handleStatusChange(e.target.value)}
+              className="min-w-[12rem]"
             >
               {getAllowedStatuses(event.status).map(status => (
-                <option key={status} value={status} className="bg-card text-foreground">{status}</option>
+                <option key={status} value={status}>{status}</option>
               ))}
-            </select>
+            </Select>
           </div>
         </div>
 
         {mutationError && <p className="no-print text-sm text-destructive">{mutationError.message}</p>}
 
+        {/* Siguiente paso */}
+        {nextStep && (
+          <div className="no-print rounded-xl border border-primary/30 bg-primary/5 p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-wide text-primary">Siguiente paso</p>
+                <p className="mt-1 text-base font-semibold text-foreground">{nextStep.title}</p>
+                <p className="mt-0.5 text-sm text-muted-foreground">{nextStep.description}</p>
+              </div>
+              <div className="flex flex-wrap gap-2 shrink-0">
+                {nextStep.primaryLabel && (
+                  <Button onClick={() => runNextStepAction(nextStep.primaryAction)}>
+                    {nextStep.primaryLabel} <ArrowRight className="size-4" />
+                  </Button>
+                )}
+                {nextStep.secondaryLabel && (
+                  <Button variant="outline" onClick={() => runNextStepAction(nextStep.secondaryAction)}>
+                    {nextStep.secondaryLabel}
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* KPI Metrics Grid */}
-        <StaggerContainer className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
+        <StaggerContainer className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7">
           <StaggerItem>
             <Card>
               <CardContent className="pt-5">
@@ -235,9 +296,20 @@ export default function EventDetail() {
               <CardContent className="pt-5">
                 <div className="flex items-center gap-2 mb-2">
                   <ShoppingCart className="size-3.5 text-accent" />
-                  <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Gastado</span>
+                  <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Mercado</span>
                 </div>
                 <p className="text-lg font-bold text-foreground">${currency(real.purchaseTotal)}</p>
+              </CardContent>
+            </Card>
+          </StaggerItem>
+          <StaggerItem>
+            <Card>
+              <CardContent className="pt-5">
+                <div className="flex items-center gap-2 mb-2">
+                  <Users className="size-3.5 text-accent" />
+                  <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Personal</span>
+                </div>
+                <p className="text-lg font-bold text-foreground">${currency(real.laborCost)}</p>
               </CardContent>
             </Card>
           </StaggerItem>
@@ -343,7 +415,7 @@ export default function EventDetail() {
       {/* Tasks & Payments */}
       <div className="no-print grid gap-6 xl:grid-cols-2">
         {/* Tasks */}
-        <Card>
+        <Card id="event-tasks">
           <CardHeader className="border-b border-border pb-4">
             <CardTitle className="flex items-center gap-2 text-base">
               <ClipboardList className="size-4.5 text-accent" />
@@ -353,8 +425,8 @@ export default function EventDetail() {
           </CardHeader>
           <CardContent className="pt-5 space-y-4">
             <form onSubmit={handleAddTask} className="flex flex-wrap gap-2">
-              <input className={`${inputClass} min-w-[12rem] flex-1`} placeholder="Nueva tarea" value={taskForm.title} onChange={e => setTaskForm({ ...taskForm, title: e.target.value })} required />
-              <input type="date" className={`${inputClass} w-36`} value={taskForm.dueDate} onChange={e => setTaskForm({ ...taskForm, dueDate: e.target.value })} />
+              <Input className="min-w-[12rem] flex-1" placeholder="Nueva tarea" value={taskForm.title} onChange={e => setTaskForm({ ...taskForm, title: e.target.value })} required />
+              <Input type="date" className="w-36" value={taskForm.dueDate} onChange={e => setTaskForm({ ...taskForm, dueDate: e.target.value })} />
               <Button type="submit" size="default">
                 <Plus className="size-4" /> Agregar
               </Button>
@@ -392,30 +464,27 @@ export default function EventDetail() {
         </Card>
 
         {/* Payments */}
-        <Card>
+        <Card id="event-payments">
           <CardHeader className="border-b border-border pb-4">
             <CardTitle className="flex items-center gap-2 text-base">
               <DollarSign className="size-4.5 text-accent" />
               Pagos
             </CardTitle>
-            <CardDescription>Registra abonos del cliente.</CardDescription>
+            <CardDescription>Registrá seña y saldo del cliente.</CardDescription>
           </CardHeader>
           <CardContent className="pt-5 space-y-4">
             <form onSubmit={handleAddPayment} className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Monto</label>
-                <input type="number" min="0" step="0.01" className={inputClass} value={paymentForm.amount} onChange={e => setPaymentForm({ ...paymentForm, amount: e.target.value })} required />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Método</label>
-                <select className={selectClass} value={paymentForm.paymentMethod} onChange={e => setPaymentForm({ ...paymentForm, paymentMethod: e.target.value })}>
+              <FormField label="Monto">
+                <Input type="number" min="0" step="0.01" inputMode="decimal" value={paymentForm.amount} onChange={e => setPaymentForm({ ...paymentForm, amount: e.target.value })} required />
+              </FormField>
+              <FormField label="Método">
+                <Select value={paymentForm.paymentMethod} onChange={e => setPaymentForm({ ...paymentForm, paymentMethod: e.target.value })}>
                   {PAYMENT_METHODS.map(m => <option key={m} value={m}>{m}</option>)}
-                </select>
-              </div>
-              <div className="space-y-1.5 sm:col-span-2">
-                <label className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Notas</label>
-                <input className={inputClass} value={paymentForm.notes} onChange={e => setPaymentForm({ ...paymentForm, notes: e.target.value })} placeholder="Opcional" />
-              </div>
+                </Select>
+              </FormField>
+              <FormField label="Notas" className="sm:col-span-2">
+                <Input value={paymentForm.notes} onChange={e => setPaymentForm({ ...paymentForm, notes: e.target.value })} placeholder="Seña / saldo / ajuste" />
+              </FormField>
               <Button type="submit" className="sm:col-span-2">
                 <Plus className="size-4" /> Registrar pago
               </Button>
@@ -464,27 +533,97 @@ export default function EventDetail() {
                 <ShoppingCart className="size-10 text-muted-foreground/40" />
                 <p className="text-sm text-muted-foreground">Sin compras vinculadas</p>
                 <p className="text-xs text-muted-foreground">Asocia una compra al crear un gasto de mercado.</p>
-                <Button variant="outline" size="sm" onClick={() => navigate('/weekly-expenses/new')} className="mt-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-2"
+                  onClick={() => navigate('/weekly-expenses/new', {
+                    state: { purchaseDraft: { eventId: id, notes: `Compra para: ${event.title}`, items: [] } },
+                  })}
+                >
                   Registrar compra
                 </Button>
+              </div>
+            ) : (
+              <>
+                <div className="mb-3 flex justify-end">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => navigate('/weekly-expenses/new', {
+                      state: { purchaseDraft: { eventId: id, notes: `Compra para: ${event.title}`, items: [] } },
+                    })}
+                  >
+                    <Plus className="size-4" /> Nueva compra
+                  </Button>
+                </div>
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-border">
+                      <TableHead className="text-[10px] uppercase tracking-wider">Fecha</TableHead>
+                      <TableHead className="text-[10px] uppercase tracking-wider">Tienda</TableHead>
+                      <TableHead className="text-[10px] uppercase tracking-wider">Items</TableHead>
+                      <TableHead className="text-right text-[10px] uppercase tracking-wider">Total</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {event.purchases.map(p => (
+                      <TableRow key={p.id}>
+                        <TableCell className="text-xs text-muted-foreground">{format(new Date(p.purchasedAt), 'dd/MM/yyyy')}</TableCell>
+                        <TableCell className="text-sm text-foreground">{p.store}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{p.items?.length || 0} productos</TableCell>
+                        <TableCell className="text-right text-sm font-medium text-foreground">${currency(p.totalAmount)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Equipo / mano de obra */}
+        <Card id="event-team" className="xl:col-span-2">
+          <CardHeader className="border-b border-border pb-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Users className="size-4.5 text-accent" />
+                  Equipo / personal
+                </CardTitle>
+                <CardDescription>Horas y pagos cargados a este evento (entran al margen real).</CardDescription>
+              </div>
+              <Button size="sm" variant="outline" asChild>
+                <Link to="/employees">Gestionar en Empleados</Link>
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-5">
+            {(event.employeeActivities || []).length === 0 ? (
+              <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border py-8">
+                <Users className="size-10 text-muted-foreground/40" />
+                <p className="text-sm text-muted-foreground">Sin horas registradas</p>
+                <p className="text-xs text-muted-foreground">Registrá actividades en Empleados y vinculá este evento.</p>
               </div>
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow className="border-border">
                     <TableHead className="text-[10px] uppercase tracking-wider">Fecha</TableHead>
-                    <TableHead className="text-[10px] uppercase tracking-wider">Tienda</TableHead>
-                    <TableHead className="text-[10px] uppercase tracking-wider">Items</TableHead>
-                    <TableHead className="text-right text-[10px] uppercase tracking-wider">Total</TableHead>
+                    <TableHead className="text-[10px] uppercase tracking-wider">Persona</TableHead>
+                    <TableHead className="text-[10px] uppercase tracking-wider">Horas</TableHead>
+                    <TableHead className="text-[10px] uppercase tracking-wider">Tipo</TableHead>
+                    <TableHead className="text-right text-[10px] uppercase tracking-wider">Pago</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {event.purchases.map(p => (
-                    <TableRow key={p.id}>
-                      <TableCell className="text-xs text-muted-foreground">{format(new Date(p.purchasedAt), 'dd/MM/yyyy')}</TableCell>
-                      <TableCell className="text-sm text-foreground">{p.store}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{p.items?.length || 0} productos</TableCell>
-                      <TableCell className="text-right text-sm font-medium text-foreground">${currency(p.totalAmount)}</TableCell>
+                  {event.employeeActivities.map(a => (
+                    <TableRow key={a.id}>
+                      <TableCell className="text-xs text-muted-foreground">{format(new Date(a.date), 'dd/MM/yyyy')}</TableCell>
+                      <TableCell className="text-sm text-foreground">{a.employee?.name || '—'}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{a.hours}h</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{a.paymentType}</TableCell>
+                      <TableCell className="text-right text-sm font-medium text-foreground">${currency(a.payment)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

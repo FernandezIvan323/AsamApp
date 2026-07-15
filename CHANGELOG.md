@@ -4,6 +4,60 @@ Todos los cambios relevantes del proyecto se documentan aqui.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es/1.1.0/)
 y el versionado sigue [Semantic Versioning](https://semver.org/lang/es/).
 
+## [2.3.0] - 2026-07-15
+
+### Agregado
+- **Detalle de compra de mercado** (`/weekly-expenses/:id`): página completa con productos, totales, vendedor, evento vinculado, notas, galería de facturas y lightbox.
+- **API** `GET /api/market-purchases/:id` con items, evento y proveedor.
+- **Auth split layout** compartido (`AuthSplitLayout`): login y registro a pantalla completa, panel visual + formulario.
+- **Assets de marca**: hero de parrilla y 6 fotos de especialidades (asado, mix, sancocho, pescado, acompañamientos, eventos).
+- Botón **Volver al inicio** personalizado en login/register (desktop y mobile).
+
+### Mejorado
+- **Landing AsamApp**: full-bleed, hero a altura de pantalla, sección especialidades con imágenes, bloque unificado “Cómo funciona” (pasos + beneficios), tipografía más legible, sin CTAs de WhatsApp.
+- **Historial de compras**: cards por día (no solo tabla), numeración si hay varias el mismo día, preview de productos, enlace al detalle.
+- **Layout del panel**: contenido a todo el ancho al colapsar el menú (sin `max-w-7xl` recortado); tipografía e iconos del sidebar más grandes.
+- **Equipo**: formularios en overlay modal (estilo notas) en lugar de apilar cards inline.
+- **Compra de mercado (alta)**: bloques de tienda colapsables y lista de productos más clara.
+- Meta SEO / Open Graph orientados a asados y catering costa Caribe.
+
+### Corregido
+- Asignación de imágenes de especialidades a la card correcta.
+- Sensación de “página recortada” con menú colapsado o landing estrecha.
+
+## [2.2.0] - 2026-07-15
+
+### Agregado
+- **Dashboard semanal**: vista Lun–Dom, bloque “Hoy”, lista “Qué me falta hacer”, KPIs honestos y accesos rápidos.
+- **Calendario Mes / Semana**: toggle de vista y navegación por semana.
+- **EventForm compartido**: Nuevo y Editar presupuesto usan el mismo formulario (`ClientCombobox`, `InsumoPicker`).
+- **adults / kids**: invitados desglosados; raciones efectivas `ceil(adults + kids×0.5)`.
+- **Máquina de estados en API**: transiciones validadas en backend (`eventStatus.js`); rechazo 400 si se salta etapas.
+- **Margen real con mano de obra**: `laborCost` en finanzas (cobrado − mercado − personal).
+- **Siguiente paso** en detalle de evento según estado.
+- **Pantallas separadas de Equipo**: `/employees/new`, `/employees/:id/edit`, `/employees/activities/new`.
+- **Pantallas separadas de Gastos fijos**: `/fixed-costs/new`, `/fixed-costs/:id/edit`.
+- Helpers `weekUtils.js`, `guests.js`, `eventFormUtils.js`.
+- Tests E2E de workflow de estados y financials (`e2e/workflow.spec.js`).
+
+### Mejorado
+- Menú lateral: PRINCIPAL / OPERAR / GESTIÓN / MÁS; CTA “Nuevo presupuesto” siempre visible.
+- UX de cotizador rápido, plantillas, clientes, historial (inputs del theme), compra de mercado (flujo en pasos).
+- Modal de notas: campos esenciales primero; “Más opciones” plegado.
+- Inventario: validación visible y estados de guardado.
+- Empleados: tipo de pago, monto sugerido, ConfirmDialog.
+- CSS de historial reducido (solo ticket/modal); print global en `index.css`.
+- Status unificado: se elimina el uso de **Pendiente** en eventos (legacy migrado a **Cotizado**).
+
+### Corregido
+- Transiciones de estado inconsistentes entre Historial y Detalle.
+- Doble conteo / label engañoso de “niños comen mitad”.
+- Grid responsive invertido en New/Edit evento.
+- Formularios de equipo y gastos fijos apilados en la misma página.
+
+### Migraciones
+- `20260715131000_event_adults_kids_status`: columnas `adults`/`kids`; `status` default Cotizado; `Pendiente` → `Cotizado`.
+
 ## [2.1.0] - 2026-06-16
 
 ### Agregado

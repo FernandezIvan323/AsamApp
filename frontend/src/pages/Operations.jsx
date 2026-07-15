@@ -35,8 +35,11 @@ export default function Operations() {
       <div className="space-y-2">
         <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary">Operaciones</Badge>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Centro Operativo</h1>
-          <p className="mt-2 text-muted-foreground">Vista unificada de eventos activos, cobros, compras reales, proveedores y alertas de stock.</p>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Centro operativo</h1>
+          <p className="mt-2 text-muted-foreground">
+            Resumen rápido: cuánto hay por cobrar, stock bajo y tareas abiertas de los eventos.
+            Más adelante parte de esto se va a concentrar en el Inicio (semana y pendientes).
+          </p>
         </div>
       </div>
 

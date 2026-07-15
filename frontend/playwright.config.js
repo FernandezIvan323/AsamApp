@@ -9,6 +9,8 @@ export default defineConfig({
   reporter: [['list'], ['html', { open: 'never' }]],
   timeout: 30_000,
   expect: { timeout: 5_000 },
+  // Asegura usuario E2E en la DB del backend (auth habilitado)
+  globalSetup: './e2e/global-setup.js',
   use: {
     baseURL: process.env.E2E_BASE_URL || 'http://localhost:5173',
     trace: 'retain-on-failure',
@@ -29,3 +31,4 @@ export default defineConfig({
     cwd: '../frontend',
   },
 });
+

@@ -23,6 +23,7 @@ import { eventsToCsv, purchasesToCsv } from './exportData.js';
 import { logger, requestLogger, notFoundHandler, errorHandler, asyncHandler } from './logger.js';
 import { generateAlerts } from './alerts.js';
 import { ftsSearchEvents, ensureFtsTable } from './search.js';
+import { assertStatusTransition } from './eventStatus.js';
 
 const app = express();
 const prisma = new PrismaClient();
@@ -133,6 +134,10 @@ function getEventInclude() {
     tasks: true,
     payments: true,
     purchases: { include: { items: true, provider: true } },
+    employeeActivities: {
+      include: { employee: { select: { id: true, name: true, hourlyRate: true } } },
+      orderBy: { date: 'desc' },
+    },
     changelog: { orderBy: { createdAt: 'desc' }, take: 50 },
     clientRef: { select: { id: true, name: true, phone: true, email: true } },
   };
@@ -186,6 +191,8 @@ app.post('/api/events', async (req, res) => {
         time: data.time,
         location: data.location,
         guests: data.guests,
+        adults: data.adults,
+        kids: data.kids,
         status: data.status,
         menuNotes: data.menuNotes,
         recipeName: data.recipeName,
@@ -200,7 +207,7 @@ app.post('/api/events', async (req, res) => {
       },
       include: getEventInclude(),
     });
-    res.status(201).json(event);
+    res.status(201).json(serializeEvent(event));
   } catch (error) {
     handlePrismaError(res, error, 'Error al crear evento');
   }
@@ -219,6 +226,11 @@ app.put('/api/events/:id', async (req, res) => {
       });
       if (errors.length) return sendValidationError(res, errors);
 
+      if (String(existing.status) !== String(data.status)) {
+        const transition = assertStatusTransition(existing.status, data.status);
+        if (!transition.ok) return res.status(400).json({ error: transition.error, from: existing.status, to: data.status });
+      }
+
       const event = await prisma.event.update({
         where: { id: req.params.id },
         data: {
@@ -229,6 +241,8 @@ app.put('/api/events/:id', async (req, res) => {
           time: data.time,
           location: data.location,
           guests: data.guests,
+          adults: data.adults,
+          kids: data.kids,
           status: data.status,
           menuNotes: data.menuNotes,
           recipeName: data.recipeName,
@@ -263,6 +277,11 @@ app.put('/api/events/:id', async (req, res) => {
 
     const existing = await prisma.event.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
     if (!existing) return res.status(404).json({ error: 'Evento no encontrado' });
+
+    if (existing.status !== data.status) {
+      const transition = assertStatusTransition(existing.status, data.status);
+      if (!transition.ok) return res.status(400).json({ error: transition.error, from: existing.status, to: data.status });
+    }
 
     const event = await prisma.event.update({
       where: { id: req.params.id },
@@ -740,21 +759,39 @@ app.get('/api/employee-activities', async (req, res) => {
 });
 
 app.post('/api/employee-activities', async (req, res) => {
-  const { employeeId, hours } = req.body;
+  const { employeeId } = req.body;
   if (!employeeId) return sendValidationError(res, ['El empleado es obligatorio']);
-  if (!hours || Number(hours) <= 0) return sendValidationError(res, ['Las horas deben ser mayores a 0']);
+
+  const paymentType = req.body.paymentType || 'Por hora';
+  const hours = Number(req.body.hours || 0);
+  let payment = Number(req.body.payment || 0);
+
+  if (paymentType === 'Por hora') {
+    if (!hours || hours <= 0) return sendValidationError(res, ['Las horas deben ser mayores a 0']);
+  } else if (paymentType === 'Por evento' || paymentType === 'Fijo') {
+    if (!(payment > 0) && !(hours > 0)) {
+      return sendValidationError(res, ['Indicá el monto de pago o las horas']);
+    }
+  }
+
   try {
+    if (paymentType === 'Por hora' && !(payment > 0)) {
+      const emp = await prisma.employee.findFirst({ where: { id: employeeId, ...ownerFilter(req) } });
+      if (emp) payment = hours * Number(emp.hourlyRate || 0);
+    }
+
     const activity = await prisma.employeeActivity.create({
       data: {
         employeeId,
         date: req.body.date ? new Date(req.body.date) : new Date(),
-        hours: Number(hours),
+        hours: hours || 0,
         description: req.body.description,
-        paymentType: req.body.paymentType || 'Por hora',
-        payment: Number(req.body.payment) || 0,
+        paymentType,
+        payment,
         eventId: req.body.eventId || null,
         ownerId: req.user?.id,
       },
+      include: { employee: { select: { name: true } }, event: { select: { title: true } } },
     });
     res.status(201).json(activity);
   } catch (error) {
@@ -901,6 +938,23 @@ app.get('/api/market-purchases', async (req, res) => {
     res.json(purchases.map(serializeMarketPurchase));
   } catch (error) {
     handlePrismaError(res, error, 'Error al obtener compras de mercado');
+  }
+});
+
+app.get('/api/market-purchases/:id', async (req, res) => {
+  try {
+    const purchase = await prisma.marketPurchase.findFirst({
+      where: { id: req.params.id, ...ownerFilter(req) },
+      include: {
+        items: { orderBy: { name: 'asc' } },
+        event: { select: { id: true, title: true, date: true, client: true, status: true } },
+        provider: true,
+      },
+    });
+    if (!purchase) return res.status(404).json({ error: 'Compra no encontrada' });
+    res.json(serializeMarketPurchase(purchase));
+  } catch (error) {
+    handlePrismaError(res, error, 'Error al obtener compra de mercado');
   }
 });
 

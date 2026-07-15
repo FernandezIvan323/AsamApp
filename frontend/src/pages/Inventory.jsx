@@ -12,8 +12,9 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Select } from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -25,6 +26,7 @@ import {
 import { useInventory } from '@/hooks/useInventory';
 import { currency } from '@/lib/finance';
 import { STOCK_MOVEMENT_TYPES } from '@/lib/paymentMethods';
+import { required, positive, validate } from '@/lib/validators';
 import { createStockMovement, getStockMovements } from '@/services/inventoryApi';
 
 export default function Inventory() {
@@ -34,6 +36,8 @@ export default function Inventory() {
   const [newPrice, setNewPrice] = useState('');
   const [newStock, setNewStock] = useState('');
   const [newMinStock, setNewMinStock] = useState('');
+  const [formErrors, setFormErrors] = useState({});
+  const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({ name: '', unit: '', price: '', stock: '', minStock: '' });
   const [mutationError, setMutationError] = useState(null);
@@ -43,6 +47,8 @@ export default function Inventory() {
   const [movements, setMovements] = useState([]);
   const [movementsLoading, setMovementsLoading] = useState(false);
   const [stockForm, setStockForm] = useState({ type: 'Entrada', quantity: '', notes: '' });
+  const [stockError, setStockError] = useState(null);
+  const [isStockSaving, setIsStockSaving] = useState(false);
 
   const [showNewUnitDropdown, setShowNewUnitDropdown] = useState(false);
   const [showEditUnitDropdown, setShowEditUnitDropdown] = useState(false);
@@ -77,18 +83,37 @@ export default function Inventory() {
     setNewPrice('');
     setNewStock('');
     setNewMinStock('');
+    setFormErrors({});
   };
 
   const handleAddItem = async (event) => {
     event.preventDefault();
-    if (!newName || !newUnit || !newPrice) return;
+    const errors = validate({
+      name: () => required(newName, 'El nombre'),
+      unit: () => required(newUnit, 'La unidad'),
+      price: () => positive(newPrice, 'El precio'),
+    });
+    setFormErrors(errors);
+    if (Object.keys(errors).length) {
+      setMutationError(null);
+      return;
+    }
 
     try {
       setMutationError(null);
-      await addItem({ name: newName, unit: newUnit, price: Number(newPrice), stock: Number(newStock || 0), minStock: Number(newMinStock || 0) });
+      setIsAdding(true);
+      await addItem({
+        name: newName,
+        unit: newUnit,
+        price: Number(newPrice),
+        stock: Number(newStock || 0),
+        minStock: Number(newMinStock || 0),
+      });
       resetNewForm();
     } catch (err) {
       setMutationError(err);
+    } finally {
+      setIsAdding(false);
     }
   };
 
@@ -135,9 +160,15 @@ export default function Inventory() {
 
   const handleStockMovement = async (e) => {
     e.preventDefault();
-    if (!stockPanelItem || !stockForm.quantity) return;
+    if (!stockPanelItem) return;
+    if (!stockForm.quantity || Number(stockForm.quantity) <= 0) {
+      setStockError('Ingresá una cantidad mayor a 0.');
+      return;
+    }
     try {
       setMutationError(null);
+      setStockError(null);
+      setIsStockSaving(true);
       const result = await createStockMovement(stockPanelItem.id, {
         type: stockForm.type,
         quantity: Number(stockForm.quantity),
@@ -150,6 +181,9 @@ export default function Inventory() {
       setMovements(Array.isArray(updatedMovements) ? updatedMovements : []);
     } catch (err) {
       setMutationError(err);
+      setStockError(err.message || 'No se pudo registrar el movimiento.');
+    } finally {
+      setIsStockSaving(false);
     }
   };
 
@@ -184,32 +218,37 @@ export default function Inventory() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleAddItem} className="grid gap-4 lg:grid-cols-[1.4fr_.8fr_.8fr_.8fr_.8fr_auto] lg:items-end">
-            <div className="space-y-2">
-              <Label htmlFor="new-name">Nombre del Insumo</Label>
-              <Input id="new-name" placeholder="Ej. Platos descartables" value={newName} onChange={e => setNewName(e.target.value)} required />
-            </div>
-            <div ref={newUnitContainerRef} className="relative space-y-2">
-              <Label htmlFor="new-unit">Unidad</Label>
-              <div className="relative">
-                <Input
-                  id="new-unit"
-                  placeholder="Ej. kg, litro, caja"
-                  value={newUnit}
-                  onChange={e => {
-                    setNewUnit(e.target.value);
-                    setShowNewUnitDropdown(true);
-                  }}
-                  onFocus={() => setShowNewUnitDropdown(true)}
-                  autoComplete="off"
-                  required
-                  className="pr-8"
-                />
-                <div className="absolute inset-y-0 right-0 flex items-center pr-2.5 pointer-events-none text-muted-foreground">
-                  <ChevronDown className="size-4 opacity-50" />
+            <FormField label="Nombre del insumo" required error={formErrors.name}>
+              <Input
+                id="new-name"
+                placeholder="Ej. Platos descartables"
+                value={newName}
+                onChange={e => { setNewName(e.target.value); setFormErrors(f => ({ ...f, name: null })); }}
+              />
+            </FormField>
+            <div ref={newUnitContainerRef} className="relative">
+              <FormField label="Unidad" required error={formErrors.unit}>
+                <div className="relative">
+                  <Input
+                    id="new-unit"
+                    placeholder="Ej. kg, litro, caja"
+                    value={newUnit}
+                    onChange={e => {
+                      setNewUnit(e.target.value);
+                      setShowNewUnitDropdown(true);
+                      setFormErrors(f => ({ ...f, unit: null }));
+                    }}
+                    onFocus={() => setShowNewUnitDropdown(true)}
+                    autoComplete="off"
+                    className="pr-8"
+                  />
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5 text-muted-foreground">
+                    <ChevronDown className="size-4 opacity-50" />
+                  </div>
                 </div>
-              </div>
+              </FormField>
               {showNewUnitDropdown && (
-                <div className="absolute left-0 right-0 z-50 mt-1 max-h-56 overflow-y-auto rounded-md border border-border bg-card shadow-2xl p-1 animate-in fade-in slide-in-from-top-1 duration-150 scrollbar-thin">
+                <div className="absolute left-0 right-0 z-50 mt-1 max-h-56 overflow-y-auto rounded-md border border-border bg-card p-1 shadow-2xl">
                   {uniqueUnits
                     .filter(unit => unit.toLowerCase().includes(newUnit.toLowerCase()))
                     .map(unit => (
@@ -219,38 +258,47 @@ export default function Inventory() {
                         onClick={() => {
                           setNewUnit(unit);
                           setShowNewUnitDropdown(false);
+                          setFormErrors(f => ({ ...f, unit: null }));
                         }}
-                        className="w-full text-left px-3 py-2 text-sm rounded-sm hover:bg-primary/20 hover:text-primary transition-colors cursor-pointer capitalize"
+                        className="w-full cursor-pointer rounded-sm px-3 py-2 text-left text-sm capitalize transition-colors hover:bg-primary/20 hover:text-primary"
                       >
                         {unit}
                       </button>
                     ))}
                   {uniqueUnits.filter(unit => unit.toLowerCase().includes(newUnit.toLowerCase())).length === 0 && (
-                    <div className="px-3 py-2 text-sm text-muted-foreground italic">
-                      Usar "{newUnit}"
+                    <div className="px-3 py-2 text-sm italic text-muted-foreground">
+                      Usar &quot;{newUnit}&quot;
                     </div>
                   )}
                 </div>
               )}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="new-price">Precio ($)</Label>
-              <Input id="new-price" type="number" min="0" placeholder="Ej. 1500" value={newPrice} onChange={e => setNewPrice(e.target.value)} required />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="new-stock">Stock</Label>
+            <FormField label="Precio ($)" required error={formErrors.price}>
+              <Input
+                id="new-price"
+                type="number"
+                min="0"
+                inputMode="decimal"
+                placeholder="Ej. 1500"
+                value={newPrice}
+                onChange={e => { setNewPrice(e.target.value); setFormErrors(f => ({ ...f, price: null })); }}
+              />
+            </FormField>
+            <FormField label="Stock" hint="Opcional">
               <Input id="new-stock" type="number" min="0" placeholder="0" value={newStock} onChange={e => setNewStock(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="new-min-stock">Minimo</Label>
+            </FormField>
+            <FormField label="Mínimo" hint="Alerta stock bajo">
               <Input id="new-min-stock" type="number" min="0" placeholder="0" value={newMinStock} onChange={e => setNewMinStock(e.target.value)} />
-            </div>
-            <Button type="submit" className="w-full lg:w-auto">
+            </FormField>
+            <Button type="submit" className="w-full lg:w-auto" disabled={isAdding}>
               <Plus className="size-4" />
-              Agregar
+              {isAdding ? 'Guardando…' : 'Agregar'}
             </Button>
           </form>
-          {mutationError && <p className="mt-4 text-sm text-destructive">{mutationError.message}</p>}
+          {Object.keys(formErrors).some(k => formErrors[k]) && (
+            <p className="mt-3 text-sm text-destructive">Revisá los campos marcados en rojo.</p>
+          )}
+          {mutationError && <p className="mt-3 text-sm text-destructive">{mutationError.message}</p>}
         </CardContent>
       </Card>
 
@@ -392,21 +440,30 @@ export default function Inventory() {
           </CardHeader>
           <CardContent className="space-y-4">
             <form onSubmit={handleStockMovement} className="grid gap-4 sm:grid-cols-4">
-              <div className="space-y-2">
-                <Label>Tipo</Label>
-                <select className="form-input h-9 w-full" value={stockForm.type} onChange={e => setStockForm({ ...stockForm, type: e.target.value })}>
+              <FormField label="Tipo">
+                <Select value={stockForm.type} onChange={e => setStockForm({ ...stockForm, type: e.target.value })}>
                   {STOCK_MOVEMENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                </select>
-              </div>
-              <div className="space-y-2">
-                <Label>Cantidad</Label>
-                <Input type="number" min="0" step="0.01" value={stockForm.quantity} onChange={e => setStockForm({ ...stockForm, quantity: e.target.value })} required />
-              </div>
-              <div className="space-y-2 sm:col-span-2">
-                <Label>Notas</Label>
+                </Select>
+              </FormField>
+              <FormField label="Cantidad" error={stockError && !stockForm.quantity ? stockError : null}>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  inputMode="decimal"
+                  value={stockForm.quantity}
+                  onChange={e => { setStockForm({ ...stockForm, quantity: e.target.value }); setStockError(null); }}
+                />
+              </FormField>
+              <FormField label="Notas" className="sm:col-span-2">
                 <Input value={stockForm.notes} onChange={e => setStockForm({ ...stockForm, notes: e.target.value })} placeholder="Opcional" />
+              </FormField>
+              <div className="sm:col-span-4 flex flex-wrap items-center gap-3">
+                <Button type="submit" disabled={isStockSaving}>
+                  <Plus className="size-4" /> {isStockSaving ? 'Guardando…' : 'Registrar movimiento'}
+                </Button>
+                {stockError && <p className="text-sm text-destructive">{stockError}</p>}
               </div>
-              <Button type="submit" className="sm:col-span-4 w-fit"><Plus className="size-4" /> Registrar movimiento</Button>
             </form>
             {movementsLoading ? (
               <LoadingState title="Cargando historial" />

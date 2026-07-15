@@ -15,6 +15,21 @@ describe('finance', () => {
     expect(real.quotedCost).toBe(45000);
     expect(real.realProfit).toBe(45000);
     expect(real.pending).toBe(20000);
+    expect(real.laborCost).toBe(0);
+  });
+
+  it('resta mano de obra del margen real', () => {
+    const event = {
+      totalPrice: 100000,
+      extraCosts: 0,
+      amountPaid: 100000,
+      insumos: [{ totalCost: 40000 }],
+      purchases: [{ totalAmount: 30000 }],
+      employeeActivities: [{ payment: 15000 }, { payment: 5000 }],
+    };
+    const real = getEventRealFinancials(event);
+    expect(real.laborCost).toBe(20000);
+    expect(real.realProfit).toBe(50000);
   });
 
   it('agrega gastos reales al resumen mensual', () => {

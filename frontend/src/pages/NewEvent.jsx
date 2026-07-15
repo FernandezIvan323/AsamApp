@@ -1,35 +1,38 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Calculator as CalcIcon, ReceiptText, Users, Save, Calendar, Beef, ChevronLeft, ChevronRight, PartyPopper, MapPin, Clock, ShoppingCart } from 'lucide-react';
-import { ErrorState, LoadingState } from '@/components/feedback/ResourceState';
+import { Beef, Calendar, ChevronLeft, ChevronRight, PartyPopper, Save } from 'lucide-react';
 import { AlertDialog } from '@/components/feedback/ConfirmDialog';
-import { FormField } from '@/components/ui/form-field';
-import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
+import EventForm from '@/components/events/EventForm';
 import { useInventory } from '@/hooks/useInventory';
-import { currency } from '@/lib/finance';
 import { applyRecipeToForm, applyTemplateToForm } from '@/lib/eventQuote';
-import { calculateQuote, getSelectedQuoteItems, toEventInsumos } from '@/lib/quote';
+import { EMPTY_EVENT_FORM, buildEventPayload } from '@/lib/eventFormUtils';
+import { validateEventForm } from '@/lib/validators';
 import { createEvent } from '@/services/eventsApi';
 import { getRecipes } from '@/services/recipesApi';
 import { getQuoteTemplates } from '@/services/quoteTemplatesApi';
 import { getClients } from '@/services/clientsApi';
 
 const steps = [
-  { num: 1, label: 'Información Base', icon: Calendar },
-  { num: 2, label: 'Planificación Menú', icon: Beef },
-  { num: 3, label: 'Finalización Evento', icon: PartyPopper },
+  { num: 1, label: 'Información base', icon: Calendar },
+  { num: 2, label: 'Menú e insumos', icon: Beef },
+  { num: 3, label: 'Finanzas', icon: PartyPopper },
 ];
 
 export default function NewEvent() {
   const navigate = useNavigate();
   const routerLocation = useLocation();
   const { items: inventory, isLoading: isInventoryLoading, error: inventoryError, refresh: refreshInventory } = useInventory();
+
+  const [values, setValues] = useState(EMPTY_EVENT_FORM);
+  const [clients, setClients] = useState([]);
+  const [recipes, setRecipes] = useState([]);
+  const [step, setStep] = useState(1);
+  const [touched, setTouched] = useState({});
+  const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [alertOpen, setAlertOpen] = useState(false);
   const [alertTitle, setAlertTitle] = useState('');
   const [alertDescription, setAlertDescription] = useState('');
-  const [step, setStep] = useState(1);
 
   const triggerAlert = (title, desc) => {
     setAlertTitle(title);
@@ -37,52 +40,33 @@ export default function NewEvent() {
     setAlertOpen(true);
   };
 
-  const [eventName, setEventName] = useState('');
-  const [clientName, setClientName] = useState('');
-  const [clientId, setClientId] = useState('');
-  const [clients, setClients] = useState([]);
-  const [eventDate, setEventDate] = useState('');
-  const [eventTime, setEventTime] = useState('');
-  const [location, setLocation] = useState('');
-  const [menuNotes, setMenuNotes] = useState('');
-  const [recipeName, setRecipeName] = useState('');
-  const [selectedRecipeId, setSelectedRecipeId] = useState('');
-  const [recipes, setRecipes] = useState([]);
-  const [adults, setAdults] = useState('');
-  const [kids, setKids] = useState('');
-  const [profitMargin, setProfitMargin] = useState('');
-  const [extraCosts, setExtraCosts] = useState('');
-  const [selectedQuantities, setSelectedQuantities] = useState({});
-  const [touched, setTouched] = useState({});
-
-  const touch = (field) => () => setTouched(prev => ({ ...prev, [field]: true }));
-
   const fieldErrors = useMemo(() => {
-    const errs = {};
-    if ((touched.eventName || touched.all) && !eventName?.trim()) errs.eventName = 'El nombre del evento es obligatorio';
-    if ((touched.eventDate || touched.all) && !eventDate) errs.eventDate = 'La fecha es obligatoria';
-    return errs;
-  }, [touched, eventName, eventDate]);
+    if (!touched.all && !Object.keys(touched).length) return {};
+    const all = validateEventForm(values);
+    if (touched.all) return all;
+    const partial = {};
+    for (const k of Object.keys(touched)) {
+      if (all[k]) partial[k] = all[k];
+    }
+    return partial;
+  }, [touched, values]);
 
   useEffect(() => {
-    getRecipes()
-      .then(data => setRecipes(Array.isArray(data) ? data : []))
-      .catch(() => setRecipes([]));
+    getRecipes().then(data => setRecipes(Array.isArray(data) ? data : [])).catch(() => setRecipes([]));
+    getClients().then(data => setClients(Array.isArray(data) ? data : [])).catch(() => {});
   }, []);
 
   useEffect(() => {
     const recipeId = routerLocation.state?.recipeId;
     if (!recipeId || recipes.length === 0 || inventory.length === 0) return;
     const recipe = recipes.find(r => r.id === recipeId);
-    if (recipe) {
-      setSelectedRecipeId(recipeId);
-      applyRecipeToForm(recipe, inventory, {
-        setRecipeName,
-        setMenuNotes,
-        setSelectedQuantities,
-        setServings: (v) => setAdults(v),
-      });
-    }
+    if (!recipe) return;
+    applyRecipeToForm(recipe, inventory, {
+      setRecipeName: (v) => setValues(prev => ({ ...prev, recipeName: v, selectedRecipeId: recipeId })),
+      setMenuNotes: (v) => setValues(prev => ({ ...prev, menuNotes: v })),
+      setSelectedQuantities: (v) => setValues(prev => ({ ...prev, selectedQuantities: typeof v === 'function' ? v(prev.selectedQuantities) : v })),
+      setServings: (v) => setValues(prev => ({ ...prev, adults: v })),
+    });
   }, [routerLocation.state?.recipeId, recipes, inventory]);
 
   useEffect(() => {
@@ -91,390 +75,141 @@ export default function NewEvent() {
     getQuoteTemplates()
       .then(all => {
         const template = (Array.isArray(all) ? all : []).find(t => t.id === templateId);
-        if (template) {
-          applyTemplateToForm(template, inventory, {
-            setRecipeName,
-            setMenuNotes,
-            setSelectedQuantities,
-            setExtraCosts,
-            setProfitMargin,
-            setServings: (v) => setAdults(v),
-          });
-        }
+        if (!template) return;
+        applyTemplateToForm(template, inventory, {
+          setRecipeName: (v) => setValues(prev => ({ ...prev, recipeName: v })),
+          setMenuNotes: (v) => setValues(prev => ({ ...prev, menuNotes: v })),
+          setSelectedQuantities: (v) => setValues(prev => ({ ...prev, selectedQuantities: typeof v === 'function' ? v(prev.selectedQuantities) : v })),
+          setExtraCosts: (v) => setValues(prev => ({ ...prev, extraCosts: v })),
+          setProfitMargin: (v) => setValues(prev => ({ ...prev, profitMargin: v })),
+          setServings: (v) => setValues(prev => ({ ...prev, adults: v })),
+        });
       })
       .catch(() => {});
   }, [routerLocation.state?.templateId, inventory]);
 
-  useEffect(() => {
-    getClients().then(data => setClients(Array.isArray(data) ? data : [])).catch(() => {});
-  }, []);
-
   const handleRecipeSelect = (recipeId) => {
-    setSelectedRecipeId(recipeId);
+    if (!recipeId) {
+      setValues(prev => ({ ...prev, selectedRecipeId: '', recipeName: '' }));
+      return;
+    }
     const recipe = recipes.find(r => r.id === recipeId);
-    if (!recipe) {
-      setRecipeName('');
-      return;
-    }
+    if (!recipe) return;
     applyRecipeToForm(recipe, inventory, {
-      setRecipeName,
-      setMenuNotes,
-      setSelectedQuantities,
-      setServings: (v) => setAdults(v),
+      setRecipeName: (v) => setValues(prev => ({ ...prev, recipeName: v, selectedRecipeId: recipeId })),
+      setMenuNotes: (v) => setValues(prev => ({ ...prev, menuNotes: v })),
+      setSelectedQuantities: (v) => setValues(prev => ({ ...prev, selectedQuantities: typeof v === 'function' ? v(prev.selectedQuantities) : v })),
+      setServings: (v) => setValues(prev => ({ ...prev, adults: v })),
     });
   };
 
-  const handleQuantityChange = (id, value) => {
-    setSelectedQuantities(prev => ({
-      ...prev,
-      [id]: Number(value)
-    }));
-  };
-
-  const guests = Number(adults) + Number(kids);
-  const summaryItems = getSelectedQuoteItems(inventory, selectedQuantities);
-  const quote = calculateQuote({ items: summaryItems, extraCosts, profitMargin, guests });
-
-  const handleSaveEvent = () => {
-    setTouched(prev => ({ ...prev, all: true }));
-    if (!eventName?.trim() || !eventDate) {
-      triggerAlert(
-        "Información requerida",
-        "Por favor, ingresa al menos el Nombre del Evento y la Fecha para poder guardar el presupuesto."
-      );
+  const handleSave = () => {
+    setTouched({ all: true });
+    const errors = validateEventForm(values);
+    if (Object.keys(errors).length) {
+      triggerAlert('Información requerida', 'Completá el nombre del evento y la fecha.');
+      setStep(1);
       return;
     }
 
-    const formattedInsumos = toEventInsumos(summaryItems);
-
-    const newEvent = {
-      title: eventName,
-      client: clientName,
-      clientId: clientId || null,
-      date: eventDate,
-      time: eventTime,
-      location: location,
-      menuNotes,
-      recipeName,
-      guests,
-      status: 'Pendiente',
-      totalPrice: quote.finalPrice,
-      insumos: formattedInsumos,
-      extraCosts: Number(extraCosts),
-      profitMargin: Number(profitMargin)
-    };
-
+    const payload = buildEventPayload(values, inventory, { status: 'Cotizado' });
     setSaveError(null);
-    createEvent(newEvent)
-    .then(() => navigate('/history'))
-    .catch(err => {
-      console.error("Error saving event:", err);
-      setSaveError(err);
-      triggerAlert("Error de guardado", "Hubo un error al intentar guardar el presupuesto.");
-    });
+    setIsSaving(true);
+    createEvent(payload)
+      .then((created) => navigate(created?.id ? `/history/${created.id}` : '/history'))
+      .catch(err => {
+        setSaveError(err);
+        triggerAlert('Error de guardado', err.message || 'No se pudo guardar el presupuesto.');
+      })
+      .finally(() => setIsSaving(false));
   };
 
   const canGoNext = () => {
-    if (step === 1) return eventName && eventDate && adults;
-    if (step === 2) return true;
+    if (step === 1) return Boolean(values.eventName?.trim() && values.eventDate);
     return true;
   };
 
+  const onBlurField = (field) => () => setTouched(prev => ({ ...prev, [field]: true }));
+
   return (
     <div className="space-y-8">
-      {/* Stepper */}
       <div className="flex items-center justify-center gap-0">
         {steps.map((s, i) => (
           <div key={s.num} className="flex items-center">
             <div className="flex flex-col items-center gap-2">
-              <div className={`flex size-10 items-center justify-center rounded-full border-2 text-sm font-bold transition-all duration-300 ${
+              <div className={`flex size-10 items-center justify-center rounded-full border-2 text-sm font-bold transition-all ${
                 step === s.num
                   ? 'border-primary bg-primary/15 text-primary shadow-sm shadow-primary/20'
                   : step > s.num
-                    ? 'border-accent bg-accent/15 text-accent'
+                    ? 'border-primary/50 bg-primary/10 text-primary'
                     : 'border-border bg-transparent text-muted-foreground'
               }`}>
                 {step > s.num ? '✓' : s.num}
               </div>
-              <span className={`text-[11px] font-medium uppercase tracking-wider transition-colors duration-300 ${
+              <span className={`text-[11px] font-medium uppercase tracking-wider ${
                 step === s.num ? 'text-foreground' : 'text-muted-foreground'
               }`}>
                 {s.label}
               </span>
             </div>
             {i < steps.length - 1 && (
-              <div className={`mx-4 mb-6 h-px w-20 sm:w-32 transition-colors duration-300 ${
-                step > s.num ? 'bg-primary/50' : 'bg-border'
-              }`} />
+              <div className={`mx-4 mb-6 h-px w-16 sm:w-28 ${step > s.num ? 'bg-primary/50' : 'bg-border'}`} />
             )}
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-[1.5fr_1fr] gap-6 items-start lg:grid-cols-1">
-        <div className="space-y-4">
-          {/* Step 1: Información Base */}
-          {step === 1 && (
-            <>
-              <div className="rounded-xl border border-border bg-card p-6">
-                <h2 className="mb-5 flex items-center gap-2 text-base font-semibold text-foreground">
-                  <Calendar className="size-4.5 text-accent" /> Información General
-                </h2>
-                <div className="space-y-4">
-                  <FormField label="Nombre del Evento" required error={fieldErrors.eventName}>
-                    <Input value={eventName} onChange={e => setEventName(e.target.value)} onBlur={touch('eventName')} placeholder="Ej. Cumpleaños Juan" />
-                  </FormField>
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField label="Contratante / Cliente">
-                      <div>
-                        <Input
-                          value={clientName}
-                          onChange={e => {
-                            setClientName(e.target.value);
-                            setClientId('');
-                          }}
-                          onSelect={e => {
-                            const selected = clients.find(c => c.name === e.target.value);
-                            if (selected) setClientId(selected.id);
-                          }}
-                          placeholder="Nombre del cliente"
-                          list="client-list"
-                        />
-                        <datalist id="client-list">
-                          {clients.map(c => <option key={c.id} value={c.name} data-id={c.id} />)}
-                        </datalist>
-                      </div>
-                    </FormField>
-                    <FormField label="Lugar del Evento">
-                      <Input value={location} onChange={e => setLocation(e.target.value)} placeholder="Ej. Salón Principal" />
-                    </FormField>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField label="Fecha" required error={fieldErrors.eventDate}>
-                      <Input type="date" value={eventDate} onChange={e => setEventDate(e.target.value)} onBlur={touch('eventDate')} />
-                    </FormField>
-                    <FormField label="Hora">
-                      <Input type="time" value={eventTime} onChange={e => setEventTime(e.target.value)} />
-                    </FormField>
-                  </div>
-                </div>
-              </div>
+      <EventForm
+        mode="create"
+        step={step}
+        values={values}
+        onChange={setValues}
+        fieldErrors={fieldErrors}
+        onBlurField={onBlurField}
+        clients={clients}
+        onClientCreated={c => setClients(prev => [c, ...prev])}
+        recipes={recipes}
+        inventory={inventory}
+        isInventoryLoading={isInventoryLoading}
+        inventoryError={inventoryError}
+        onRetryInventory={refreshInventory}
+        onRecipeSelect={handleRecipeSelect}
+        isSaving={isSaving}
+        saveError={saveError}
+        onSave={handleSave}
+      />
 
-              <div className="rounded-xl border border-border bg-card p-6">
-                <h2 className="mb-5 flex items-center gap-2 text-base font-semibold text-foreground">
-                  <Users className="size-4.5 text-accent" /> Invitados
-                </h2>
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField label="Adultos">
-                    <Input type="number" min="0" value={adults} onChange={e => setAdults(e.target.value)} placeholder="Ej. 20" />
-                  </FormField>
-                  <FormField label="Niños (Comen mitad)">
-                    <Input type="number" min="0" value={kids} onChange={e => setKids(e.target.value)} placeholder="Ej. 5" />
-                  </FormField>
-                </div>
-              </div>
-            </>
+      <div className="flex items-center justify-between pt-2">
+        <div>
+          {step > 1 && (
+            <button
+              type="button"
+              onClick={() => setStep(s => s - 1)}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-5 py-2.5 text-sm font-medium text-muted-foreground transition hover:border-primary/40 hover:text-foreground"
+            >
+              <ChevronLeft className="size-4" /> Anterior
+            </button>
           )}
-
-          {/* Step 2: Planificación Menú */}
-          {step === 2 && (
-            <>
-              <div className="rounded-xl border border-border bg-card p-6">
-                <h2 className="mb-5 flex items-center gap-2 text-base font-semibold text-foreground">
-                  <Beef className="size-4.5 text-accent" /> Menú y comidas especiales
-                </h2>
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField label="Receta / combo base">
-                    <Select value={selectedRecipeId} onChange={e => handleRecipeSelect(e.target.value)}>
-                      <option value="">Sin combo predefinido</option>
-                      {recipes.map(recipe => (
-                        <option key={recipe.id} value={recipe.id}>{recipe.name}</option>
-                      ))}
-                    </Select>
-                  </FormField>
-                  <FormField label="Solicitud especial del cliente">
-                    <Input value={menuNotes} onChange={e => setMenuNotes(e.target.value)} placeholder="Ej. sopa, arroz de cerdo, ensalada, yuca" />
-                  </FormField>
-                </div>
-                <p className="mt-3 text-xs text-muted-foreground/60">Usa este campo para dejar claro que se cotizó: sopas, arroz de cerdo, guarniciones, bebidas u otras comidas fuera del asado base.</p>
-              </div>
-
-              <div className="rounded-xl border border-border bg-card p-6">
-                <h2 className="mb-2 flex items-center gap-2 text-base font-semibold text-foreground">
-                  <ShoppingCart className="size-4.5 text-accent" /> Cantidades de Insumos
-                </h2>
-                <p className="mb-5 text-xs text-muted-foreground/60">Ingresa las cantidades para el evento basado en tu catálogo.</p>
-                <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3">
-                  {isInventoryLoading ? (
-                    <LoadingState title="Cargando insumos" />
-                  ) : inventoryError ? (
-                    <ErrorState description={inventoryError.message} onRetry={refreshInventory} />
-                  ) : inventory.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">Primero debes agregar insumos en la sección "Insumos" del menú lateral.</p>
-                  ) : (
-                    inventory.map(item => (
-                      <div key={item.id} className="flex flex-col gap-1.5 rounded-lg border border-[rgba(255,210,140,0.16)] bg-secondary p-3">
-                        <label className="flex justify-between text-[11px] font-medium text-muted-foreground">
-                          <span>{item.name}</span>
-                          <span className="capitalize">({item.unit})</span>
-                        </label>
-                        <input
-                          type="number" min="0" step="0.1"
-                          value={selectedQuantities[item.id] || ''}
-                          placeholder="0"
-                          onChange={(e) => handleQuantityChange(item.id, e.target.value)}
-                          className="w-full rounded-md border border-border bg-secondary px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground transition-all duration-150 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/50"
-                        />
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* Step 3: Finalización Evento */}
-          {step === 3 && (
-            <>
-              <div className="rounded-xl border border-border bg-card p-6">
-                <h2 className="mb-5 flex items-center gap-2 text-base font-semibold text-foreground">
-                  <CalcIcon className="size-4.5 text-accent" /> Finanzas Adicionales
-                </h2>
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField label="Costos Extra ($)" hint="Mozos, traslado, etc.">
-                    <Input type="number" value={extraCosts} onChange={e => setExtraCosts(e.target.value)} placeholder="Ej. 15000" />
-                  </FormField>
-                  <FormField label="Margen de Ganancia (%)">
-                    <Input type="number" value={profitMargin} onChange={e => setProfitMargin(e.target.value)} placeholder="Ej. 30" />
-                  </FormField>
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-border bg-card p-6">
-                <h2 className="mb-4 flex items-center gap-2 text-base font-semibold text-foreground">
-                  <MapPin className="size-4.5 text-accent" /> Confirmar datos del evento
-                </h2>
-                <div className="space-y-3 text-sm">
-                  <div className="flex justify-between rounded-lg bg-secondary px-4 py-3">
-                    <span className="text-muted-foreground/70">Evento</span>
-                    <span className="font-medium text-foreground">{eventName || '—'}</span>
-                  </div>
-                  <div className="flex justify-between rounded-lg bg-secondary px-4 py-3">
-                    <span className="text-muted-foreground/70">Cliente</span>
-                    <span className="font-medium text-foreground">{clientName || '—'}</span>
-                  </div>
-                  <div className="flex justify-between rounded-lg bg-secondary px-4 py-3">
-                    <span className="text-muted-foreground/70">Fecha</span>
-                    <span className="font-medium text-foreground">{eventDate || '—'}</span>
-                  </div>
-                  <div className="flex justify-between rounded-lg bg-secondary px-4 py-3">
-                    <span className="text-muted-foreground/70">Invitados</span>
-                    <span className="font-medium text-foreground">{guests || 0}</span>
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* Navigation Buttons */}
-          <div className="flex items-center justify-between pt-2">
-            <div>
-              {step > 1 && (
-                <button onClick={() => setStep(s => s - 1)} className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-transparent px-5 py-2.5 text-sm font-medium text-muted-foreground/80 transition-all duration-150 hover:border-[rgba(255,210,140,0.35)] hover:text-foreground">
-                  <ChevronLeft className="size-4" /> Anterior
-                </button>
-              )}
-            </div>
-            {step < 3 ? (
-              <button
-                onClick={() => setStep(s => s + 1)}
-                disabled={!canGoNext()}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground shadow-sm shadow-primary/20 transition-all duration-150 hover:brightness-110 active:brightness-95 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                Siguiente <ChevronRight className="size-4" />
-              </button>
-            ) : (
-              <button
-                onClick={handleSaveEvent}
-                className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground shadow-sm shadow-primary/20 transition-all duration-150 hover:brightness-110 active:brightness-95"
-              >
-                <Save className="size-4" /> Guardar Presupuesto
-              </button>
-            )}
-          </div>
         </div>
-
-        {/* Summary Panel */}
-        <div className="flex flex-col gap-4">
-          <div className="sticky top-6 rounded-xl border border-border bg-card">
-            <div className="border-b border-[rgba(255,210,140,0.16)] px-6 py-4">
-              <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                <ReceiptText className="size-4.5 text-accent" /> Resumen en Vivo
-              </h3>
-            </div>
-            <div className="px-6 py-4 space-y-3">
-              <div className="space-y-1">
-                {summaryItems.length === 0 ? (
-                  <p className="text-xs italic text-muted-foreground/60">Añade insumos a la izquierda para ver el resumen.</p>
-                ) : (
-                  summaryItems.slice(0, 5).map(item => (
-                    <div key={item.id} className="flex justify-between text-xs">
-                      <span className="text-muted-foreground/70 truncate mr-2">{item.name}</span>
-                      <span className="font-medium text-foreground/80 whitespace-nowrap">{item.quantity} {item.unit}</span>
-                    </div>
-                  ))
-                )}
-                {summaryItems.length > 5 && (
-                  <p className="text-[10px] text-muted-foreground/50">+{summaryItems.length - 5} insumos más</p>
-                )}
-              </div>
-
-              <div className="border-t border-[rgba(255,210,140,0.16)] pt-4 space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <ShoppingCart className="size-3.5 text-accent/70" /> Insumos
-                  </div>
-                  <span className="text-sm font-semibold text-foreground">${currency(quote.costTotal)}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <CalcIcon className="size-3.5 text-accent/70" /> Extras
-                  </div>
-                  <span className="text-sm font-semibold text-foreground">${currency(Number(extraCosts || 0))}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Clock className="size-3.5 text-accent/70" /> Ganancia ({profitMargin || 0}%)
-                  </div>
-                  <span className="text-sm font-semibold text-accent">${currency(quote.profit)}</span>
-                </div>
-              </div>
-
-              <div className="rounded-lg bg-secondary border border-[rgba(255,210,140,0.16)] p-4 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-medium text-muted-foreground">Precio Sugerido</span>
-                  <span className="text-xl font-bold text-foreground">${currency(quote.finalPrice)}</span>
-                </div>
-                {guests > 0 && (
-                  <div className="flex items-center justify-between border-t border-[rgba(255,210,140,0.16)] pt-2">
-                    <span className="text-[10px] text-muted-foreground/50">Por persona</span>
-                    <span className="text-xs font-semibold text-primary">${currency(quote.pricePerPerson)}</span>
-                  </div>
-                )}
-              </div>
-
-              <button
-                onClick={handleSaveEvent}
-                className="w-full rounded-lg bg-primary py-2.5 text-sm font-medium text-primary-foreground shadow-sm shadow-primary/20 transition-all duration-150 hover:brightness-110 active:brightness-95"
-              >
-                <Save className="mr-1.5 inline-block size-4" /> Guardar Presupuesto
-              </button>
-              {saveError && (
-                <p className="text-center text-xs text-destructive">{saveError.message}</p>
-              )}
-            </div>
-          </div>
-        </div>
+        {step < 3 ? (
+          <button
+            type="button"
+            onClick={() => setStep(s => s + 1)}
+            disabled={!canGoNext()}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Siguiente <ChevronRight className="size-4" />
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={isSaving}
+            className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground shadow-sm transition hover:brightness-110 disabled:opacity-50"
+          >
+            <Save className="size-4" /> {isSaving ? 'Guardando…' : 'Guardar presupuesto'}
+          </button>
+        )}
       </div>
 
       <AlertDialog

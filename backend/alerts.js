@@ -33,7 +33,7 @@ export async function generateAlerts(user = null) {
     include: { payments: true },
   });
   for (const event of events) {
-    if (event.status === 'Cotizado' || event.status === 'Pendiente') {
+    if (event.status === 'Cotizado' || event.status === 'Pendiente') { // Pendiente = legacy
       if (event.date && event.date < today) {
         alerts.push({
           type: ALERT_TYPES.EVENT_UNCONFIRMED,
