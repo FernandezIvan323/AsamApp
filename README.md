@@ -38,34 +38,6 @@ Un solo sistema para el ciclo real del negocio:
 
 ---
 
-## Inicio rápido
-
-### Windows (scripts)
-
-```bat
-INICIAR.bat
-```
-
-### Manual
-
-```bash
-# Backend
-cd backend
-cp .env.example .env   # si existe; o crear DATABASE_URL + AUTH_SECRET
-npx prisma migrate deploy
-npm run dev            # http://localhost:3000
-
-# Frontend (otra terminal)
-cd frontend
-npm install
-npm run dev            # http://localhost:5173
-```
-
-1. Abrí la app sin sesión → **landing**  
-2. **Registrarse** (primer usuario = admin) o **Ingresar**  
-3. Creá un presupuesto y registrá compras de la semana  
-
----
 
 ## Estructura
 
@@ -135,42 +107,6 @@ ProyectoAsado/
 
 ---
 
-## Tests
-
-```bash
-# Backend
-cd backend && npm test
-
-# Frontend unit
-cd frontend && npm test
-
-# E2E (backend + frontend en marcha; ver playwright.config)
-cd frontend && npm run test:e2e
-```
-
----
-
-## Seguridad
-
-- En **producción**, el backend exige `AUTH_SECRET` real (no el default de desarrollo).  
-- Passwords con scrypt; tokens firmados HMAC.  
-- Generar secreto:
-
-```bash
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-```
-
----
-
-## Backup
-
-```bash
-cd backend
-npm run backup              # copia SQLite a backups/database/
-npm run backup:schedule     # opcional, cada 24h
-```
-
----
 
 ## Versiones recientes
 
