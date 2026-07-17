@@ -1,4 +1,4 @@
-# AsamApp (Proyecto Asados)
+# AsamApp 
 
 Aplicación web full-stack para gestionar **catering a las brasas**: cotización, presupuestos, inventario, compras de mercado, finanzas, equipo, notas y multi-usuario. Pensada para asadores, comida costeña y emprendedores gastronómicos.
 
