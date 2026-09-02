@@ -128,8 +128,11 @@ export async function handleAuthRegister(req, res) {
       return res.status(409).json({ error: `Ese ${field} ya está registrado` });
     }
 
+    const userCount = await prisma.user.count();
+    const role = userCount === 0 ? 'admin' : 'editor';
+
     const user = await prisma.user.create({
-      data: { email: email.trim(), username: username.trim(), password: hashPassword(password), role: 'user' },
+      data: { email: email.trim(), username: username.trim(), password: hashPassword(password), role },
     });
     const token = signToken(user.id);
     res.status(201).json({ token, user: { id: user.id, email: user.email, username: user.username, role: user.role } });

@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Eye, EyeOff, LogIn } from 'lucide-react';
 import AuthSplitLayout from '@/components/auth/AuthSplitLayout';
-import { AuthLabel } from '@/components/auth/AuthLabel';
-import { authInputClassName } from '@/components/auth/authInputClassName';
+import { Button } from '@/components/ui/button';
+import { FormField } from '@/components/ui/form-field';
+import { Input } from '@/components/ui/input';
 import { setStoredToken, setStoredUser } from '@/lib/auth';
 import { apiRequest } from '@/lib/api';
 
@@ -43,73 +44,61 @@ export default function Login({ onAuthSuccess }) {
       footer={
         <>
           ¿No tenés cuenta?{' '}
-          <Link to="/register" className="font-semibold text-[#E8834A] hover:text-[#D4733A] transition-colors">
+          <Link to="/register" className="font-semibold text-primary hover:text-primary/90 transition-colors">
             Registrate
           </Link>
         </>
       }
     >
       <form onSubmit={handleSubmit} className="space-y-4 pt-1">
-        <div>
-          <AuthLabel htmlFor="username">Usuario</AuthLabel>
-          <input
+        <FormField label="Usuario" required>
+          <Input
             id="username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             autoComplete="username"
-            required
             placeholder="Tu usuario"
-            className={authInputClassName()}
           />
-        </div>
+        </FormField>
 
-        <div>
-          <div className="mb-1.5 flex items-center justify-between gap-2">
-            <label htmlFor="password" className="text-[10px] font-bold uppercase tracking-wider text-[#8BA0B0]">
-              Contraseña
-            </label>
-            <span className="text-[10px] text-[#8BA0B0]/70" title="Pedila al administrador familiar">
-              ¿Olvidaste? · Pedila al admin
-            </span>
-          </div>
+        <FormField
+          label="Contraseña"
+          required
+          hint="¿Olvidaste? Pedila al admin"
+        >
           <div className="relative">
-            <input
+            <Input
               id="password"
               type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="current-password"
-              required
               placeholder="Tu contraseña"
-              className={authInputClassName('pr-11')}
+              className="pr-11"
             />
             <button
               type="button"
               onClick={() => setShowPassword((v) => !v)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8BA0B0] hover:text-white transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
               aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
             >
               {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
             </button>
           </div>
-        </div>
+        </FormField>
 
         {error && (
-          <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+          <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
             {error.message || String(error)}
           </div>
         )}
 
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#E8834A] px-4 py-3.5 text-sm font-bold text-[#0A1428] shadow-[0_4px_20px_rgba(232,131,74,0.3)] transition-all hover:bg-[#D4733A] disabled:opacity-60"
-        >
+        <Button type="submit" disabled={isLoading} size="lg" className="w-full">
           <LogIn className="size-4" />
           {isLoading ? 'Entrando…' : 'Entrar al panel'}
-        </button>
+        </Button>
 
-        <p className="text-center text-[11px] leading-relaxed text-[#8BA0B0]/80 pt-0.5">
+        <p className="pt-0.5 text-center text-[11px] leading-relaxed text-muted-foreground/80">
           App familiar compartida: todos ven y editan los mismos eventos, notas y compras.
         </p>
       </form>

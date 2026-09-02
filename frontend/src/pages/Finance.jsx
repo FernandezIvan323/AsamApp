@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { BarChart3, Calendar as CalIcon, DollarSign, PieChart, TrendingUp } from 'lucide-react';
+import { BarChart3, Calendar as CalIcon, DollarSign, PieChart, TrendingUp, Receipt } from 'lucide-react';
 
 import { EmptyState, ErrorState, LoadingState } from '@/components/feedback/ResourceState';
 import { Badge } from '@/components/ui/badge';
@@ -21,18 +21,38 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useEvents } from '@/hooks/useEvents';
+import { getEmployeeActivities } from '@/services/employeesApi';
+import { getFixedCosts } from '@/services/fixedCostsApi';
+import { getMarketPurchases } from '@/services/marketPurchasesApi';
 import {
   MONTHS,
   currency,
   getAvailableYears,
   getEventRealFinancials,
   getMonthlyFinance,
+  getUnassignedMonthlyFinance,
   getYearlyEvents,
 } from '@/lib/finance';
 
 export default function Finance() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const { events, isLoading, error, refresh } = useEvents();
+
+  const [purchases, setPurchases] = useState([]);
+  const [activities, setActivities] = useState([]);
+  const [fixedCosts, setFixedCosts] = useState([]);
+  const [otherLoading, setOtherLoading] = useState(true);
+
+  useEffect(() => {
+    setOtherLoading(true);
+    Promise.allSettled([getMarketPurchases(), getEmployeeActivities(), getFixedCosts()])
+      .then(([p, a, f]) => {
+        setPurchases(p.status === 'fulfilled' ? p.value : []);
+        setActivities(a.status === 'fulfilled' ? a.value : []);
+        setFixedCosts(f.status === 'fulfilled' ? f.value : []);
+      })
+      .finally(() => setOtherLoading(false));
+  }, []);
 
   const availableYears = getAvailableYears(events);
   const monthlyData = getMonthlyFinance(events, selectedYear);
@@ -46,6 +66,21 @@ export default function Finance() {
   const totalRealProfit = monthlyData.reduce((acc, m) => acc + m.gananciaReal, 0);
   const totalRealSpent = monthlyData.reduce((acc, m) => acc + m.gastosReales, 0);
   const totalCollected = monthlyData.reduce((acc, m) => acc + m.cobrado, 0);
+
+  const unassignedMonthly = getUnassignedMonthlyFinance({
+    purchases,
+    activities,
+    fixedCosts,
+    year: selectedYear,
+  });
+  const totalUnassigned = unassignedMonthly.reduce((acc, m) => acc + m.total, 0);
+  const totalUnassignedPurchases = unassignedMonthly.reduce((acc, m) => acc + m.purchaseTotal, 0);
+  const totalUnassignedLabor = unassignedMonthly.reduce((acc, m) => acc + m.laborTotal, 0);
+  const totalUnassignedFixed = unassignedMonthly.reduce((acc, m) => acc + m.monthlyFixed, 0);
+  const monthsWithUnassigned = unassignedMonthly.filter(
+    (m) => m.purchaseCount > 0 || m.activityCount > 0 || m.monthlyFixed > 0,
+  );
+  const netRealProfit = totalRealProfit - totalUnassignedPurchases - totalUnassignedLabor - totalUnassignedFixed;
 
   return (
     <div className="space-y-6">
@@ -111,6 +146,44 @@ export default function Finance() {
               </CardHeader>
             </Card>
           </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><Receipt className="size-5 text-primary" /> Ganancia neta real (con gastos del negocio)</CardTitle>
+              <CardDescription>
+                Margen real de los eventos menos compras y horas sin evento más costos fijos prorrateados.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-3 sm:grid-cols-4">
+                <div className="rounded-lg border border-border bg-secondary/30 p-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Margen eventos</p>
+                  <p className="mt-1 text-lg font-semibold text-foreground">${currency(totalRealProfit)}</p>
+                </div>
+                <div className="rounded-lg border border-border bg-secondary/30 p-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Compras sin evento</p>
+                  <p className="mt-1 text-lg font-semibold text-foreground">-${currency(totalUnassignedPurchases)}</p>
+                </div>
+                <div className="rounded-lg border border-border bg-secondary/30 p-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Horas sin evento</p>
+                  <p className="mt-1 text-lg font-semibold text-foreground">-${currency(totalUnassignedLabor)}</p>
+                </div>
+                <div className="rounded-lg border border-border bg-secondary/30 p-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Costos fijos</p>
+                  <p className="mt-1 text-lg font-semibold text-foreground">-${currency(totalUnassignedFixed)}</p>
+                </div>
+              </div>
+              <div className="mt-4 flex items-center justify-between rounded-lg border-2 border-primary/30 bg-primary/10 p-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-primary">Ganancia neta del negocio</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">Incluye todos los egresos de {selectedYear}</p>
+                </div>
+                <p className={`text-2xl font-bold ${netRealProfit >= 0 ? 'text-emerald-300' : 'text-destructive'}`}>
+                  ${currency(netRealProfit)}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
 
           <Card>
             <CardHeader>
@@ -220,6 +293,55 @@ export default function Finance() {
                         <TableCell className={month.gananciaReal >= 0 ? 'font-semibold text-emerald-300' : 'font-semibold text-destructive'}>${currency(month.gananciaReal)}</TableCell>
                       </TableRow>
                     ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><Receipt className="size-5 text-primary" /> Otros gastos del negocio</CardTitle>
+              <CardDescription>
+                Compras y horas no vinculadas a un evento, más costos fijos prorrateados.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {otherLoading ? (
+                <LoadingState title="Cargando gastos" />
+              ) : monthsWithUnassigned.length === 0 ? (
+                <EmptyState
+                  title="Sin gastos sin evento"
+                  description="Todas las compras y horas están vinculadas a un presupuesto."
+                />
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Mes</TableHead>
+                      <TableHead className="text-right">Compras sin evento</TableHead>
+                      <TableHead className="text-right">Horas sin evento</TableHead>
+                      <TableHead className="text-right">Costos fijos</TableHead>
+                      <TableHead className="text-right">Total mes</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {monthsWithUnassigned.map(month => (
+                      <TableRow key={month.name}>
+                        <TableCell className="font-medium">{month.name}</TableCell>
+                        <TableCell className="text-right">${currency(month.purchaseTotal)}</TableCell>
+                        <TableCell className="text-right">${currency(month.laborTotal)}</TableCell>
+                        <TableCell className="text-right">${currency(month.monthlyFixed)}</TableCell>
+                        <TableCell className="text-right font-semibold text-foreground">${currency(month.total)}</TableCell>
+                      </TableRow>
+                    ))}
+                    <TableRow className="border-t-2 border-border bg-secondary/30 font-semibold">
+                      <TableCell>Total anual</TableCell>
+                      <TableCell className="text-right">${currency(totalUnassignedPurchases)}</TableCell>
+                      <TableCell className="text-right">${currency(totalUnassignedLabor)}</TableCell>
+                      <TableCell className="text-right">${currency(totalUnassignedFixed)}</TableCell>
+                      <TableCell className="text-right text-foreground">${currency(totalUnassigned)}</TableCell>
+                    </TableRow>
                   </TableBody>
                 </Table>
               )}

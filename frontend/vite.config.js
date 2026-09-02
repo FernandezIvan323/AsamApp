@@ -66,6 +66,25 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    chunkSizeWarningLimit: 700,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined;
+          if (id.includes('react-router')) return 'vendor-react-router';
+          if (id.includes('/react-dom') || id.match(/[\\/]react[\\/]/)) return 'vendor-react';
+          if (id.includes('jspdf') || id.includes('html2canvas')) return 'vendor-pdf';
+          if (id.includes('recharts')) return 'vendor-charts';
+          if (id.includes('framer-motion')) return 'vendor-motion';
+          if (id.includes('date-fns')) return 'vendor-dates';
+          if (id.includes('lucide-react')) return 'vendor-icons';
+          if (id.includes('i18next')) return 'vendor-i18n';
+          return undefined;
+        },
+      },
+    },
+  },
   optimizeDeps: {
     entries: ['./index.html'],
   },

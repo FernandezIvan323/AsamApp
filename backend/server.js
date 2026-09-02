@@ -24,6 +24,7 @@ import { logger, requestLogger, notFoundHandler, errorHandler, asyncHandler } fr
 import { generateAlerts } from './alerts.js';
 import { ftsSearchEvents, ensureFtsTable } from './search.js';
 import { assertStatusTransition } from './eventStatus.js';
+import { createRateLimiter, clientIp } from './rate-limit.js';
 
 const app = express();
 const prisma = new PrismaClient();
@@ -57,14 +58,29 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.get('/api/auth/config', handleAuthConfig);
-app.post('/api/auth/login', handleAuthLogin);
-app.post('/api/auth/register', handleAuthRegister);
+
+const loginLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  keyGenerator: (req) => `login:${clientIp(req)}|${(req.body?.username || '').toLowerCase().trim()}`,
+  message: 'Demasiados intentos de inicio de sesión. Esperá 15 minutos antes de reintentar.',
+});
+
+const registerLimiter = createRateLimiter({
+  windowMs: 60 * 60 * 1000,
+  max: 3,
+  keyGenerator: (req) => `register:${clientIp(req)}`,
+  message: 'Demasiados registros desde esta IP. Esperá una hora antes de reintentar.',
+});
+
+app.post('/api/auth/login', loginLimiter, handleAuthLogin);
+app.post('/api/auth/register', registerLimiter, handleAuthRegister);
 app.use(authMiddleware);
 app.get('/api/auth/me', handleAuthMe);
 
 function requirePermission(permission) {
   return (req, res, next) => {
-    if (!req.user) return res.status(401).json({ error: 'No autorizado' });
+    if (!req.user) return next();
     if (!hasPermission(req.user.role, permission)) {
       return res.status(403).json({ error: `No tenés permiso para: ${permission}` });
     }
@@ -177,7 +193,7 @@ app.get('/api/events/:id', async (req, res) => {
   }
 });
 
-app.post('/api/events', async (req, res) => {
+app.post('/api/events', requirePermission('events:write'), async (req, res) => {
   const { errors, data } = validateEventPayload(req.body);
   if (errors.length) return sendValidationError(res, errors);
 
@@ -213,7 +229,7 @@ app.post('/api/events', async (req, res) => {
   }
 });
 
-app.put('/api/events/:id', async (req, res) => {
+app.put('/api/events/:id', requirePermission('events:write'), async (req, res) => {
   try {
     if (req.body?.title !== undefined) {
       const existing = await prisma.event.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
@@ -301,6 +317,37 @@ app.put('/api/events/:id', async (req, res) => {
   }
 });
 
+app.patch('/api/events/:id/status', requirePermission('events:write'), async (req, res) => {
+  try {
+    const { errors, data } = validateStatusPayload(req.body);
+    if (errors.length) return sendValidationError(res, errors);
+
+    const existing = await prisma.event.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
+    if (!existing) return res.status(404).json({ error: 'Evento no encontrado' });
+
+    if (existing.status !== data.status) {
+      const transition = assertStatusTransition(existing.status, data.status);
+      if (!transition.ok) return res.status(400).json({ error: transition.error, from: existing.status, to: data.status });
+    }
+
+    const event = await prisma.event.update({
+      where: { id: req.params.id },
+      data: { status: data.status },
+      include: getEventInclude(),
+    });
+
+    if (existing.status !== data.status) {
+      await prisma.eventChangeLog.create({
+        data: { field: 'status', oldValue: existing.status, newValue: data.status, eventId: req.params.id },
+      });
+    }
+
+    res.json(serializeEvent(event));
+  } catch (error) {
+    handlePrismaError(res, error, 'Error al cambiar estado del evento');
+  }
+});
+
 app.get('/api/events/:id/financials', async (req, res) => {
   try {
     const event = await prisma.event.findFirst({
@@ -332,7 +379,7 @@ app.get('/api/shopping-list', async (req, res) => {
   }
 });
 
-app.delete('/api/events/:id', async (req, res) => {
+app.delete('/api/events/:id', requirePermission('events:delete'), async (req, res) => {
   try {
     const existing = await prisma.event.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
     if (!existing) return res.status(404).json({ error: 'Evento no encontrado' });
@@ -343,7 +390,7 @@ app.delete('/api/events/:id', async (req, res) => {
   }
 });
 
-app.post('/api/events/:id/duplicate', async (req, res) => {
+app.post('/api/events/:id/duplicate', requirePermission('events:write'), async (req, res) => {
   try {
     const source = await prisma.event.findFirst({
       where: { id: req.params.id, ...ownerFilter(req) },
@@ -390,7 +437,7 @@ app.post('/api/events/:id/duplicate', async (req, res) => {
   }
 });
 
-app.post('/api/events/:id/tasks', async (req, res) => {
+app.post('/api/events/:id/tasks', requirePermission('events:write'), async (req, res) => {
   const { errors, data } = validateTaskPayload(req.body);
   if (errors.length) return sendValidationError(res, errors);
 
@@ -406,7 +453,7 @@ app.post('/api/events/:id/tasks', async (req, res) => {
   }
 });
 
-app.put('/api/events/:eventId/tasks/:taskId', async (req, res) => {
+app.put('/api/events/:eventId/tasks/:taskId', requirePermission('events:write'), async (req, res) => {
   const { errors, data } = validateTaskPayload(req.body);
   if (errors.length) return sendValidationError(res, errors);
 
@@ -423,7 +470,20 @@ app.put('/api/events/:eventId/tasks/:taskId', async (req, res) => {
   }
 });
 
-app.post('/api/events/:id/payments', async (req, res) => {
+app.delete('/api/events/:eventId/tasks/:taskId', requirePermission('events:delete'), async (req, res) => {
+  try {
+    const event = await prisma.event.findFirst({ where: { id: req.params.eventId, ...ownerFilter(req) } });
+    if (!event) return res.status(404).json({ error: 'Evento no encontrado' });
+    const existing = await prisma.eventTask.findFirst({ where: { id: req.params.taskId, eventId: event.id } });
+    if (!existing) return res.status(404).json({ error: 'Tarea no encontrada' });
+    await prisma.eventTask.delete({ where: { id: existing.id } });
+    res.status(204).send();
+  } catch (error) {
+    handlePrismaError(res, error, 'Error al eliminar tarea');
+  }
+});
+
+app.post('/api/events/:id/payments', requirePermission('events:write'), async (req, res) => {
   const { errors, data } = validatePaymentPayload(req.body);
   if (errors.length) return sendValidationError(res, errors);
 
@@ -447,6 +507,27 @@ app.post('/api/events/:id/payments', async (req, res) => {
   }
 });
 
+app.delete('/api/events/:eventId/payments/:paymentId', requirePermission('events:delete'), async (req, res) => {
+  try {
+    const event = await prisma.event.findFirst({ where: { id: req.params.eventId, ...ownerFilter(req) } });
+    if (!event) return res.status(404).json({ error: 'Evento no encontrado' });
+    const existing = await prisma.eventPayment.findFirst({ where: { id: req.params.paymentId, eventId: event.id } });
+    if (!existing) return res.status(404).json({ error: 'Pago no encontrado' });
+    await prisma.eventPayment.delete({ where: { id: existing.id } });
+    const paidTotal = await prisma.eventPayment.aggregate({
+      where: { eventId: event.id },
+      _sum: { amount: true },
+    });
+    await prisma.event.update({
+      where: { id: event.id },
+      data: { amountPaid: paidTotal._sum.amount || 0 },
+    });
+    res.status(204).send();
+  } catch (error) {
+    handlePrismaError(res, error, 'Error al eliminar pago');
+  }
+});
+
 app.get('/api/inventory', async (req, res) => {
   try {
     const items = await prisma.catalogItem.findMany({
@@ -459,7 +540,7 @@ app.get('/api/inventory', async (req, res) => {
   }
 });
 
-app.post('/api/inventory', async (req, res) => {
+app.post('/api/inventory', requirePermission('inventory:write'), async (req, res) => {
   const { errors, data } = validateCatalogPayload(req.body);
   if (errors.length) return sendValidationError(res, errors);
 
@@ -471,7 +552,7 @@ app.post('/api/inventory', async (req, res) => {
   }
 });
 
-app.put('/api/inventory/:id', async (req, res) => {
+app.put('/api/inventory/:id', requirePermission('inventory:write'), async (req, res) => {
   const { errors, data } = validateCatalogPayload(req.body);
   if (errors.length) return sendValidationError(res, errors);
 
@@ -488,7 +569,7 @@ app.put('/api/inventory/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/inventory/:id', async (req, res) => {
+app.delete('/api/inventory/:id', requirePermission('inventory:delete'), async (req, res) => {
   try {
     const existing = await prisma.catalogItem.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
     if (!existing) return res.status(404).json({ error: 'Insumo no encontrado' });
@@ -514,7 +595,7 @@ app.get('/api/inventory/:id/stock-movements', async (req, res) => {
   }
 });
 
-app.post('/api/inventory/:id/stock-movements', async (req, res) => {
+app.post('/api/inventory/:id/stock-movements', requirePermission('inventory:write'), async (req, res) => {
   const { errors, data } = validateStockMovementPayload(req.body);
   if (errors.length) return sendValidationError(res, errors);
 
@@ -553,7 +634,7 @@ app.get('/api/providers', async (req, res) => {
   }
 });
 
-app.post('/api/providers', async (req, res) => {
+app.post('/api/providers', requirePermission('providers:write'), async (req, res) => {
   const { errors, data } = validateProviderPayload(req.body);
   if (errors.length) return sendValidationError(res, errors);
 
@@ -565,7 +646,7 @@ app.post('/api/providers', async (req, res) => {
   }
 });
 
-app.put('/api/providers/:id', async (req, res) => {
+app.put('/api/providers/:id', requirePermission('providers:write'), async (req, res) => {
   const { errors, data } = validateProviderPayload(req.body);
   if (errors.length) return sendValidationError(res, errors);
 
@@ -582,7 +663,7 @@ app.put('/api/providers/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/providers/:id', async (req, res) => {
+app.delete('/api/providers/:id', requirePermission('providers:delete'), async (req, res) => {
   try {
     const existing = await prisma.provider.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
     if (!existing) return res.status(404).json({ error: 'Proveedor no encontrado' });
@@ -620,7 +701,7 @@ app.get('/api/clients/:id', async (req, res) => {
   }
 });
 
-app.post('/api/clients', async (req, res) => {
+app.post('/api/clients', requirePermission('events:write'), async (req, res) => {
   const { name } = req.body;
   if (!name?.trim()) return sendValidationError(res, ['El nombre del cliente es obligatorio']);
   try {
@@ -633,7 +714,7 @@ app.post('/api/clients', async (req, res) => {
   }
 });
 
-app.put('/api/clients/:id', async (req, res) => {
+app.put('/api/clients/:id', requirePermission('events:write'), async (req, res) => {
   const { name } = req.body;
   if (!name?.trim()) return sendValidationError(res, ['El nombre del cliente es obligatorio']);
   try {
@@ -649,7 +730,7 @@ app.put('/api/clients/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/clients/:id', async (req, res) => {
+app.delete('/api/clients/:id', requirePermission('events:delete'), async (req, res) => {
   try {
     const existing = await prisma.client.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
     if (!existing) return res.status(404).json({ error: 'Cliente no encontrado' });
@@ -687,7 +768,7 @@ app.get('/api/employees/:id', async (req, res) => {
   }
 });
 
-app.post('/api/employees', async (req, res) => {
+app.post('/api/employees', requirePermission('inventory:write'), async (req, res) => {
   const { name } = req.body;
   if (!name?.trim()) return sendValidationError(res, ['El nombre del empleado es obligatorio']);
   try {
@@ -708,7 +789,7 @@ app.post('/api/employees', async (req, res) => {
   }
 });
 
-app.put('/api/employees/:id', async (req, res) => {
+app.put('/api/employees/:id', requirePermission('inventory:write'), async (req, res) => {
   const { name } = req.body;
   if (!name?.trim()) return sendValidationError(res, ['El nombre del empleado es obligatorio']);
   try {
@@ -732,7 +813,7 @@ app.put('/api/employees/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/employees/:id', async (req, res) => {
+app.delete('/api/employees/:id', requirePermission('inventory:delete'), async (req, res) => {
   try {
     const existing = await prisma.employee.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
     if (!existing) return res.status(404).json({ error: 'Empleado no encontrado' });
@@ -758,7 +839,7 @@ app.get('/api/employee-activities', async (req, res) => {
   }
 });
 
-app.post('/api/employee-activities', async (req, res) => {
+app.post('/api/employee-activities', requirePermission('inventory:write'), async (req, res) => {
   const { employeeId } = req.body;
   if (!employeeId) return sendValidationError(res, ['El empleado es obligatorio']);
 
@@ -799,7 +880,7 @@ app.post('/api/employee-activities', async (req, res) => {
   }
 });
 
-app.delete('/api/employee-activities/:id', async (req, res) => {
+app.delete('/api/employee-activities/:id', requirePermission('inventory:delete'), async (req, res) => {
   try {
     const existing = await prisma.employeeActivity.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
     if (!existing) return res.status(404).json({ error: 'Actividad no encontrada' });
@@ -822,7 +903,7 @@ app.get('/api/recipes', async (req, res) => {
   }
 });
 
-app.post('/api/recipes', async (req, res) => {
+app.post('/api/recipes', requirePermission('events:write'), async (req, res) => {
   const { errors, data } = validateRecipePayload(req.body);
   if (errors.length) return sendValidationError(res, errors);
 
@@ -834,7 +915,7 @@ app.post('/api/recipes', async (req, res) => {
   }
 });
 
-app.put('/api/recipes/:id', async (req, res) => {
+app.put('/api/recipes/:id', requirePermission('events:write'), async (req, res) => {
   const { errors, data } = validateRecipePayload(req.body);
   if (errors.length) return sendValidationError(res, errors);
 
@@ -851,7 +932,7 @@ app.put('/api/recipes/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/recipes/:id', async (req, res) => {
+app.delete('/api/recipes/:id', requirePermission('events:delete'), async (req, res) => {
   try {
     const existing = await prisma.recipeCombo.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
     if (!existing) return res.status(404).json({ error: 'Receta no encontrada' });
@@ -958,7 +1039,7 @@ app.get('/api/market-purchases/:id', async (req, res) => {
   }
 });
 
-app.post('/api/market-purchases', async (req, res) => {
+app.post('/api/market-purchases', requirePermission('purchases:write'), async (req, res) => {
   const { errors, data } = validateMarketPurchasePayload(req.body);
   if (errors.length) return sendValidationError(res, errors);
 
@@ -988,7 +1069,7 @@ app.post('/api/market-purchases', async (req, res) => {
   }
 });
 
-app.put('/api/market-purchases/:id', async (req, res) => {
+app.put('/api/market-purchases/:id', requirePermission('purchases:write'), async (req, res) => {
   const { errors, data } = validateMarketPurchasePayload(req.body);
   if (errors.length) return sendValidationError(res, errors);
 
@@ -1021,7 +1102,7 @@ app.put('/api/market-purchases/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/market-purchases/:id', async (req, res) => {
+app.delete('/api/market-purchases/:id', requirePermission('purchases:delete'), async (req, res) => {
   try {
     const existing = await prisma.marketPurchase.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
     if (!existing) return res.status(404).json({ error: 'Compra no encontrada' });
@@ -1189,7 +1270,7 @@ app.get('/api/notes', async (req, res) => {
   }
 });
 
-app.post('/api/notes', async (req, res) => {
+app.post('/api/notes', requirePermission('notes:write'), async (req, res) => {
   if (!req.body.title?.trim()) return res.status(400).json({ error: 'El título es requerido' });
   try {
     const note = await prisma.note.create({
@@ -1215,7 +1296,7 @@ app.get('/api/notes/:id', async (req, res) => {
   }
 });
 
-app.patch('/api/notes/:id', async (req, res) => {
+app.patch('/api/notes/:id', requirePermission('notes:write'), async (req, res) => {
   try {
     const existing = await prisma.note.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
     if (!existing) return res.status(404).json({ error: 'Nota no encontrada' });
@@ -1263,7 +1344,7 @@ app.patch('/api/notes/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/notes/:id', async (req, res) => {
+app.delete('/api/notes/:id', requirePermission('notes:delete'), async (req, res) => {
   try {
     const existing = await prisma.note.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
     if (!existing) return res.status(404).json({ error: 'Nota no encontrada' });
@@ -1274,7 +1355,7 @@ app.delete('/api/notes/:id', async (req, res) => {
   }
 });
 
-app.post('/api/notes/:id/archive', async (req, res) => {
+app.post('/api/notes/:id/archive', requirePermission('notes:write'), async (req, res) => {
   try {
     const existing = await prisma.note.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
     if (!existing) return res.status(404).json({ error: 'Nota no encontrada' });
@@ -1289,7 +1370,7 @@ app.post('/api/notes/:id/archive', async (req, res) => {
   }
 });
 
-app.post('/api/notes/:id/restore', async (req, res) => {
+app.post('/api/notes/:id/restore', requirePermission('notes:write'), async (req, res) => {
   try {
     const existing = await prisma.note.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
     if (!existing) return res.status(404).json({ error: 'Nota no encontrada' });
@@ -1357,7 +1438,7 @@ app.get('/api/quote-templates', async (req, res) => {
   }
 });
 
-app.post('/api/quote-templates', async (req, res) => {
+app.post('/api/quote-templates', requirePermission('events:write'), async (req, res) => {
   const { errors, data } = validateQuoteTemplatePayload(req.body);
   if (errors.length) return sendValidationError(res, errors);
   try {
@@ -1368,7 +1449,7 @@ app.post('/api/quote-templates', async (req, res) => {
   }
 });
 
-app.put('/api/quote-templates/:id', async (req, res) => {
+app.put('/api/quote-templates/:id', requirePermission('events:write'), async (req, res) => {
   const { errors, data } = validateQuoteTemplatePayload(req.body);
   if (errors.length) return sendValidationError(res, errors);
   try {
@@ -1381,7 +1462,7 @@ app.put('/api/quote-templates/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/quote-templates/:id', async (req, res) => {
+app.delete('/api/quote-templates/:id', requirePermission('events:delete'), async (req, res) => {
   try {
     const existing = await prisma.quoteTemplate.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
     if (!existing) return res.status(404).json({ error: 'Plantilla no encontrada' });
@@ -1407,7 +1488,7 @@ app.get('/api/fixed-costs', async (req, res) => {
   }
 });
 
-app.post('/api/fixed-costs', async (req, res) => {
+app.post('/api/fixed-costs', requirePermission('events:write'), async (req, res) => {
   const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
   const amount = Number(req.body?.amount);
   const frequency = typeof req.body?.frequency === 'string' ? req.body.frequency.trim() : 'Mensual';
@@ -1424,7 +1505,7 @@ app.post('/api/fixed-costs', async (req, res) => {
   }
 });
 
-app.put('/api/fixed-costs/:id', async (req, res) => {
+app.put('/api/fixed-costs/:id', requirePermission('events:write'), async (req, res) => {
   const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
   const amount = Number(req.body?.amount);
   const frequency = typeof req.body?.frequency === 'string' ? req.body.frequency.trim() : 'Mensual';
@@ -1444,7 +1525,7 @@ app.put('/api/fixed-costs/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/fixed-costs/:id', async (req, res) => {
+app.delete('/api/fixed-costs/:id', requirePermission('events:delete'), async (req, res) => {
   try {
     const existing = await prisma.fixedCost.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
     if (!existing) return res.status(404).json({ error: 'Gasto fijo no encontrado' });
@@ -1465,7 +1546,7 @@ app.get('/api/search', async (req, res) => {
   try {
     await ensureFtsTable();
     const [events, providers, inventory, notes, templates] = await Promise.all([
-      ftsSearchEvents(query, 8, req.user?.role !== 'admin' ? req.user?.id : null),
+      ftsSearchEvents(query, 8, req.user?.role === 'admin' ? null : req.user?.id),
       prisma.provider.findMany({
         where: { ...ownerFilter(req), OR: [{ name: { contains: query } }, { category: { contains: query } }] },
         take: 5,
@@ -1631,7 +1712,7 @@ app.get('/api/events/:id/photos', async (req, res) => {
   }
 });
 
-app.post('/api/events/:id/photos', async (req, res) => {
+app.post('/api/events/:id/photos', requirePermission('events:write'), async (req, res) => {
   try {
     const event = await prisma.event.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
     if (!event) return res.status(404).json({ error: 'Evento no encontrado' });
@@ -1664,7 +1745,7 @@ app.post('/api/events/:id/photos', async (req, res) => {
   }
 });
 
-app.delete('/api/events/:eventId/photos/:photoId', async (req, res) => {
+app.delete('/api/events/:eventId/photos/:photoId', requirePermission('events:delete'), async (req, res) => {
   try {
     const event = await prisma.event.findFirst({ where: { id: req.params.eventId, ...ownerFilter(req) } });
     if (!event) return res.status(404).json({ error: 'Evento no encontrado' });
@@ -1704,14 +1785,9 @@ app.get('/api/docs', (_req, res) => {
 
 if (process.env.SERVE_FRONTEND === 'true') {
   const distPath = path.join(__dirname, '../frontend/dist');
-  const landingPath = path.join(__dirname, '../landing');
 
-  // Landing en /
-  app.use(express.static(landingPath));
-
-  // App React en /app
-  app.use('/app', express.static(distPath));
-  app.get(/^\/app(\/.*)?$/, (_req, res) => {
+  app.use(express.static(distPath));
+  app.get(/^(?!\/api).*/, (_req, res) => {
     res.sendFile(path.join(distPath, 'index.html'));
   });
 }

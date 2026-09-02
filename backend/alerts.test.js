@@ -2,14 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { ALERT_TYPES, SEVERITY, generateAlerts } from './alerts.js';
 
-test('ALERT_TYPES incluye los 6 tipos de alerta', () => {
+test('ALERT_TYPES incluye los 7 tipos de alerta', () => {
   assert.equal(ALERT_TYPES.EVENT_UNCONFIRMED, 'event_unconfirmed');
   assert.equal(ALERT_TYPES.PAYMENT_OVERDUE, 'payment_overdue');
   assert.equal(ALERT_TYPES.LOW_STOCK, 'low_stock');
   assert.equal(ALERT_TYPES.NOTE_DUE, 'note_due');
   assert.equal(ALERT_TYPES.NOTE_OVERDUE, 'note_overdue');
   assert.equal(ALERT_TYPES.TASK_PENDING, 'task_pending');
-  assert.equal(Object.keys(ALERT_TYPES).length, 6);
+  assert.equal(ALERT_TYPES.PURCHASE_NO_EVENT, 'purchase_no_event');
+  assert.equal(Object.keys(ALERT_TYPES).length, 7);
 });
 
 test('SEVERITY tiene 3 niveles: info, warn, error', () => {

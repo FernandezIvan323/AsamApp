@@ -58,6 +58,7 @@ export default function NewEvent() {
 
   useEffect(() => {
     const recipeId = routerLocation.state?.recipeId;
+    if (routerLocation.state?.selectedQuantities) return;
     if (!recipeId || recipes.length === 0 || inventory.length === 0) return;
     const recipe = recipes.find(r => r.id === recipeId);
     if (!recipe) return;
@@ -71,6 +72,7 @@ export default function NewEvent() {
 
   useEffect(() => {
     const templateId = routerLocation.state?.templateId;
+    if (routerLocation.state?.selectedQuantities) return;
     if (!templateId || inventory.length === 0) return;
     getQuoteTemplates()
       .then(all => {
@@ -87,6 +89,21 @@ export default function NewEvent() {
       })
       .catch(() => {});
   }, [routerLocation.state?.templateId, inventory]);
+
+  useEffect(() => {
+    const s = routerLocation.state;
+    if (!s?.selectedQuantities) return;
+    setValues(prev => ({
+      ...prev,
+      adults: s.guests ?? prev.adults,
+      extraCosts: s.extraCosts ?? prev.extraCosts,
+      profitMargin: s.profitMargin ?? prev.profitMargin,
+      recipeName: s.recipeName ?? prev.recipeName,
+      menuNotes: s.menuNotes ?? prev.menuNotes,
+      selectedRecipeId: s.recipeId ?? '',
+      selectedQuantities: s.selectedQuantities,
+    }));
+  }, [routerLocation.state]);
 
   const handleRecipeSelect = (recipeId) => {
     if (!recipeId) {

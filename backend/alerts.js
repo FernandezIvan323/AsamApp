@@ -9,6 +9,7 @@ const ALERT_TYPES = {
   NOTE_DUE: 'note_due',
   NOTE_OVERDUE: 'note_overdue',
   TASK_PENDING: 'task_pending',
+  PURCHASE_NO_EVENT: 'purchase_no_event',
 };
 
 const SEVERITY = { info: 'info', warn: 'warn', error: 'error' };
@@ -120,6 +121,24 @@ export async function generateAlerts(user = null) {
         eventId: task.eventId,
       });
     }
+  }
+
+  const purchases = await prisma.marketPurchase.findMany({
+    where: { eventId: null, ...ownerFilter },
+    orderBy: { purchasedAt: 'desc' },
+    take: 10,
+  });
+  if (purchases.length > 0) {
+    const totalAmount = purchases.reduce((sum, p) => sum + Number(p.totalAmount || 0), 0);
+    alerts.push({
+      type: ALERT_TYPES.PURCHASE_NO_EVENT,
+      severity: SEVERITY.info,
+      title: `${purchases.length} compra${purchases.length !== 1 ? 's' : ''} sin evento`,
+      message: `Total sin asignar $${totalAmount.toFixed(2)}. Asigná estas compras a un presupuesto para que entren al margen real.`,
+      link: '/weekly-expenses',
+      purchaseCount: purchases.length,
+      totalAmount,
+    });
   }
 
   return alerts;

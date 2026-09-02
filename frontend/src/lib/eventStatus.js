@@ -24,10 +24,10 @@ const STATUS_TRANSITIONS = {
 
 export const STATUS_COLORS = {
   Cotizado: 'bg-sky-500/15 text-sky-300 border-sky-500/20',
-  Aprobado: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/20',
-  'Compras pendientes': 'bg-orange-500/15 text-orange-300 border-orange-500/20',
-  'En preparacion': 'bg-violet-500/15 text-violet-300 border-violet-500/20',
-  Realizado: 'bg-violet-500/15 text-violet-300 border-violet-500/20',
+  Aprobado: 'bg-amber-500/15 text-amber-300 border-amber-500/20',
+  'Compras pendientes': 'bg-muted/30 text-muted-foreground border-border',
+  'En preparacion': 'bg-amber-500/15 text-amber-300 border-amber-500/20',
+  Realizado: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/20',
   Cobrado: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/20',
   Cancelado: 'bg-red-500/15 text-red-300 border-red-500/20',
   Pendiente: 'bg-sky-500/15 text-sky-300 border-sky-500/20',

@@ -89,6 +89,11 @@ model EmployeeActivity {
 
   eventId      String?
   event        Event?   @relation(fields: [eventId], references: [id], onDelete: SetNull)
+
+  @@index([ownerId])
+  @@index([employeeId])
+  @@index([eventId])
+  @@index([ownerId, date])
 }
 
 model Event {
@@ -124,6 +129,11 @@ model Event {
   changelog    EventChangeLog[]
   photos       EventPhoto[]
   employeeActivities EmployeeActivity[]
+
+  @@index([ownerId])
+  @@index([ownerId, status])
+  @@index([ownerId, date])
+  @@index([clientId])
 }
 
 model CatalogItem {
@@ -140,6 +150,8 @@ model CatalogItem {
   owner     User?    @relation("CatalogItemOwner", fields: [ownerId], references: [id], onDelete: SetNull)
 
   movements StockMovement[]
+
+  @@index([ownerId])
 }
 
 model MarketPurchase {
@@ -163,6 +175,11 @@ model MarketPurchase {
   providerId    String?
   provider      Provider? @relation(fields: [providerId], references: [id], onDelete: SetNull)
   items         MarketPurchaseItem[]
+
+  @@index([ownerId])
+  @@index([ownerId, purchasedAt])
+  @@index([eventId])
+  @@index([providerId])
 }
 
 model MarketPurchaseItem {
@@ -277,6 +294,10 @@ model Note {
   changelog          NoteChangeLog[]
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
+
+  @@index([ownerId])
+  @@index([ownerId, archived])
+  @@index([ownerId, status])
 }
 
 model NoteChangeLog {

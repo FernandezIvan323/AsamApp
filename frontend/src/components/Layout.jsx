@@ -4,7 +4,6 @@ import { Beef, Building2, Calculator, Calendar, CalendarDays, ClipboardList, Com
 import CommandPalette from '@/components/CommandPalette';
 import GlobalSearch from '@/components/GlobalSearch';
 import NotificationsBell from '@/components/NotificationsBell';
-import LocaleSwitcher from '@/components/LocaleSwitcher';
 import { clearStoredToken } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { apiRequest } from '@/lib/api';
@@ -50,7 +49,6 @@ const navGroups = [
       { to: '/providers', label: 'Proveedores', icon: Store },
       { to: '/fixed-costs', label: 'Gastos fijos', icon: Building2 },
       { to: '/notes', label: 'Notas', icon: StickyNote },
-      { to: '/operations', label: 'Operaciones', icon: ClipboardList },
       { to: '/export', label: 'Exportar', icon: Download },
     ],
   },
@@ -147,7 +145,7 @@ export default function Layout() {
   const confirmLogout = () => {
     setShowLogoutConfirm(false);
     clearStoredToken();
-    window.location.href = '/app/login';
+    window.location.href = '/login';
   };
 
   return (
@@ -170,7 +168,6 @@ export default function Layout() {
           <span className="text-sm font-bold text-foreground">AsamApp</span>
         </div>
         <div className="flex items-center gap-1">
-          <LocaleSwitcher />
           <NotificationsBell />
         </div>
       </div>
@@ -322,7 +319,6 @@ export default function Layout() {
                 <GlobalSearch />
               </div>
               <div className="flex shrink-0 items-center gap-2">
-                <LocaleSwitcher />
                 <NotificationsBell />
               </div>
             </div>

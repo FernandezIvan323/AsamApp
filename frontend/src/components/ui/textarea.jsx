@@ -5,8 +5,10 @@ function Textarea({ className, ...props }) {
     <textarea
       data-slot="textarea"
       className={cn(
-        'border-white/15 bg-[#0A1428] ring-offset-[#0A1428] placeholder:text-[#8BA0B0]/40 flex min-h-[80px] w-full rounded-lg border px-3.5 py-2 text-sm text-white shadow-xs transition-all duration-200 outline-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50',
-        'focus:border-[#E8834A] focus:ring-4 focus:ring-[#E8834A]/15 focus:shadow-[0_0_15px_rgba(232,131,74,0.15)]',
+        'flex min-h-[80px] w-full rounded-lg border-2 px-3.5 py-2 text-sm text-foreground shadow-xs transition-all outline-none placeholder:text-muted-foreground/40 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50',
+        'border-[var(--border2)] bg-[var(--input-bg)]',
+        'focus:border-primary focus:ring-4 focus:ring-primary/30 focus:shadow-[0_0_18px_rgba(232,131,74,0.18)]',
+        'aria-[invalid=true]:border-destructive aria-[invalid=true]:ring-4 aria-[invalid=true]:ring-destructive/25',
         className,
       )}
       {...props}

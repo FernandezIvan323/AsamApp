@@ -17,6 +17,14 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { useEvents } from '@/hooks/useEvents';
 import { EVENT_STATUSES, getAllowedStatuses, getStatusVariant, STATUS_COLORS } from '@/lib/eventStatus';
 import { currency, getEventFinancials, getEventSubtotal } from '@/lib/finance';
@@ -30,6 +38,7 @@ export default function History() {
   const [mutationError, setMutationError] = useState(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [eventToDelete, setEventToDelete] = useState(null);
+  const [statusConfirm, setStatusConfirm] = useState(null);
 
   const filteredEvents = events.filter(event => {
     const term = searchTerm.toLowerCase();
@@ -41,6 +50,18 @@ export default function History() {
   });
 
   const handleStatusChange = async (id, newStatus) => {
+    const event = events.find(e => e.id === id);
+    if (newStatus === 'Cobrado' && event) {
+      const pending = Math.max(0, Number(event.totalPrice || 0) - Number(event.amountPaid || 0));
+      if (pending > 0.01) {
+        setStatusConfirm({ id, newStatus, pending });
+        return;
+      }
+    }
+    await applyStatus(id, newStatus);
+  };
+
+  const applyStatus = async (id, newStatus) => {
     try {
       setMutationError(null);
       await setEventStatus(id, newStatus);
@@ -123,75 +144,73 @@ export default function History() {
           ) : filteredEvents.length === 0 ? (
             <EmptyState title="No se encontraron presupuestos" description="Ajustá la búsqueda o creá un nuevo evento." />
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full caption-bottom text-sm">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="h-10 px-3 text-left text-[10px] font-medium uppercase tracking-wider text-muted-foreground whitespace-nowrap">Fecha</th>
-                    <th className="h-10 px-3 text-left text-[10px] font-medium uppercase tracking-wider text-muted-foreground whitespace-nowrap">Evento</th>
-                    <th className="h-10 px-3 text-left text-[10px] font-medium uppercase tracking-wider text-muted-foreground whitespace-nowrap hidden sm:table-cell">Cliente</th>
-                    <th className="h-10 px-3 text-left text-[10px] font-medium uppercase tracking-wider text-muted-foreground whitespace-nowrap hidden md:table-cell">Invitados</th>
-                    <th className="h-10 px-3 text-left text-[10px] font-medium uppercase tracking-wider text-muted-foreground whitespace-nowrap">Total</th>
-                    <th className="h-10 px-3 text-left text-[10px] font-medium uppercase tracking-wider text-muted-foreground whitespace-nowrap">Estado</th>
-                    <th className="h-10 px-3 text-right text-[10px] font-medium uppercase tracking-wider text-muted-foreground whitespace-nowrap">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredEvents.map(event => {
-                    const dateObj = event.date ? parseISO(event.date) : new Date();
-                    const allowed = getAllowedStatuses(event.status);
-                    return (
-                      <tr key={event.id} className="border-b border-border/60 transition-colors hover:bg-secondary/40">
-                        <td className="p-3 whitespace-nowrap text-xs text-muted-foreground">
-                          {event.date ? format(dateObj, 'dd/MM/yyyy', { locale: es }) : '—'}
-                        </td>
-                        <td className="p-3 whitespace-nowrap font-medium text-foreground">{event.title}</td>
-                        <td className="p-3 whitespace-nowrap text-sm text-muted-foreground hidden sm:table-cell">{event.client || '—'}</td>
-                        <td className="p-3 whitespace-nowrap text-sm text-muted-foreground hidden md:table-cell">{event.guests}</td>
-                        <td className="p-3 whitespace-nowrap font-semibold text-foreground">${currency(event.totalPrice)}</td>
-                        <td className="p-3 whitespace-nowrap">
-                          <select
-                            className={`appearance-none rounded-full border px-3 py-1 text-[11px] font-medium tracking-wide transition-all focus:outline-none focus:ring-2 focus:ring-primary/40 ${STATUS_COLORS[event.status] || 'bg-muted/30 text-muted-foreground border-border'}`}
-                            value={event.status}
-                            onChange={(e) => handleStatusChange(event.id, e.target.value)}
+            <Table>
+              <TableHeader>
+                <TableRow className="border-border">
+                  <TableHead className="text-[10px] uppercase tracking-wider">Fecha</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-wider">Evento</TableHead>
+                  <TableHead className="hidden text-[10px] uppercase tracking-wider sm:table-cell">Cliente</TableHead>
+                  <TableHead className="hidden text-[10px] uppercase tracking-wider md:table-cell">Invitados</TableHead>
+                  <TableHead className="text-right text-[10px] uppercase tracking-wider">Total</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-wider">Estado</TableHead>
+                  <TableHead className="text-right text-[10px] uppercase tracking-wider">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredEvents.map(event => {
+                  const dateObj = event.date ? parseISO(event.date) : new Date();
+                  const allowed = getAllowedStatuses(event.status);
+                  return (
+                    <TableRow key={event.id}>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {event.date ? format(dateObj, 'dd/MM/yyyy', { locale: es }) : '—'}
+                      </TableCell>
+                      <TableCell className="font-medium text-foreground">{event.title}</TableCell>
+                      <TableCell className="hidden text-sm text-muted-foreground sm:table-cell">{event.client || '—'}</TableCell>
+                      <TableCell className="hidden text-sm text-muted-foreground md:table-cell">{event.guests}</TableCell>
+                      <TableCell className="text-right font-semibold text-foreground">${currency(event.totalPrice)}</TableCell>
+                      <TableCell>
+                        <select
+                          className={`appearance-none rounded-full border px-3 py-1 text-[11px] font-medium tracking-wide transition-all focus:outline-none focus:ring-2 focus:ring-primary/40 ${STATUS_COLORS[event.status] || 'bg-muted/30 text-muted-foreground border-border'}`}
+                          value={event.status}
+                          onChange={(e) => handleStatusChange(event.id, e.target.value)}
+                        >
+                          {allowed.map(status => (
+                            <option key={status} value={status} className="bg-card text-foreground">{status}</option>
+                          ))}
+                        </select>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1.5">
+                          <Button size="sm" variant="outline" asChild>
+                            <Link to={`/history/${event.id}`}>
+                              <Eye className="size-3.5" />
+                              Gestionar
+                            </Link>
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => { setSelectedEvent(event); setTimeout(handlePrint, 300); }}
                           >
-                            {allowed.map(status => (
-                              <option key={status} value={status} className="bg-card text-foreground">{status}</option>
-                            ))}
-                          </select>
-                        </td>
-                        <td className="p-3 whitespace-nowrap">
-                          <div className="flex justify-end gap-1.5">
-                            <Button size="sm" variant="outline" asChild className="h-8 px-2.5 text-xs">
-                              <Link to={`/history/${event.id}`}>
-                                <Eye className="size-3.5" />
-                                Gestionar
-                              </Link>
-                            </Button>
-                            <Button
-                              size="sm"
-                              className="h-8 px-2.5 text-xs"
-                              onClick={() => { setSelectedEvent(event); setTimeout(handlePrint, 300); }}
-                            >
-                              <Download className="size-3.5" />
-                              PDF
-                            </Button>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteClick(event)}
-                              className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/15 hover:text-destructive"
-                              title="Eliminar presupuesto"
-                            >
-                              <Trash2 className="size-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                            <Download className="size-3.5" />
+                            PDF
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => handleDeleteClick(event)}
+                            aria-label="Eliminar presupuesto"
+                            className="text-muted-foreground hover:bg-destructive/15 hover:text-destructive"
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
           )}
         </CardContent>
       </Card>
@@ -282,6 +301,21 @@ export default function History() {
           setDeleteConfirmOpen(false);
           setEventToDelete(null);
         }}
+      />
+
+      <ConfirmDialog
+        isOpen={Boolean(statusConfirm)}
+        title="¿Marcar como Cobrado con saldo pendiente?"
+        description={statusConfirm ? `Todavía hay $${currency(statusConfirm.pending)} sin cobrar. ¿Continuar de todas formas?` : ''}
+        confirmText="Marcar como Cobrado"
+        cancelText="Cancelar"
+        variant="warning"
+        onConfirm={() => {
+          const target = statusConfirm;
+          setStatusConfirm(null);
+          if (target) applyStatus(target.id, target.newStatus);
+        }}
+        onCancel={() => setStatusConfirm(null)}
       />
     </div>
   );

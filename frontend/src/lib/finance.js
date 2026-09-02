@@ -130,3 +130,45 @@ export function getDashboardSummary(events) {
     closedEvents: events.filter(event => event.status === 'Cobrado').length,
   };
 }
+
+/**
+ * Gastos sin evento vinculados al año: compras (sin eventId),
+ * horas del equipo (sin eventId), y costos fijos prorrateados por mes.
+ * Devuelve un array mensual con { name, count, gastos }.
+ */
+export function getUnassignedMonthlyFinance({
+  purchases = [],
+  activities = [],
+  fixedCosts = [],
+  year,
+}) {
+  return MONTHS.map((name, index) => {
+    const monthPurchases = purchases.filter((p) => {
+      const d = p.purchasedAt ? new Date(p.purchasedAt) : null;
+      return !p.eventId && d && d.getFullYear() === year && d.getMonth() === index;
+    });
+    const monthActivities = activities.filter((a) => {
+      const d = a.date ? new Date(a.date) : null;
+      return !a.eventId && d && d.getFullYear() === year && d.getMonth() === index;
+    });
+    const purchaseTotal = monthPurchases.reduce((s, p) => s + Number(p.totalAmount || 0), 0);
+    const laborTotal = monthActivities.reduce((s, a) => s + Number(a.payment || 0), 0);
+
+    const monthlyFixed = fixedCosts.reduce((sum, cost) => {
+      const amount = Number(cost.amount || 0);
+      if (cost.frequency === 'Mensual') return sum + amount;
+      if (cost.frequency === 'Anual') return sum + amount / 12;
+      return sum;
+    }, 0);
+
+    return {
+      name,
+      purchaseTotal,
+      laborTotal,
+      monthlyFixed,
+      total: purchaseTotal + laborTotal + monthlyFixed,
+      purchaseCount: monthPurchases.length,
+      activityCount: monthActivities.length,
+    };
+  });
+}

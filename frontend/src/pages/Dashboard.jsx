@@ -423,6 +423,59 @@ export default function Dashboard() {
               </Card>
             </FadeIn>
           )}
+
+          {/* Stock bajo y tareas pendientes (resumen de Operaciones) */}
+          {ops && (ops.lowStock?.length > 0 || ops.openTasks?.length > 0) && (
+            <FadeIn delay={0.14}>
+              <div className="grid gap-4 md:grid-cols-2">
+                {ops.lowStock?.length > 0 && (
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-2 text-base">
+                        <CircleAlert className="size-4 text-amber-400" /> Stock bajo
+                      </CardTitle>
+                      <CardDescription>{ops.lowStock.length} insumo{ops.lowStock.length !== 1 ? 's' : ''} por debajo del mínimo.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-1.5">
+                      {ops.lowStock.slice(0, 5).map(item => (
+                        <div
+                          key={item.id}
+                          className="flex items-center justify-between gap-2 rounded-lg border border-border/50 bg-secondary/30 px-3 py-2 text-sm"
+                        >
+                          <span className="truncate font-medium text-foreground">{item.name}</span>
+                          <span className="shrink-0 text-xs text-amber-300">
+                            {item.stock} / {item.minStock} {item.unit}
+                          </span>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                )}
+                {ops.openTasks?.length > 0 && (
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-2 text-base">
+                        <ClipboardList className="size-4 text-primary" /> Tareas pendientes
+                      </CardTitle>
+                      <CardDescription>{ops.openTasks.length} tarea{ops.openTasks.length !== 1 ? 's' : ''} abierta{ops.openTasks.length !== 1 ? 's' : ''} en eventos.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-1.5">
+                      {ops.openTasks.slice(0, 5).map(task => (
+                        <Link
+                          key={task.id}
+                          to={`/history/${task.eventId}`}
+                          className="flex items-center justify-between gap-2 rounded-lg border border-border/50 bg-secondary/30 px-3 py-2 text-sm hover:bg-secondary/60"
+                        >
+                          <span className="truncate font-medium text-foreground">{task.title}</span>
+                          <span className="shrink-0 text-xs text-muted-foreground">{task.eventTitle || '—'}</span>
+                        </Link>
+                      ))}
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            </FadeIn>
+          )}
         </>
       )}
     </div>

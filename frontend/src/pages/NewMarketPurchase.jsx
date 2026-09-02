@@ -144,8 +144,8 @@ function PurchaseBlock({
   const itemCount = purchase.items.length;
 
   return (
-    <Card className={cn(collapsed && 'border-border/80 bg-card/80')}>
-      <CardHeader className="flex flex-row items-start justify-between gap-3 border-b border-border pb-3">
+    <Card className={cn(collapsed && 'border-[var(--border2)] bg-card/95')}>
+      <CardHeader className="flex flex-row items-start justify-between gap-3 border-b-2 border-[var(--border2)] pb-3">
         <button
           type="button"
           onClick={onToggleCollapse}
@@ -200,9 +200,9 @@ function PurchaseBlock({
 
       {!collapsed && (
         <CardContent className="space-y-5 pt-5">
-          <div className="space-y-3">
-            <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              <Store className="size-3.5" /> Dónde y cómo pagaste
+          <div className="space-y-4 rounded-lg border-2 border-dashed border-[var(--border2)] bg-[var(--input-bg)]/30 p-4">
+            <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-foreground">
+              <Store className="size-3.5 text-primary" /> Dónde y cómo pagaste
             </p>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <FormField label="Tienda / establecimiento" required hint="Ej. Carnicería del barrio">
@@ -236,15 +236,15 @@ function PurchaseBlock({
             )}
           </div>
 
-          <div className="space-y-3 border-t border-border pt-4">
-            <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              <Package className="size-3.5" /> Productos
+          <div className="space-y-4 rounded-lg border-2 border-dashed border-[var(--border2)] bg-[var(--input-bg)]/30 p-4">
+            <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-foreground">
+              <Package className="size-3.5 text-primary" /> Productos
             </p>
             <p className="text-xs text-muted-foreground">
               Completá una fila y tocá <strong className="text-foreground">Agregar</strong> (o Enter).
             </p>
 
-            <div className="rounded-xl border border-border bg-secondary/30 p-3 sm:p-4">
+            <div className="rounded-lg border-2 border-[var(--border2)] bg-background/40 p-3 sm:p-4">
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-12 sm:items-end">
                 <FormField label="Producto" className="sm:col-span-4">
                   <Input
@@ -297,19 +297,19 @@ function PurchaseBlock({
             </div>
 
             {purchase.items.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">
+              <div className="rounded-lg border-2 border-dashed border-[var(--border2)] px-4 py-6 text-center text-sm text-muted-foreground">
                 Todavía no hay productos en esta compra.
               </div>
             ) : (
-              <div className="overflow-hidden rounded-xl border border-border">
-                <div className="hidden grid-cols-12 gap-2 border-b border-border bg-secondary/40 px-3 py-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground sm:grid">
+              <div className="overflow-hidden rounded-xl border-2 border-[var(--border2)]">
+                <div className="hidden grid-cols-12 gap-2 border-b-2 border-[var(--border2)] bg-[var(--input-bg)] px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-foreground sm:grid">
                   <div className="col-span-5">Producto</div>
                   <div className="col-span-2 text-right">Cant.</div>
                   <div className="col-span-2 text-right">P. unit.</div>
                   <div className="col-span-2 text-right">Subtotal</div>
                   <div className="col-span-1" />
                 </div>
-                <ul className="divide-y divide-border">
+                <ul className="divide-y-2 divide-[var(--border)]">
                   {purchase.items.map((item, i) => (
                     <li
                       key={item.localId}
@@ -347,7 +347,7 @@ function PurchaseBlock({
                     </li>
                   ))}
                 </ul>
-                <div className="flex items-center justify-between border-t border-border bg-secondary/30 px-3 py-2.5">
+                <div className="flex items-center justify-between border-t-2 border-[var(--border2)] bg-[var(--input-bg)] px-3 py-2.5">
                   <span className="text-xs font-medium text-muted-foreground">
                     {itemCount} ítem{itemCount !== 1 ? 's' : ''}
                   </span>
@@ -357,7 +357,7 @@ function PurchaseBlock({
             )}
           </div>
 
-          <div className="flex items-center justify-between border-t border-dashed border-border pt-3">
+          <div className="flex items-center justify-between border-t-2 border-[var(--border2)] pt-3">
             <span className="text-sm font-medium text-muted-foreground">Subtotal de esta compra</span>
             <span className="text-lg font-bold text-foreground">${currency(totalAmount)}</span>
           </div>
@@ -540,7 +540,7 @@ export default function NewMarketPurchase() {
         };
         await createMarketPurchase(payload);
       }
-      navigate('/weekly-expenses');
+      navigate(session.eventId ? `/history/${session.eventId}` : '/weekly-expenses');
     } catch (err) {
       setSaveError(err);
       triggerAlert('Error de guardado', 'No se pudieron guardar las compras. Revisá los datos e intentá de nuevo.');
@@ -559,7 +559,7 @@ export default function NewMarketPurchase() {
             Podés cargar varias tiendas: al agregar otra, la anterior se minimiza sola.
           </p>
         </div>
-        <Button variant="ghost" onClick={() => navigate('/weekly-expenses')} className="w-full sm:w-auto">
+        <Button variant="ghost" onClick={() => navigate(session.eventId ? `/history/${session.eventId}` : '/weekly-expenses')} className="w-full sm:w-auto">
           <ArrowLeft className="size-4" /> Volver
         </Button>
       </div>
@@ -579,7 +579,7 @@ export default function NewMarketPurchase() {
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[1fr_1.4fr]">
         <div className="flex flex-col gap-4 lg:sticky lg:top-6">
           <Card>
-            <CardHeader className="pb-3">
+            <CardHeader className="border-b-2 border-[var(--border2)] pb-3">
               <CardTitle className="flex items-center gap-2 text-base">
                 <StepBadge n={1} />
                 ¿Para qué evento es?
@@ -588,7 +588,7 @@ export default function NewMarketPurchase() {
                 Si es gasto general del negocio, dejá “Sin evento”.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 pt-5">
               <FormField label="Evento asociado" hint="Recomendado para el margen real del asado">
                 <Select
                   value={session.eventId}
@@ -613,7 +613,7 @@ export default function NewMarketPurchase() {
           </Card>
 
           <Card>
-            <CardHeader className="pb-3">
+            <CardHeader className="border-b-2 border-[var(--border2)] pb-3">
               <div className="flex items-center justify-between gap-2">
                 <CardTitle className="text-base">Extras (opcional)</CardTitle>
                 <Button
@@ -641,7 +641,7 @@ export default function NewMarketPurchase() {
                   <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     Fotos del ticket
                   </p>
-                  <label className="flex min-h-20 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-border bg-secondary/40 p-4 text-center transition-colors hover:border-primary/50 hover:bg-primary/5">
+                  <label className="flex min-h-20 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-[var(--border2)] bg-[var(--input-bg)]/40 p-4 text-center transition-colors hover:border-primary/60 hover:bg-primary/[0.06]">
                     <Image className="mb-1.5 size-5 text-primary" />
                     <span className="text-sm font-medium text-foreground">Subir fotos</span>
                     <span className="text-xs text-muted-foreground">Hasta 6 imágenes</span>
@@ -650,7 +650,7 @@ export default function NewMarketPurchase() {
                   {sessionPhotos.length > 0 && (
                     <div className="mt-2 grid grid-cols-3 gap-2">
                       {sessionPhotos.map((photo, photoIndex) => (
-                        <div key={photo.slice(0, 40)} className="relative overflow-hidden rounded-lg border border-border">
+                        <div key={photo.slice(0, 40)} className="relative overflow-hidden rounded-lg border-2 border-[var(--border2)]">
                           <img src={photo} alt={`Ticket ${photoIndex + 1}`} className="h-20 w-full object-cover" />
                           <Button
                             type="button"
@@ -670,10 +670,13 @@ export default function NewMarketPurchase() {
             )}
           </Card>
 
-          <Card className="border-primary/25 hidden lg:block">
+          <Card className="hidden border-2 border-primary/40 bg-primary/[0.06] lg:block">
+            <CardHeader className="border-b-2 border-primary/20 pb-3">
+              <CardTitle className="text-base">Resumen</CardTitle>
+            </CardHeader>
             <CardContent className="space-y-4 pt-5">
               <div>
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">Total a registrar</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Total a registrar</p>
                 <p className="text-2xl font-bold text-primary">${currency(grandTotal)}</p>
                 <p className="text-xs text-muted-foreground">
                   {productCount} producto{productCount !== 1 ? 's' : ''} · {session.purchases.length} compra{session.purchases.length !== 1 ? 's' : ''}
@@ -718,7 +721,7 @@ export default function NewMarketPurchase() {
         </div>
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 p-3 backdrop-blur lg:hidden">
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t-2 border-[var(--border2)] bg-card/95 p-3 backdrop-blur lg:hidden">
         <div className="mx-auto flex max-w-7xl items-center gap-3">
           <div className="min-w-0 flex-1">
             <p className="text-[10px] uppercase text-muted-foreground">Total</p>

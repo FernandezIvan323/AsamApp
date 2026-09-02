@@ -30,9 +30,11 @@
   --accent: #1E293B;
   --accent-foreground: #FFFFFF;
   --destructive: #EF4444;
-  --border: rgba(255, 255, 255, 0.06);
-  --border2: rgba(255, 255, 255, 0.10);
-  --input: rgba(255, 255, 255, 0.06);
+  --border: rgba(255, 255, 255, 0.16);
+  --border2: rgba(255, 255, 255, 0.26);
+  --input: rgba(255, 255, 255, 0.10);
+  --input-bg: #1B2A47;
+  --input-focus-ring: 0 0 0 3px rgba(232, 131, 74, 0.32);
   --ring: #E8834A;
   --chart-1: #E8834A;
   --chart-2: #D4733A;
@@ -49,12 +51,9 @@
   --sidebar-ring: var(--ring);
 
   --primary-glow: rgba(232, 131, 74, 0.15);
-  --success: #E8834A;
-  --success-bg: rgba(232, 131, 74, 0.15);
+  --success: #10B981;
   --warning: #F59E0B;
-  --warning-bg: rgba(245, 158, 11, 0.12);
   --info: #3B82F6;
-  --info-bg: rgba(59, 130, 246, 0.12);
 
   /* Legacy tokens */
   --bg-color: var(--layer-0);
@@ -197,35 +196,32 @@ p {
 #root .bg-background {
   background: transparent;
 }
-html.notes-view #root .bg-background {
-  background: linear-gradient(160deg, #0A1428 0%, #0A1428 50%, #0F1B33 100%);
-}
-
-/* ─── Glass card utility ─── */
-.glass {
-  background: color-mix(in oklch, var(--card) 75%, transparent);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
-
-/* ─── Stagger animation for lists ─── */
-.stagger > * {
-  animation: fade-in 0.3s ease both;
-}
-.stagger > *:nth-child(1) { animation-delay: 0ms; }
-.stagger > *:nth-child(2) { animation-delay: 40ms; }
-.stagger > *:nth-child(3) { animation-delay: 80ms; }
-.stagger > *:nth-child(4) { animation-delay: 120ms; }
-.stagger > *:nth-child(5) { animation-delay: 160ms; }
-.stagger > *:nth-child(6) { animation-delay: 200ms; }
-.stagger > *:nth-child(7) { animation-delay: 240ms; }
-.stagger > *:nth-child(8) { animation-delay: 280ms; }
-.stagger > *:nth-child(n+9) { animation-delay: 320ms; }
 
 /* ─── Select option theming ─── */
 select option {
   background-color: var(--card);
   color: var(--foreground);
+}
+
+/* ─── Form fields: reforzar contraste por defecto ─── */
+input:not([type='checkbox']):not([type='radio']):not([type='file']):not([type='hidden']):not([type='submit']):not([type='button']),
+select,
+textarea {
+  background-color: var(--input-bg);
+  border-color: var(--border2);
+}
+
+input:not([type='checkbox']):not([type='radio']):not([type='file']):not([type='hidden']):not([type='submit']):not([type='button']):focus,
+select:focus,
+textarea:focus {
+  border-color: var(--primary);
+  box-shadow: var(--input-focus-ring);
+}
+
+input[aria-invalid='true'],
+select[aria-invalid='true'],
+textarea[aria-invalid='true'] {
+  border-color: var(--destructive);
 }
 
 /* ─── Print / PDF (EventDetail, History ticket, ShoppingList) ─── */

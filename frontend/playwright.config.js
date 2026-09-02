@@ -23,12 +23,21 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-  webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:5173',
-    timeout: 60_000,
-    reuseExistingServer: !process.env.CI,
-    cwd: '../frontend',
-  },
+  webServer: [
+    {
+      command: 'node server.js',
+      cwd: '../backend',
+      url: 'http://localhost:3000/api/health',
+      timeout: 60_000,
+      reuseExistingServer: !process.env.CI,
+    },
+    {
+      command: 'npm run dev',
+      cwd: '.',
+      url: 'http://localhost:5173',
+      timeout: 120_000,
+      reuseExistingServer: !process.env.CI,
+    },
+  ],
 });
 

@@ -48,8 +48,11 @@ import { useNavigate } from 'react-router-dom';
 import { EmptyState, ErrorState, LoadingState } from '@/components/feedback/ResourceState';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/components/ui/use-toast';
 import { ConfirmDialog } from '@/components/feedback/ConfirmDialog';
 import {
   getNotes,
@@ -168,30 +171,6 @@ function TypeIcon({ type, className }) {
   return <Icon className={className} />;
 }
 
-function FieldLabel({ children, hint }) {
-  return (
-    <label className="flex items-center justify-between text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
-      <span>{children}</span>
-      {hint && <span className="text-[10px] normal-case tracking-normal text-muted-foreground/70">{hint}</span>}
-    </label>
-  );
-}
-
-function SelectField({ value, onChange, children, className }) {
-  return (
-    <select
-      value={value}
-      onChange={event => onChange(event.target.value)}
-      className={cn(
-        'h-10 w-full rounded-md border border-input bg-card px-3 text-sm text-foreground shadow-xs outline-none transition-colors focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]',
-        className,
-      )}
-    >
-      {children}
-    </select>
-  );
-}
-
 function StatusPill({ note, size = 'sm' }) {
   const done = note.status === 'Realizada';
   const overdue = isOverdue(note);
@@ -287,19 +266,23 @@ function NoteColorCard({ note, onView, onDelete, onToggleDone, onPin }) {
       </div>
 
       <div className="mt-5 flex items-center gap-1.5">
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="icon"
           onClick={(e) => { e.stopPropagation(); onView(note); }}
-          className="inline-flex size-11 items-center justify-center rounded-lg bg-background/60 text-muted-foreground transition-all hover:scale-110 hover:bg-primary/25 hover:text-primary"
+          className="size-11 bg-background/60 text-muted-foreground hover:bg-primary/25 hover:text-primary"
           title="Ver nota"
         >
           <Eye className="size-5" />
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="ghost"
+          size="icon"
           onClick={(e) => { e.stopPropagation(); onToggleDone(note); }}
           className={cn(
-            'inline-flex size-11 items-center justify-center rounded-lg bg-background/60 transition-all hover:scale-110',
+            'size-11 bg-background/60',
             done
               ? 'text-emerald-300 hover:bg-emerald-500/25'
               : 'text-muted-foreground hover:bg-emerald-500/25 hover:text-emerald-300',
@@ -307,12 +290,14 @@ function NoteColorCard({ note, onView, onDelete, onToggleDone, onPin }) {
           title={done ? 'Reabrir' : 'Marcar como realizada'}
         >
           {done ? <RotateCcw className="size-5" /> : <Check className="size-5" />}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="ghost"
+          size="icon"
           onClick={(e) => { e.stopPropagation(); onPin(note); }}
           className={cn(
-            'inline-flex size-11 items-center justify-center rounded-lg bg-background/60 transition-all hover:scale-110',
+            'size-11 bg-background/60',
             note.pinned
               ? 'text-primary hover:bg-primary/25'
               : 'text-muted-foreground hover:bg-primary/25 hover:text-primary',
@@ -320,15 +305,17 @@ function NoteColorCard({ note, onView, onDelete, onToggleDone, onPin }) {
           title={note.pinned ? 'Desfijar' : 'Fijar'}
         >
           {note.pinned ? <PinOff className="size-5" /> : <Pin className="size-5" />}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="ghost"
+          size="icon"
           onClick={(e) => { e.stopPropagation(); onDelete(note); }}
-          className="inline-flex size-11 items-center justify-center rounded-lg bg-background/60 text-muted-foreground transition-all hover:scale-110 hover:bg-destructive/25 hover:text-destructive"
+          className="size-11 bg-background/60 text-muted-foreground hover:bg-destructive/25 hover:text-destructive"
           title="Eliminar"
         >
           <Trash2 className="size-5" />
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -338,12 +325,11 @@ function ModalShell({ children, onClose, maxWidth = 'max-w-3xl', maxHeight = 'h-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm cursor-pointer"
+        className="fixed inset-0 cursor-pointer bg-black/60 backdrop-blur-sm"
         onClick={onClose}
       />
       <div
-        className={cn('relative z-10 flex w-full flex-col overflow-hidden rounded-2xl shadow-2xl', maxWidth, maxHeight)}
-        style={{ background: '#0F1B33', border: '1px solid rgba(255,255,255,0.06)' }}
+        className={cn('relative z-10 flex w-full flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl', maxWidth, maxHeight)}
       >
         {children}
       </div>
@@ -353,18 +339,13 @@ function ModalShell({ children, onClose, maxWidth = 'max-w-3xl', maxHeight = 'h-
 
 function ModalHeader({ onClose, children, action }) {
   return (
-    <div className="flex items-start justify-between gap-4 border-b border-[rgba(255,255,255,0.06)] px-6 py-4">
+    <div className="flex items-start justify-between gap-4 border-b border-border px-6 py-4">
       <div className="min-w-0">{children}</div>
       <div className="flex flex-wrap items-center gap-2">
         {action}
-        <button
-          type="button"
-          onClick={onClose}
-          className="inline-flex size-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary/40 hover:text-foreground"
-          title="Cerrar"
-        >
+        <Button type="button" variant="ghost" size="icon" onClick={onClose} title="Cerrar">
           <X className="size-4" />
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -382,28 +363,30 @@ function LinkedEntityField({ linkedType, linkedId, onChangeType, onChangeId, opt
 
   return (
     <div className="grid gap-3 md:grid-cols-2">
-      <div className="space-y-2">
-        <FieldLabel>Contexto</FieldLabel>
-        <SelectField value={linkedType} onChange={(v) => { onChangeType(v); onChangeId(''); }}>
+      <FormField label="Contexto">
+        <Select
+          value={linkedType}
+          onChange={(e) => { onChangeType(e.target.value); onChangeId(''); }}
+        >
           {LINKED_FILTERS.map(item => (
             <option key={item.key} value={item.key}>{item.label}</option>
           ))}
-        </SelectField>
-      </div>
+        </Select>
+      </FormField>
       {showEntitySelect && (
-        <div className="space-y-2">
-          <FieldLabel hint="Opcional">
-            {linkedType === 'event' ? 'Evento' : linkedType === 'provider' ? 'Proveedor' : 'Compra'}
-          </FieldLabel>
-          <SelectField value={linkedId} onChange={onChangeId}>
+        <FormField
+          label={linkedType === 'event' ? 'Evento' : linkedType === 'provider' ? 'Proveedor' : 'Compra'}
+          hint="Opcional"
+        >
+          <Select value={linkedId} onChange={(e) => onChangeId(e.target.value)}>
             <option value="">— Sin vincular —</option>
             {linkedOptions.map(opt => (
               <option key={opt.id} value={opt.id}>
                 {opt.label}{opt.sub ? ` (${opt.sub})` : ''}
               </option>
             ))}
-          </SelectField>
-        </div>
+          </Select>
+        </FormField>
       )}
     </div>
   );
@@ -478,20 +461,20 @@ function NoteViewModal({ note, onClose, onEdit, onDelete, onArchive, onRestore, 
 
       <div className="flex-1 space-y-5 overflow-y-auto px-6 py-5">
         {note.content ? (
-          <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-secondary/20 p-4">
+          <div className="rounded-xl border border-border bg-secondary/20 p-4">
             <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
               <TypeIcon2 className="size-3.5" /> Contenido
             </div>
             <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">{note.content}</p>
           </div>
         ) : (
-          <div className="rounded-xl border border-dashed border-[rgba(255,255,255,0.06)] p-4 text-center text-sm text-muted-foreground">
+          <div className="rounded-xl border border-dashed border-border p-4 text-center text-sm text-muted-foreground">
             Sin contenido
           </div>
         )}
 
         <div className="grid gap-3 md:grid-cols-2">
-          <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-secondary/15 p-4">
+          <div className="rounded-xl border border-border bg-secondary/15 p-4">
             <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
               <Calendar className="size-3.5" /> Vencimiento
             </div>
@@ -499,7 +482,7 @@ function NoteViewModal({ note, onClose, onEdit, onDelete, onArchive, onRestore, 
               {note.dueDate ? format(new Date(`${note.dueDate}T00:00:00`), "EEEE d 'de' MMMM, yyyy", { locale: es }) : 'Sin fecha de vencimiento'}
             </p>
           </div>
-          <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-secondary/15 p-4">
+          <div className="rounded-xl border border-border bg-secondary/15 p-4">
             <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
               <Link2 className="size-3.5" /> Contexto
             </div>
@@ -507,14 +490,16 @@ function NoteViewModal({ note, onClose, onEdit, onDelete, onArchive, onRestore, 
               {LINKED_FILTERS.find(l => l.key === note.linkedType)?.label || 'General'}
             </p>
             {linkedEntity && (
-              <button
+              <Button
                 type="button"
+                variant="outline"
+                size="sm"
                 onClick={() => onOpenLinked(linkedEntity.path)}
-                className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/10 px-2.5 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
+                className="mt-2 border-primary/30 bg-primary/10 text-primary hover:bg-primary/20"
               >
                 <ExternalLink className="size-3" />
                 {linkedEntity.label}
-              </button>
+              </Button>
             )}
             {note.linkedId && !linkedEntity && (
               <p className="mt-1 text-xs text-muted-foreground">ID: {note.linkedId}</p>
@@ -523,7 +508,7 @@ function NoteViewModal({ note, onClose, onEdit, onDelete, onArchive, onRestore, 
         </div>
 
         {(note.tags || []).length > 0 && (
-          <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-secondary/15 p-4">
+          <div className="rounded-xl border border-border bg-secondary/15 p-4">
             <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
               <Tag className="size-3.5" /> Etiquetas
             </div>
@@ -538,7 +523,7 @@ function NoteViewModal({ note, onClose, onEdit, onDelete, onArchive, onRestore, 
         )}
 
         {(note.changelog || []).length > 0 && (
-          <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-secondary/10 p-4">
+          <div className="rounded-xl border border-border bg-secondary/10 p-4">
             <div className="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
               <History className="size-3.5" /> Historial de cambios
             </div>
@@ -562,7 +547,7 @@ function NoteViewModal({ note, onClose, onEdit, onDelete, onArchive, onRestore, 
           </div>
         )}
 
-        <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-secondary/10 p-4">
+        <div className="rounded-xl border border-border bg-secondary/10 p-4">
           <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
             <CalendarDays className="size-3.5" /> Tiempos
           </div>
@@ -573,7 +558,7 @@ function NoteViewModal({ note, onClose, onEdit, onDelete, onArchive, onRestore, 
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 border-t border-[rgba(255,255,255,0.06)] px-6 py-4 sm:flex-row sm:items-center sm:justify-end">
+      <div className="flex flex-col gap-3 border-t border-border px-6 py-4 sm:flex-row sm:items-center sm:justify-end">
         <Button type="button" variant="outline" size="sm" onClick={() => onPostpone(note)}>
           <Clock className="size-4" /> Posponer
         </Button>
@@ -629,8 +614,7 @@ function NoteFormModal({ note, draft, setDraft, onClose, onSave, onDelete, onPin
         <div className="flex-1 space-y-5 overflow-y-auto px-6 py-5">
           <div className="space-y-4 rounded-xl border border-border/60 bg-secondary/10 p-4">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-primary">1 · Lo principal</p>
-            <div className="space-y-2">
-              <FieldLabel>Título *</FieldLabel>
+            <FormField label="Título" required>
               <Input
                 value={draft.title}
                 onChange={handleChange('title')}
@@ -638,43 +622,38 @@ function NoteFormModal({ note, draft, setDraft, onClose, onSave, onDelete, onPin
                 required
                 autoFocus={isCreating}
               />
-            </div>
-            <div className="space-y-2">
-              <FieldLabel>Contenido</FieldLabel>
+            </FormField>
+            <FormField label="Contenido">
               <Textarea
                 value={draft.content}
                 onChange={handleChange('content')}
                 placeholder="Detalle del pendiente, acuerdo o llamada…"
                 rows={4}
               />
-            </div>
+            </FormField>
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <FieldLabel>Vencimiento</FieldLabel>
+              <FormField label="Vencimiento">
                 <Input type="date" value={draft.dueDate} onChange={handleChange('dueDate')} />
-              </div>
-              <div className="space-y-2">
-                <FieldLabel>Prioridad</FieldLabel>
-                <SelectField value={draft.priority} onChange={handleSelect('priority')}>
+              </FormField>
+              <FormField label="Prioridad">
+                <Select value={draft.priority} onChange={(e) => handleSelect('priority')(e.target.value)}>
                   {PRIORITIES.map(p => <option key={p}>{p}</option>)}
-                </SelectField>
-              </div>
+                </Select>
+              </FormField>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <FieldLabel>Tipo</FieldLabel>
-                <SelectField value={draft.type} onChange={handleSelect('type')}>
+              <FormField label="Tipo">
+                <Select value={draft.type} onChange={(e) => handleSelect('type')(e.target.value)}>
                   {TYPES.map(t => <option key={t}>{t}</option>)}
-                </SelectField>
-              </div>
+                </Select>
+              </FormField>
               {!isCreating && (
-                <div className="space-y-2">
-                  <FieldLabel>Estado</FieldLabel>
-                  <SelectField value={draft.status} onChange={handleSelect('status')}>
+                <FormField label="Estado">
+                  <Select value={draft.status} onChange={(e) => handleSelect('status')(e.target.value)}>
                     <option>Pendiente</option>
                     <option>Realizada</option>
-                  </SelectField>
-                </div>
+                  </Select>
+                </FormField>
               )}
             </div>
           </div>
@@ -696,16 +675,14 @@ function NoteFormModal({ note, draft, setDraft, onClose, onSave, onDelete, onPin
             {(showMore || (!isCreating && hasAdvanced)) && (
               <div className="space-y-4 border-t border-border/40 px-4 py-4">
                 <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <FieldLabel hint="Se repite al completarla">Repetir</FieldLabel>
-                    <SelectField value={draft.recurrence} onChange={handleSelect('recurrence')}>
+                  <FormField label="Repetir" hint="Se repite al completarla">
+                    <Select value={draft.recurrence} onChange={(e) => handleSelect('recurrence')(e.target.value)}>
                       {RECURRENCE.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
-                    </SelectField>
-                  </div>
-                  <div className="space-y-2">
-                    <FieldLabel>Etiquetas</FieldLabel>
+                    </Select>
+                  </FormField>
+                  <FormField label="Etiquetas">
                     <Input value={draft.tags} onChange={handleChange('tags')} placeholder="Separadas por coma" />
-                  </div>
+                  </FormField>
                 </div>
                 <LinkedEntityField
                   linkedType={draft.linkedType}
@@ -719,7 +696,7 @@ function NoteFormModal({ note, draft, setDraft, onClose, onSave, onDelete, onPin
           </div>
         </div>
 
-        <div className="flex flex-col gap-3 border-t border-[rgba(255,255,255,0.06)] px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 border-t border-border px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap gap-2">
             {!isCreating && note && (
               <>
@@ -757,8 +734,8 @@ function NoteFormModal({ note, draft, setDraft, onClose, onSave, onDelete, onPin
 
 function KanbanColumn({ title, icon: Icon, color, notes, onView, onDelete, onToggleDone }) {
   return (
-    <div className="flex h-full min-w-[280px] flex-1 flex-col rounded-2xl border border-[rgba(255,255,255,0.06)] bg-card/50">
-      <div className="flex items-center justify-between gap-2 border-b border-[rgba(255,255,255,0.06)] px-4 py-3">
+    <div className="flex h-full min-w-[280px] flex-1 flex-col rounded-2xl border border-border bg-card/50">
+      <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
         <div className="flex items-center gap-2">
           <Icon className={cn('size-4', color)} />
           <h3 className="text-sm font-semibold text-foreground">{title}</h3>
@@ -803,25 +780,29 @@ function KanbanColumn({ title, icon: Icon, color, notes, onView, onDelete, onTog
                 </div>
               )}
               <div className="mt-2 flex items-center gap-1">
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="icon"
                   onClick={(e) => { e.stopPropagation(); onToggleDone(note); }}
                   className={cn(
-                    'inline-flex size-6 items-center justify-center rounded transition-colors',
+                    'size-6',
                     note.status === 'Realizada' ? 'text-emerald-300' : 'text-muted-foreground hover:text-emerald-300',
                   )}
                   title={note.status === 'Realizada' ? 'Reabrir' : 'Realizada'}
                 >
                   {note.status === 'Realizada' ? <RotateCcw className="size-3" /> : <Check className="size-3" />}
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="icon"
                   onClick={(e) => { e.stopPropagation(); onDelete(note); }}
-                  className="inline-flex size-6 items-center justify-center rounded text-muted-foreground transition-colors hover:text-destructive"
+                  className="size-6 text-muted-foreground hover:text-destructive"
                   title="Eliminar"
                 >
                   <Trash2 className="size-3" />
-                </button>
+                </Button>
               </div>
             </div>
           ))
@@ -831,33 +812,9 @@ function KanbanColumn({ title, icon: Icon, color, notes, onView, onDelete, onTog
   );
 }
 
-function Toast({ message, variant = 'success', onClose }) {
-  useEffect(() => {
-    const timer = setTimeout(onClose, 2500);
-    return () => clearTimeout(timer);
-  }, [onClose]);
-
-  const colors = variant === 'success'
-    ? { bg: 'rgba(232, 131, 74, 0.15)', border: 'rgba(232, 131, 74, 0.5)', icon: 'bg-primary' }
-    : { bg: 'rgba(239, 68, 68, 0.15)', border: 'rgba(239, 68, 68, 0.5)', icon: 'bg-destructive' };
-
-  return (
-    <div className="fixed top-6 left-1/2 z-[60] -translate-x-1/2 animate-in fade-in slide-in-from-top-4 duration-300">
-      <div
-        className="flex items-center gap-3 rounded-full px-5 py-3 shadow-2xl"
-        style={{ background: colors.bg, border: `1px solid ${colors.border}`, backdropFilter: 'blur(12px)' }}
-      >
-        <div className={cn('flex size-7 items-center justify-center rounded-full text-white', colors.icon)}>
-          {variant === 'success' ? <Check className="size-4" /> : <AlertOctagon className="size-4" />}
-        </div>
-        <span className="text-sm font-semibold text-foreground">{message}</span>
-      </div>
-    </div>
-  );
-}
-
 export default function Notes() {
   const navigate = useNavigate();
+  const toast = useToast();
   const [notes, setNotes] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -866,7 +823,6 @@ export default function Notes() {
   const [draft, setDraft] = useState({ ...EMPTY_FORM });
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(null);
-  const [toast, setToast] = useState(null);
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
@@ -942,7 +898,7 @@ export default function Notes() {
       if (mode === 'create') {
         const created = await createNote(payload);
         setNotes(prev => [created, ...prev]);
-        setToast({ message: `Nota "${created.title}" creada con éxito`, variant: 'success' });
+        toast(`Nota "${created.title}" creada con éxito`, 'success');
         handleClose();
       } else if (mode === 'edit' && activeNote) {
         const updated = await updateNote(activeNote.id, payload);
@@ -950,10 +906,10 @@ export default function Notes() {
         setActiveNote(updated);
         setDraft(noteToDraft(updated));
         setMode('view');
-        setToast({ message: 'Cambios guardados', variant: 'success' });
+        toast('Cambios guardados', 'success');
       }
     } catch {
-      setToast({ message: 'Error al guardar la nota', variant: 'error' });
+      toast('Error al guardar la nota', 'error');
     } finally {
       setSaving(false);
     }
@@ -966,7 +922,7 @@ export default function Notes() {
       if (activeNote?.id === note.id) setActiveNote(updated);
       if (mode === 'edit') setDraft(noteToDraft(updated));
     } catch {
-      setToast({ message: 'Error al fijar la nota', variant: 'error' });
+      toast('Error al fijar la nota', 'error');
     }
   };
 
@@ -976,12 +932,12 @@ export default function Notes() {
       setNotes(prev => prev.map(n => n.id === updated.id ? updated : n));
       if (activeNote?.id === note.id) setActiveNote(updated);
       if (mode === 'edit') setDraft(noteToDraft(updated));
-      setToast({
-        message: note.status === 'Realizada' ? 'Nota reabierta' : '¡Bien! Una menos en la lista',
-        variant: 'success',
-      });
+      toast(
+        note.status === 'Realizada' ? 'Nota reabierta' : '¡Bien! Una menos en la lista',
+        'success',
+      );
     } catch {
-      setToast({ message: 'Error al actualizar la nota', variant: 'error' });
+      toast('Error al actualizar la nota', 'error');
     }
   };
 
@@ -991,9 +947,9 @@ export default function Notes() {
       setNotes(prev => prev.map(n => n.id === updated.id ? updated : n));
       if (activeNote?.id === note.id) setActiveNote(updated);
       if (mode === 'edit') setDraft(noteToDraft(updated));
-      setToast({ message: 'Pospuesto para mañana', variant: 'success' });
+      toast('Pospuesto para mañana', 'success');
     } catch {
-      setToast({ message: 'Error al posponer la nota', variant: 'error' });
+      toast('Error al posponer la nota', 'error');
     }
   };
 
@@ -1002,9 +958,9 @@ export default function Notes() {
       const updated = await archiveNote(note.id);
       setNotes(prev => prev.map(n => n.id === updated.id ? updated : n));
       if (activeNote?.id === note.id) handleClose();
-      setToast({ message: 'Nota archivada', variant: 'success' });
+      toast('Nota archivada', 'success');
     } catch {
-      setToast({ message: 'Error al archivar la nota', variant: 'error' });
+      toast('Error al archivar la nota', 'error');
     }
   };
 
@@ -1013,9 +969,9 @@ export default function Notes() {
       const updated = await restoreNote(note.id);
       setNotes(prev => prev.map(n => n.id === updated.id ? updated : n));
       if (activeNote?.id === note.id) setActiveNote(updated);
-      setToast({ message: 'Nota restaurada', variant: 'success' });
+      toast('Nota restaurada', 'success');
     } catch {
-      setToast({ message: 'Error al restaurar la nota', variant: 'error' });
+      toast('Error al restaurar la nota', 'error');
     }
   };
 
@@ -1027,9 +983,9 @@ export default function Notes() {
       await deleteNote(confirmDelete.id);
       setNotes(prev => prev.filter(n => n.id !== confirmDelete.id));
       if (activeNote?.id === confirmDelete.id) handleClose();
-      setToast({ message: 'Nota eliminada', variant: 'success' });
+      toast('Nota eliminada', 'success');
     } catch {
-      setToast({ message: 'Error al eliminar la nota', variant: 'error' });
+      toast('Error al eliminar la nota', 'error');
     } finally {
       setConfirmDelete(null);
     }
@@ -1046,9 +1002,9 @@ export default function Notes() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      setToast({ message: `Notas exportadas a ${format.toUpperCase()}`, variant: 'success' });
+      toast(`Notas exportadas a ${format.toUpperCase()}`, 'success');
     } catch {
-      setToast({ message: 'Error al exportar', variant: 'error' });
+      toast('Error al exportar', 'error');
     }
   };
 
@@ -1499,8 +1455,6 @@ export default function Notes() {
         onConfirm={confirmDeleteAction}
         onCancel={() => setConfirmDelete(null)}
       />
-
-      {toast && <Toast message={toast.message} variant={toast.variant} onClose={() => setToast(null)} />}
     </div>
   );
 }

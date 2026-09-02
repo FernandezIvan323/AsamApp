@@ -87,17 +87,14 @@ export default function QuickQuote() {
   }, [inventory, insumoSearch, showAllCatalog, selectedIds]);
 
   const handleCreateEvent = () => {
-    const params = new URLSearchParams({
-      guests: guests || '',
-      extraCosts: extraCosts || '0',
-      profitMargin: profitMargin || '30',
-      recipeName: recipeName || '',
-      menuNotes: menuNotes || '',
-    });
-    if (selectedTemplateId) params.set('templateId', selectedTemplateId);
-    if (selectedRecipeId) params.set('recipeId', selectedRecipeId);
-    navigate(`/new-event?${params}`, {
+    navigate('/new-event', {
       state: {
+        guests: guests || '',
+        extraCosts: extraCosts || '0',
+        profitMargin: profitMargin || '30',
+        recipeName: recipeName || '',
+        menuNotes: menuNotes || '',
+        selectedQuantities: selectedQuantities || {},
         templateId: selectedTemplateId || undefined,
         recipeId: selectedRecipeId || undefined,
       },

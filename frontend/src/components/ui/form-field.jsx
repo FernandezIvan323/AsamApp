@@ -8,18 +8,18 @@ function FormField({ label, error, hint, required, children, className, labelCla
   });
 
   return (
-    <div className={cn('space-y-1.5', className)} {...props}>
+    <div className={cn('space-y-2', className)} {...props}>
       {label && (
-        <label className={cn('text-xs font-medium tracking-[0.06em] text-muted-foreground uppercase', labelClassName)}>
+        <label className={cn('block text-xs font-semibold tracking-wide text-foreground/85 uppercase', labelClassName)}>
           {label}{required && <span className="ml-0.5 text-destructive">*</span>}
         </label>
       )}
       {enhanced}
       {hint && !error && (
-        <p className="text-[10px] text-muted-foreground/50">{hint}</p>
+        <p className="text-xs text-muted-foreground">{hint}</p>
       )}
       {error && (
-        <p className={cn('text-xs text-destructive', errorClassName)} role="alert">{error}</p>
+        <p className={cn('text-xs font-medium text-destructive', errorClassName)} role="alert">{error}</p>
       )}
     </div>
   );

@@ -1,7 +1,7 @@
 import { test, expect, request as apiRequest } from '@playwright/test';
+import { createAuthedApiContext } from './authHelper.js';
 
 const API_URL = process.env.E2E_API_URL || 'http://localhost:3000';
-const APP_URL = process.env.E2E_BASE_URL || 'http://localhost:5173/app';
 
 test.describe('Smoke E2E', () => {
   test('health check del backend responde ok', async () => {
@@ -15,13 +15,11 @@ test.describe('Smoke E2E', () => {
   test('landing carga con el titulo de la app', async ({ page }) => {
     await page.goto('/');
     await expect(page).toHaveTitle(/AsamApp/);
-    await expect(page.locator('h1')).toContainText(/Gestion/);
+    await expect(page.locator('h1')).toContainText(/fuego/i);
   });
 
   test('flujo API: crear, leer, duplicar y eliminar evento', async () => {
-    const ctx = await apiRequest.newContext();
-    const auth = await ctx.get(`${API_URL}/api/auth/config`);
-    expect(auth.ok()).toBeTruthy();
+    const ctx = await createAuthedApiContext();
 
     const create = await ctx.post(`${API_URL}/api/events`, {
       data: {
@@ -64,7 +62,7 @@ test.describe('Smoke E2E', () => {
   });
 
   test('búsqueda global devuelve resultados', async () => {
-    const ctx = await apiRequest.newContext();
+    const ctx = await createAuthedApiContext();
     const created = await ctx.post(`${API_URL}/api/events`, {
       data: {
         title: 'Búsqueda Exclusiva XYZ',
@@ -87,7 +85,7 @@ test.describe('Smoke E2E', () => {
   });
 
   test('inventario: crear item, registrar movimiento, eliminar', async () => {
-    const ctx = await apiRequest.newContext();
+    const ctx = await createAuthedApiContext();
     const create = await ctx.post(`${API_URL}/api/inventory`, {
       data: { name: 'Sal E2E', unit: 'kg', price: 100, stock: 5, minStock: 1 },
     });
@@ -106,7 +104,7 @@ test.describe('Smoke E2E', () => {
   });
 
   test('exportacion CSV funciona', async () => {
-    const ctx = await apiRequest.newContext();
+    const ctx = await createAuthedApiContext();
     const res = await ctx.get(`${API_URL}/api/export?type=events&format=csv`);
     expect(res.ok()).toBeTruthy();
     const text = await res.text();

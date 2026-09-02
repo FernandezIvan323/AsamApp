@@ -1,4 +1,24 @@
 import { Info, Trash2, TriangleAlert } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+
+const VARIANTS = {
+  destructive: {
+    icon: Trash2,
+    iconClass: 'bg-destructive/10 text-destructive',
+    confirmClass: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
+  },
+  warning: {
+    icon: TriangleAlert,
+    iconClass: 'bg-amber-500/10 text-amber-500',
+    confirmClass: 'bg-amber-600 text-[#FFFFFF] hover:bg-amber-700',
+  },
+  default: {
+    icon: Info,
+    iconClass: 'bg-blue-500/10 text-blue-400',
+    confirmClass: 'bg-primary text-primary-foreground hover:brightness-110',
+  },
+};
 
 export function ConfirmDialog({
   isOpen,
@@ -12,98 +32,46 @@ export function ConfirmDialog({
   onCancel,
 }) {
   if (!isOpen) return null;
-
-  const getIconContainer = () => {
-    switch (variant) {
-      case 'destructive':
-        return (
-          <div className="rounded-full bg-red-500/10 p-3 text-red-500 shrink-0">
-            <Trash2 className="h-6 w-6" />
-          </div>
-        );
-      case 'warning':
-        return (
-          <div className="rounded-full bg-amber-500/10 p-3 text-amber-500 shrink-0">
-            <TriangleAlert className="h-6 w-6" />
-          </div>
-        );
-      default:
-        return (
-          <div className="rounded-full bg-blue-500/10 p-3 text-blue-400 shrink-0">
-            <Info className="h-6 w-6" />
-          </div>
-        );
-    }
-  };
-
-  const getConfirmButtonStyles = () => {
-    switch (variant) {
-      case 'destructive':
-        return 'h-10 inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-[#FFFFFF] transition-colors hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 cursor-pointer';
-      case 'warning':
-        return 'h-10 inline-flex items-center justify-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-[#FFFFFF] transition-colors hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer';
-      default:
-        return 'h-10 inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-[#FFFFFF] transition-colors hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer';
-    }
-  };
-
-  const getConfirmButtonIcon = () => {
-    switch (variant) {
-      case 'destructive':
-        return <Trash2 className="h-4 w-4" />;
-      case 'warning':
-        return <TriangleAlert className="h-4 w-4" />;
-      default:
-        return null;
-    }
-  };
+  const { icon: Icon, iconClass, confirmClass } = VARIANTS[variant] || VARIANTS.default;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div 
+      <div
         className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 animate-in fade-in cursor-pointer"
         onClick={onCancel}
+        aria-hidden="true"
       />
-      
-      <div className="relative z-10 w-full max-w-md overflow-hidden rounded-xl p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150" style={{ background: '#0F1B33', border: '1px solid rgba(255,255,255,0.06)' }}>
-        
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="relative z-10 w-full max-w-md overflow-hidden rounded-xl border border-border bg-card p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150"
+      >
         <div className="flex items-start gap-4">
-          {getIconContainer()}
+          <div className={cn('shrink-0 rounded-full p-3', iconClass)}>
+            <Icon className="size-6" />
+          </div>
           <div className="space-y-1">
-            <h2 className="text-lg font-semibold flex items-center gap-2" style={{ color: '#FFFFFF' }}>
-              {title}
-            </h2>
-            <p className="text-sm leading-relaxed font-normal" style={{ color: '#8BA0B0' }}>
-              {description}
-            </p>
+            <h2 className="flex items-center gap-2 text-lg font-semibold text-foreground">{title}</h2>
+            {description && (
+              <p className="text-sm font-normal leading-relaxed text-muted-foreground">{description}</p>
+            )}
           </div>
         </div>
 
         {note && (
-          <div className="mt-4 rounded-lg p-3 text-xs" style={{ background: '#132240', border: '1px solid rgba(255,255,255,0.06)', color: '#64748B' }}>
+          <div className="mt-4 rounded-lg border border-border bg-secondary p-3 text-xs text-muted-foreground">
             {note}
           </div>
         )}
 
-        <div className="mt-6 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
-          <button 
-            type="button"
-            onClick={onCancel}
-            className="h-10 rounded-lg border bg-transparent px-4 py-2 text-sm font-medium transition-colors hover:bg-[#132240] focus:outline-none focus:ring-2 focus:ring-[#8BA0B0] cursor-pointer"
-            style={{ borderColor: 'rgba(255,255,255,0.06)', color: '#8BA0B0' }}
-          >
+        <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <Button variant="outline" onClick={onCancel}>
             {cancelText}
-          </button>
-          <button 
-            type="button"
-            onClick={onConfirm}
-            className={getConfirmButtonStyles()}
-          >
-            {getConfirmButtonIcon()}
+          </Button>
+          <Button onClick={onConfirm} className={confirmClass}>
             {confirmText}
-          </button>
+          </Button>
         </div>
-
       </div>
     </div>
   );
@@ -117,40 +85,32 @@ export function AlertDialog({
   onClose,
 }) {
   if (!isOpen) return null;
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div 
+      <div
         className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 animate-in fade-in cursor-pointer"
         onClick={onClose}
+        aria-hidden="true"
       />
-      
-      <div className="relative z-10 w-full max-w-lg overflow-hidden rounded-xl p-8 shadow-2xl animate-in fade-in zoom-in-95 duration-150" style={{ background: '#0F1B33', border: '1px solid rgba(255,255,255,0.06)' }}>
-        
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="relative z-10 w-full max-w-lg overflow-hidden rounded-xl border border-border bg-card p-8 shadow-2xl animate-in fade-in zoom-in-95 duration-150"
+      >
         <div className="flex items-start gap-4">
-          <div className="rounded-full bg-blue-500/10 p-3 text-blue-400 shrink-0">
-            <Info className="h-7 w-7" />
+          <div className="shrink-0 rounded-full bg-blue-500/10 p-3 text-blue-400">
+            <Info className="size-7" />
           </div>
           <div className="space-y-2">
-            <h2 className="text-2xl font-semibold flex items-center gap-2" style={{ color: '#FFFFFF' }}>
-              {title}
-            </h2>
-            <p className="text-lg leading-relaxed font-normal" style={{ color: '#8BA0B0' }}>
-              {description}
-            </p>
+            <h2 className="flex items-center gap-2 text-2xl font-semibold text-foreground">{title}</h2>
+            {description && (
+              <p className="text-base font-normal leading-relaxed text-muted-foreground">{description}</p>
+            )}
           </div>
         </div>
-
-        <div className="mt-6 flex justify-end gap-2">
-          <button 
-            type="button"
-            onClick={onClose}
-            className="h-12 rounded-lg bg-primary px-6 py-2 text-base font-medium text-[#FFFFFF] transition-colors hover:bg-primary/95 focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer"
-          >
-            {buttonText}
-          </button>
+        <div className="mt-6 flex justify-end">
+          <Button onClick={onClose}>{buttonText}</Button>
         </div>
-
       </div>
     </div>
   );

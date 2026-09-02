@@ -27,6 +27,7 @@ import {
 import { generateEventPdf } from '@/lib/generatePdf';
 
 import { EmptyState, ErrorState, LoadingState } from '@/components/feedback/ResourceState';
+import { ConfirmDialog } from '@/components/feedback/ConfirmDialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -46,6 +47,7 @@ import {
   updateEventStatus,
   updateEventTask,
 } from '@/services/eventsApi';
+import { createEmployeeActivity, getEmployees } from '@/services/employeesApi';
 
 export default function EventDetail() {
   const { id } = useParams();
@@ -58,6 +60,17 @@ export default function EventDetail() {
 
   const [taskForm, setTaskForm] = useState({ title: '', dueDate: '' });
   const [paymentForm, setPaymentForm] = useState({ amount: '', paymentMethod: 'Efectivo', notes: '' });
+  const [employees, setEmployees] = useState([]);
+  const [activityOpen, setActivityOpen] = useState(false);
+  const [activitySaving, setActivitySaving] = useState(false);
+  const [activityForm, setActivityForm] = useState({
+    employeeId: '',
+    date: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
+    hours: '',
+    paymentType: 'Por hora',
+    payment: '',
+  });
+  const [statusConfirm, setStatusConfirm] = useState(null);
 
   const loadEvent = useCallback(() => {
     setIsLoading(true);
@@ -70,16 +83,22 @@ export default function EventDetail() {
 
   useEffect(() => { loadEvent(); }, [loadEvent]);
 
+  useEffect(() => {
+    getEmployees().then(d => setEmployees(Array.isArray(d) ? d : [])).catch(() => setEmployees([]));
+  }, []);
+
   const handleStatusChange = async (newStatus) => {
     if (newStatus === 'Cobrado' && event) {
       const pending = Math.max(0, Number(event.totalPrice || 0) - Number(event.amountPaid || 0));
       if (pending > 0.01) {
-        const ok = window.confirm(
-          `Todavía hay saldo pendiente ($${currency(pending)}). ¿Marcar como Cobrado de todas formas?`,
-        );
-        if (!ok) return;
+        setStatusConfirm({ newStatus, pending });
+        return;
       }
     }
+    await applyStatus(newStatus);
+  };
+
+  const applyStatus = async (newStatus) => {
     try {
       setMutationError(null);
       const updated = await updateEventStatus(id, newStatus);
@@ -149,6 +168,32 @@ export default function EventDetail() {
       setPaymentForm({ amount: '', paymentMethod: 'Efectivo', notes: '' });
       loadEvent();
     } catch (err) { setMutationError(err); }
+  };
+
+  const handleAddActivity = async (e) => {
+    e.preventDefault();
+    if (!activityForm.employeeId) return;
+    try {
+      setMutationError(null);
+      setActivitySaving(true);
+      await createEmployeeActivity({
+        employeeId: activityForm.employeeId,
+        date: activityForm.date,
+        hours: Number(activityForm.hours) || 0,
+        paymentType: activityForm.paymentType,
+        payment: Number(activityForm.payment) || 0,
+        eventId: id,
+      });
+      setActivityForm({
+        employeeId: '',
+        date: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
+        hours: '',
+        paymentType: 'Por hora',
+        payment: '',
+      });
+      setActivityOpen(false);
+      loadEvent();
+    } catch (err) { setMutationError(err); } finally { setActivitySaving(false); }
   };
 
   const handlePrint = () => window.print();
@@ -593,17 +638,54 @@ export default function EventDetail() {
                 </CardTitle>
                 <CardDescription>Horas y pagos cargados a este evento (entran al margen real).</CardDescription>
               </div>
-              <Button size="sm" variant="outline" asChild>
-                <Link to="/employees">Gestionar en Empleados</Link>
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" onClick={() => setActivityOpen(o => !o)}>
+                  <Plus className="size-3.5" /> Registrar horas
+                </Button>
+                <Button size="sm" variant="ghost" asChild>
+                  <Link to="/employees">Gestionar en Empleados</Link>
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="pt-5">
+            {activityOpen && (
+              <form onSubmit={handleAddActivity} className="mb-5 grid grid-cols-1 gap-3 rounded-xl border border-border bg-background p-4 sm:grid-cols-2 lg:grid-cols-4">
+                <FormField label="Empleado" required>
+                  <Select value={activityForm.employeeId} onChange={e => setActivityForm(f => ({ ...f, employeeId: e.target.value }))}>
+                    <option value="">Seleccionar…</option>
+                    {employees.map(emp => <option key={emp.id} value={emp.id}>{emp.name}</option>)}
+                  </Select>
+                </FormField>
+                <FormField label="Fecha">
+                  <Input type="datetime-local" value={activityForm.date} onChange={e => setActivityForm(f => ({ ...f, date: e.target.value }))} />
+                </FormField>
+                <FormField label="Horas">
+                  <Input type="number" min="0" step="0.5" placeholder="0" value={activityForm.hours} onChange={e => setActivityForm(f => ({ ...f, hours: e.target.value }))} />
+                </FormField>
+                <FormField label="Tipo de pago">
+                  <Select value={activityForm.paymentType} onChange={e => setActivityForm(f => ({ ...f, paymentType: e.target.value }))}>
+                    <option value="Por hora">Por hora</option>
+                    <option value="Por evento">Por evento</option>
+                    <option value="Fijo">Fijo</option>
+                  </Select>
+                </FormField>
+                <FormField label="Pago ($)">
+                  <Input type="number" min="0" placeholder="0" value={activityForm.payment} onChange={e => setActivityForm(f => ({ ...f, payment: e.target.value }))} />
+                </FormField>
+                <div className="flex items-end gap-2 sm:col-span-2 lg:col-span-3">
+                  <Button type="submit" disabled={activitySaving || !activityForm.employeeId}>
+                    {activitySaving ? 'Guardando…' : 'Guardar actividad'}
+                  </Button>
+                  <Button type="button" variant="ghost" onClick={() => setActivityOpen(false)}>Cancelar</Button>
+                </div>
+              </form>
+            )}
             {(event.employeeActivities || []).length === 0 ? (
               <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border py-8">
                 <Users className="size-10 text-muted-foreground/40" />
                 <p className="text-sm text-muted-foreground">Sin horas registradas</p>
-                <p className="text-xs text-muted-foreground">Registrá actividades en Empleados y vinculá este evento.</p>
+                <p className="text-xs text-muted-foreground">Usá “Registrar horas” para cargar actividades a este evento.</p>
               </div>
             ) : (
               <Table>
@@ -667,6 +749,21 @@ export default function EventDetail() {
           </Card>
         )}
       </div>
+
+      <ConfirmDialog
+        isOpen={Boolean(statusConfirm)}
+        title="¿Marcar como Cobrado con saldo pendiente?"
+        description={statusConfirm ? `Todavía hay ${currency(statusConfirm.pending)} sin cobrar. ¿Continuar de todas formas?` : ''}
+        confirmText="Marcar como Cobrado"
+        cancelText="Cancelar"
+        variant="warning"
+        onConfirm={() => {
+          const target = statusConfirm?.newStatus;
+          setStatusConfirm(null);
+          if (target) applyStatus(target);
+        }}
+        onCancel={() => setStatusConfirm(null)}
+      />
     </div>
   );
 }

@@ -121,12 +121,13 @@ test('usuario B no puede actualizar evento de A', async () => {
   assert.equal(res.status, 404);
 });
 
-test('usuario B no puede eliminar evento de A', async () => {
+test('usuario B (editor) no puede eliminar evento de A', async () => {
   const res = await api(`/api/events/${eventIdA}`, {
     method: 'DELETE',
     token: tokenB,
   });
-  assert.equal(res.status, 404);
+  // Editor no tiene permiso events:delete → 403 (RBAC)
+  assert.equal(res.status, 403);
 });
 
 test('admin ve todos los eventos', async () => {
