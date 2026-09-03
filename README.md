@@ -221,26 +221,26 @@ npm run backup:schedule     # opcional, cada 24h
 
 ## Versiones recientes (Releases)
 
-> Última versión estable: **v2.5.1** (2026-09-02). Detalle completo en [`CHANGELOG.md`](./CHANGELOG.md).
+> **Última release en GitHub:** [v2.5.1](https://github.com/FernandezIvan323/AsamApp/releases/tag/v2.5.1) (2026-09-02). Detalle completo en [`CHANGELOG.md`](./CHANGELOG.md).
 
-### Versiones mayores
+### Releases publicadas en GitHub
 
-| Versión | Fecha | Categorías | Resumen |
-|---------|-------|------------|---------|
-| **v2.5.1** | 2026-09-02 | `docs` | README enriquecido + tabla de releases + CHANGELOG con todos los tags |
-| **v2.5.0** | 2026-09-02 | `ui` `datos` `auth` `testing` `finanzas` | Fases 1–5: workflow, UI kit, RBAC real, índices Prisma, finanzas honestas, landing nueva, E2E, rate limit |
-| **v2.3.0** | 2026-07-15 | `ui` `landing` | Landing/auth en React, detalle de compras, panel full-width, UX menú y tipografía |
-| **v2.1.0** | 2026 | `feature` `multi-tenant` | Empleados, clientes, multi-tenant completo + tests de aislamiento |
-| **v1.0.1** | 2026 | `docs` `testing` `auth` | Lint limpio, AUTH_SECRET forzado, tests, screenshots, plantillas |
-| **v1.0.0** | 2026 | `release` `pwa` | Primera versión: iconos, PWA, meta tags, paleta naranja |
+| Versión | Fecha | Categorías | Resumen | Notas |
+|---------|-------|------------|---------|-------|
+| **[v2.5.1](https://github.com/FernandezIvan323/AsamApp/releases/tag/v2.5.1)** | 2026-09-02 | `docs` | README enriquecido + tabla de releases + CHANGELOG completo | [Release](https://github.com/FernandezIvan323/AsamApp/releases/tag/v2.5.1) |
+| **[v2.5.0](https://github.com/FernandezIvan323/AsamApp/releases/tag/v2.5.0)** | 2026-09-02 | `ui` `datos` `auth` `testing` `finanzas` | Fases 1–5: workflow, UI kit, RBAC, índices, landing nueva, E2E, rate limit | [Release](https://github.com/FernandezIvan323/AsamApp/releases/tag/v2.5.0) |
+| **[v2.3.0](https://github.com/FernandezIvan323/AsamApp/releases/tag/v2.3.0)** | 2026-07-15 | `ui` `landing` | Landing/auth en React, detalle de compras, panel full-width | [Release](https://github.com/FernandezIvan323/AsamApp/releases/tag/v2.3.0) |
+| **[v2.1.0](https://github.com/FernandezIvan323/AsamApp/releases/tag/v2.1.0)** | 2026 | `feature` `multi-tenant` | Empleados, clientes, multi-tenant completo + tests | [Release](https://github.com/FernandezIvan323/AsamApp/releases/tag/v2.1.0) |
+| **[v1.0.1](https://github.com/FernandezIvan323/AsamApp/releases/tag/v1.0.1)** | 2026 | `docs` `testing` `auth` | Lint limpio, AUTH_SECRET forzado, tests, plantillas | [Release](https://github.com/FernandezIvan323/AsamApp/releases/tag/v1.0.1) |
+| **[v1.0.0](https://github.com/FernandezIvan323/AsamApp/releases/tag/v1.0.0)** | 2026 | `release` `pwa` | Primera versión: iconos, PWA, meta tags, paleta naranja | [Release](https://github.com/FernandezIvan323/AsamApp/releases/tag/v1.0.0) |
 
-### Cambios por categoría (cumulative)
+### Cambios por release
 
-**Última versión (v2.5.1):**
-- Documentación completa — README con badges, releases, endpoints, seguridad y backup.
-- CHANGELOG con entradas para todos los tags.
+**v2.5.1** (docs):
+- README con badges, releases, endpoints, seguridad y backup.
+- CHANGELOG con índice y entradas para todos los tags.
 
-**v2.5.0 — cambios mayores:**
+**v2.5.0** (Fases 1–5):
 - **UI / UX**: bordes reforzados, kit `ui/` consolidado, landing renovada con 8 secciones, Operaciones fusionadas al Dashboard, partículas CSS en hero.
 - **Auth / Seguridad**: rate limit (5 logins/15min, 3 registros/hora), `AUTH_SECRET` forzado en producción, RBAC en 27 endpoints.
 - **Datos / API**: DELETE pagos/tareas, PATCH status, índices Prisma, multi-tenant coherente en búsqueda.
@@ -248,22 +248,22 @@ npm run backup:schedule     # opcional, cada 24h
 - **Testing**: 81 tests backend + 8 frontend + 11 E2E con Playwright.
 - **Removido**: LocaleSwitcher (i18n no estaba activo).
 
-**v2.3.0:**
+**v2.3.0**:
 - Landing React full-bleed con hero, especialidades y "Cómo funciona".
 - Auth split layout (Login/Register con imagen + formulario).
 - Detalle de compras, panel full-width, tipografía DM Sans.
 
-**v2.1.0:**
+**v2.1.0**:
 - Empleados con actividades por evento.
 - Clientes vinculados a eventos + historial.
 - Multi-tenant por `ownerId` con tests de aislamiento.
 
-**v1.0.1:**
+**v1.0.1**:
 - Lint limpio, CI en verde.
 - AUTH_SECRET forzado en producción.
 - Tests + screenshots + plantillas de cotización.
 
-**v1.0.0:**
+**v1.0.0**:
 - Primera versión pública.
 - Eventos, cotizaciones, inventario, compras, finanzas, notas.
 - PWA, meta tags, paleta naranja/brasa (`#E8834A`).
