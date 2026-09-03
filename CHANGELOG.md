@@ -6,19 +6,31 @@ Formato inspirado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
 ---
 
-## [2.5.1] — 2026-09-02
+## Índice rápido
 
-### Documentation
-- **README.md enriquecido**: badges, sección "Qué resuelve", stack completo, funcionalidades principales, endpoints API, variables de entorno, seguridad, backup, testing.
-- **Tabla de releases**: "Versiones recientes" con todas las versiones (`2.5.1`, `2.5.0`, `2.3.0`, `2.1.0`, `1.0.1`, `1.0.0`) y resumen de cada una.
-- **CHANGELOG.md completo**: entradas para todos los tags existentes (faltan `1.0.0`, `1.0.1`, `2.1.0` que ahora se documentan).
-
-### Notes
-Esta versión es un parche de documentación: el código de `v2.5.0` ya está taggeado y publicado. Solo se actualizan los archivos de docs.
+| Versión | Fecha | Categorías | Resumen |
+|---------|-------|------------|---------|
+| **[2.5.1]** | 2026-09-02 | `docs` | README enriquecido + tabla de releases + CHANGELOG completo |
+| **[2.5.0]** | 2026-09-02 | `ui` `auth` `datos` `finanzas` `testing` | Fases 1–5: workflow, UI kit, RBAC, índices, landing nueva, E2E, rate limit |
+| **[2.3.0]** | 2026-07-15 | `ui` `landing` | Landing/auth React, detalle compras, panel full-width |
+| **[2.1.0]** | 2026 | `feature` `multi-tenant` | Empleados, clientes, multi-tenant completo + tests |
+| **[1.0.1]** | 2026 | `docs` `testing` `auth` | Lint limpio, AUTH_SECRET forzado, tests, plantillas |
+| **[1.0.0]** | 2026 | `release` `pwa` | Primera versión: iconos, PWA, meta tags, paleta naranja |
 
 ---
 
-## [2.5.0] — 2026-09-02
+## [2.5.1] — 2026-09-02 · `docs`
+
+> Release de documentación. El código de `v2.5.0` ya estaba taggeado.
+
+### Documentation
+- **README.md enriquecido**: badges, sección "Qué resuelve", stack completo, funcionalidades principales, endpoints API, variables de entorno, seguridad, backup, testing.
+- **Tabla de releases**: "Versiones recientes" con todas las versiones y resumen categorizado de cada una.
+- **CHANGELOG.md completo**: entradas para todos los tags (`1.0.0`, `1.0.1`, `2.1.0`, `2.3.0`, `2.5.0`, `2.5.1`) e índice rápido al inicio.
+
+---
+
+## [2.5.0] — 2026-09-02 · `ui` `auth` `datos` `finanzas` `testing`
 
 ### Added
 - **Landing page renovada**: nuevas secciones — "Para quién es" (3 perfiles), "El sistema en un vistazo" (4 pantallas), "Métricas que importan", FAQ, y footer extendido con links útiles.
@@ -44,7 +56,7 @@ Esta versión es un parche de documentación: el código de `v2.5.0` ya está ta
 
 ---
 
-## [2.3.0] — 2026-07-15
+## [2.3.0] — 2026-07-15 · `ui` `landing`
 
 ### Added
 - **Landing React full-bleed**: hero, especialidades con fotos, "Cómo funciona" unificado en 3 pasos.
@@ -62,7 +74,7 @@ Esta versión es un parche de documentación: el código de `v2.5.0` ya está ta
 
 ---
 
-## [2.1.0] — 2026
+## [2.1.0] — 2026 · `feature` `multi-tenant`
 
 ### Added
 - **Empleados**: CRUD + actividades por evento (registro de horas, costo).
@@ -72,7 +84,7 @@ Esta versión es un parche de documentación: el código de `v2.5.0` ya está ta
 
 ---
 
-## [1.0.1] — 2026
+## [1.0.1] — 2026 · `docs` `testing` `auth`
 
 ### Added
 - **AUTH_SECRET forzado en producción**: error explícito si falta o es el default.
@@ -85,7 +97,7 @@ Esta versión es un parche de documentación: el código de `v2.5.0` ya está ta
 
 ---
 
-## [1.0.0] — 2026
+## [1.0.0] — 2026 · `release` `pwa`
 
 ### Added
 - **Primera versión pública**: eventos, cotizaciones, inventario, compras, finanzas, notas.

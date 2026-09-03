@@ -221,16 +221,52 @@ npm run backup:schedule     # opcional, cada 24h
 
 ## Versiones recientes (Releases)
 
-| Versión | Fecha | Resumen |
-|---------|------|---------|
-| **2.5.1** | 2026-09-02 | Docs completas: README enriquecido + tabla de releases + CHANGELOG con todos los tags |
-| **2.5.0** | 2026-09-02 | Fases 1–5: workflow, UI kit, RBAC real, índices Prisma, finanzas honestas, landing nueva, E2E, rate limit |
-| **2.3.0** | 2026-07-15 | Landing/auth en React, detalle de compras, panel full-width, UX menú y tipografía |
-| **2.1.0** | — | Empleados, clientes, multi-tenant completo + tests de aislamiento |
-| **1.0.1** | — | Lint limpio, AUTH_SECRET forzado, tests, screenshots, plantillas |
-| **1.0.0** | — | Primera versión: iconos, PWA, meta tags, paleta naranja |
+> Última versión estable: **v2.5.1** (2026-09-02). Detalle completo en [`CHANGELOG.md`](./CHANGELOG.md).
 
-Detalle: [`CHANGELOG.md`](./CHANGELOG.md)
+### Versiones mayores
+
+| Versión | Fecha | Categorías | Resumen |
+|---------|-------|------------|---------|
+| **v2.5.1** | 2026-09-02 | `docs` | README enriquecido + tabla de releases + CHANGELOG con todos los tags |
+| **v2.5.0** | 2026-09-02 | `ui` `datos` `auth` `testing` `finanzas` | Fases 1–5: workflow, UI kit, RBAC real, índices Prisma, finanzas honestas, landing nueva, E2E, rate limit |
+| **v2.3.0** | 2026-07-15 | `ui` `landing` | Landing/auth en React, detalle de compras, panel full-width, UX menú y tipografía |
+| **v2.1.0** | 2026 | `feature` `multi-tenant` | Empleados, clientes, multi-tenant completo + tests de aislamiento |
+| **v1.0.1** | 2026 | `docs` `testing` `auth` | Lint limpio, AUTH_SECRET forzado, tests, screenshots, plantillas |
+| **v1.0.0** | 2026 | `release` `pwa` | Primera versión: iconos, PWA, meta tags, paleta naranja |
+
+### Cambios por categoría (cumulative)
+
+**Última versión (v2.5.1):**
+- Documentación completa — README con badges, releases, endpoints, seguridad y backup.
+- CHANGELOG con entradas para todos los tags.
+
+**v2.5.0 — cambios mayores:**
+- **UI / UX**: bordes reforzados, kit `ui/` consolidado, landing renovada con 8 secciones, Operaciones fusionadas al Dashboard, partículas CSS en hero.
+- **Auth / Seguridad**: rate limit (5 logins/15min, 3 registros/hora), `AUTH_SECRET` forzado en producción, RBAC en 27 endpoints.
+- **Datos / API**: DELETE pagos/tareas, PATCH status, índices Prisma, multi-tenant coherente en búsqueda.
+- **Finanzas**: margen real con gastos sin evento (compras, horas, costos fijos).
+- **Testing**: 81 tests backend + 8 frontend + 11 E2E con Playwright.
+- **Removido**: LocaleSwitcher (i18n no estaba activo).
+
+**v2.3.0:**
+- Landing React full-bleed con hero, especialidades y "Cómo funciona".
+- Auth split layout (Login/Register con imagen + formulario).
+- Detalle de compras, panel full-width, tipografía DM Sans.
+
+**v2.1.0:**
+- Empleados con actividades por evento.
+- Clientes vinculados a eventos + historial.
+- Multi-tenant por `ownerId` con tests de aislamiento.
+
+**v1.0.1:**
+- Lint limpio, CI en verde.
+- AUTH_SECRET forzado en producción.
+- Tests + screenshots + plantillas de cotización.
+
+**v1.0.0:**
+- Primera versión pública.
+- Eventos, cotizaciones, inventario, compras, finanzas, notas.
+- PWA, meta tags, paleta naranja/brasa (`#E8834A`).
 
 ---
 
