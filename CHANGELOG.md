@@ -6,6 +6,18 @@ Formato inspirado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
 ---
 
+## [2.5.1] — 2026-09-02
+
+### Documentation
+- **README.md enriquecido**: badges, sección "Qué resuelve", stack completo, funcionalidades principales, endpoints API, variables de entorno, seguridad, backup, testing.
+- **Tabla de releases**: "Versiones recientes" con todas las versiones (`2.5.1`, `2.5.0`, `2.3.0`, `2.1.0`, `1.0.1`, `1.0.0`) y resumen de cada una.
+- **CHANGELOG.md completo**: entradas para todos los tags existentes (faltan `1.0.0`, `1.0.1`, `2.1.0` que ahora se documentan).
+
+### Notes
+Esta versión es un parche de documentación: el código de `v2.5.0` ya está taggeado y publicado. Solo se actualizan los archivos de docs.
+
+---
+
 ## [2.5.0] — 2026-09-02
 
 ### Added
@@ -20,7 +32,7 @@ Formato inspirado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 ### Changed
 - **Bordes y contraste reforzados**: `--border` de 0.06→0.16, `--border2` de 0.10→0.26, `--input-bg` añadido (fondo `#1B2A47` más oscuro). NewMarketPurchase usa secciones con bordes dashed-tinted y cards más visibles.
 - **Code splitting**: manualChunks por dependencia (React, router, PDF, charts, motion, dates, icons, i18n).
-- **sistema visual unificado**: Tokens CSS consolidados, 90+ hex literales eliminados en Landing.
+- **Sistema visual unificado**: tokens CSS consolidados, 90+ hex literales eliminados en Landing.
 
 ### Fixed
 - **Registro**: rol correcto en registro (primer usuario = admin, resto = editor).
@@ -32,13 +44,52 @@ Formato inspirado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
 ---
 
-## [2.3.0] — 2026-09-02
+## [2.3.0] — 2026-07-15
 
 ### Added
-- Fase 1-3 del plan de mejora (workflow, UI, datos, permisos, alertas).
+- **Landing React full-bleed**: hero, especialidades con fotos, "Cómo funciona" unificado en 3 pasos.
+- **Auth split layout**: Login / Register con imagen + formulario enriquecido.
+- **Detalle de compras**: pantalla `MarketPurchaseDetail` con header, lista de productos, totales y fotos del ticket.
+- **Panel full-width**: calendario y dashboard mensuales más anchos.
+- **Tipografía DM Sans** + jerarquía visual consistente.
+
+### Changed
+- **UX menú lateral**: rediseñado con mejor jerarquía y estado activo.
+- **Listas y tablas**: rediseñadas con tokens del theme.
+
+### Removed
+- **Landing estática**: ya no se sirve desde `landing/`. Ahora es una SPA React servida en `/`.
 
 ---
 
-## [2.0.0] — versiones prior
+## [2.1.0] — 2026
 
-Versión inicial con soporte base para eventos, stock, pagos y multi-tenancy básico.
+### Added
+- **Empleados**: CRUD + actividades por evento (registro de horas, costo).
+- **Clientes**: vinculación con eventos, historial.
+- **Multi-tenant completo**: campo `ownerId` en todas las tablas, `ownerFilter(req)` aplicado en endpoints.
+- **Tests de aislamiento**: `backend/isolation.test.js` verifica que un usuario no vea/edite datos de otro.
+
+---
+
+## [1.0.1] — 2026
+
+### Added
+- **AUTH_SECRET forzado en producción**: error explícito si falta o es el default.
+- **Plantillas de cotización**: reutilizar ofertas frecuentes.
+- **Screenshots**: capturas del dashboard y pantallas clave.
+
+### Fixed
+- **Lint limpio**: CI pasa sin warnings.
+- **Test runner**: configuración correcta de `node:test` para backend.
+
+---
+
+## [1.0.0] — 2026
+
+### Added
+- **Primera versión pública**: eventos, cotizaciones, inventario, compras, finanzas, notas.
+- **PWA**: manifest + service worker para uso offline parcial.
+- **Iconos rediseñados** con Lucide.
+- **Meta tags** y OG banner para compartir en redes.
+- **Paleta naranja/brasa** (`#E8834A`) como color de marca.
