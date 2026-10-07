@@ -77,7 +77,7 @@ test('createRateLimiter cuenta por IP+username independiente', () => {
   assert.equal(nextCount, 3, 'otro usuario con misma IP debe contar separado');
 });
 
-test('clientIp respeta x-forwarded-for', () => {
+test('clientIp ignora x-forwarded-for y usa la IP del socket', () => {
   const req = { headers: { 'x-forwarded-for': '10.0.0.1, 10.0.0.2' }, ip: '127.0.0.1' };
-  assert.equal(clientIp(req), '10.0.0.1');
+  assert.equal(clientIp(req), '127.0.0.1');
 });

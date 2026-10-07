@@ -112,3 +112,31 @@ test('auth rechaza API sin token cuando esta habilitada', async () => {
   await prisma.user.deleteMany({ where: { username: 'integrationtest' } });
   process.env.AUTH_ENABLED = 'false';
 });
+
+test('POST /api/users crea un usuario correctamente', async () => {
+  await prisma.user.deleteMany({ where: { username: 'createduser' } });
+
+  const invalid = await fetch(`${baseUrl}/api/users`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: 'created@example.com', username: 'createduser', password: 'short', role: 'viewer' }),
+  });
+  assert.equal(invalid.status, 400);
+
+  const res = await fetch(`${baseUrl}/api/users`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: 'created@example.com', username: 'createduser', password: 'password-valido-123', role: 'viewer' }),
+  });
+  assert.equal(res.status, 201);
+  const user = await res.json();
+  assert.equal(user.username, 'createduser');
+  assert.equal(user.role, 'viewer');
+  assert.ok(user.id);
+  assert.ok(!user.password, 'la respuesta no debe incluir el hash de la contraseña');
+
+  const dbUser = await prisma.user.findUnique({ where: { username: 'createduser' } });
+  assert.ok(dbUser.password.includes(':'), 'el password debe estar hasheado como salt:hash');
+
+  await prisma.user.deleteMany({ where: { username: 'createduser' } });
+});

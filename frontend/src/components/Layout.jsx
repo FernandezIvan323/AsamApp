@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { Beef, Building2, Calculator, Calendar, CalendarDays, ClipboardList, Command, Download, FileStack, Flame, LineChart, ListChecks, Menu, PanelLeftClose, PlusCircle, ShoppingCart, StickyNote, Store, Utensils, Users, X, Zap } from 'lucide-react';
+import { Beef, Building2, Calculator, Calendar, CalendarDays, Command, Download, FileStack, Flame, LineChart, ListChecks, Menu, PanelLeftClose, PlusCircle, ShoppingCart, StickyNote, Store, Utensils, Users, X, Zap } from 'lucide-react';
 
 import CommandPalette from '@/components/CommandPalette';
 import GlobalSearch from '@/components/GlobalSearch';

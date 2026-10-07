@@ -4,7 +4,7 @@ import { LoadingState } from '@/components/feedback/ResourceState';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import Landing from '@/pages/Landing';
-import { clearStoredToken, getStoredToken } from '@/lib/auth';
+import { getStoredToken } from '@/lib/auth';
 import { apiRequest } from '@/lib/api';
 
 export default function AuthGate({ children }) {
@@ -12,11 +12,17 @@ export default function AuthGate({ children }) {
   const isAuthPath = location.pathname === '/login' || location.pathname === '/register';
   const [checked, setChecked] = useState(false);
   const [hasUsers, setHasUsers] = useState(false);
-  const [token, setToken] = useState(isAuthPath ? null : getStoredToken());
+  const [token, setToken] = useState(null);
 
   useEffect(() => {
     if (isAuthPath) {
-      clearStoredToken();
+      setToken(null);
+      setChecked(true);
+      return;
+    }
+    const stored = getStoredToken();
+    if (stored) {
+      setToken(stored);
       setChecked(true);
       return;
     }

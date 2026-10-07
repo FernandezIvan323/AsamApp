@@ -60,6 +60,9 @@ export default function EventDetail() {
 
   const [taskForm, setTaskForm] = useState({ title: '', dueDate: '' });
   const [paymentForm, setPaymentForm] = useState({ amount: '', paymentMethod: 'Efectivo', notes: '' });
+  const [taskSaving, setTaskSaving] = useState(false);
+  const [paymentSaving, setPaymentSaving] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
   const [employees, setEmployees] = useState([]);
   const [activityOpen, setActivityOpen] = useState(false);
   const [activitySaving, setActivitySaving] = useState(false);
@@ -141,13 +144,14 @@ export default function EventDetail() {
 
   const handleAddTask = async (e) => {
     e.preventDefault();
-    if (!taskForm.title.trim()) return;
+    if (!taskForm.title.trim() || taskSaving) return;
     try {
       setMutationError(null);
+      setTaskSaving(true);
       await createEventTask(id, { title: taskForm.title.trim(), dueDate: taskForm.dueDate || null, done: false });
       setTaskForm({ title: '', dueDate: '' });
       loadEvent();
-    } catch (err) { setMutationError(err); }
+    } catch (err) { setMutationError(err); } finally { setTaskSaving(false); }
   };
 
   const handleToggleTask = async (task) => {
@@ -161,13 +165,14 @@ export default function EventDetail() {
   const handleAddPayment = async (e) => {
     e.preventDefault();
     const amount = Number(paymentForm.amount);
-    if (!amount || amount <= 0) return;
+    if (!amount || amount <= 0 || paymentSaving) return;
     try {
       setMutationError(null);
+      setPaymentSaving(true);
       await createEventPayment(id, { amount, paymentMethod: paymentForm.paymentMethod, notes: paymentForm.notes || null });
       setPaymentForm({ amount: '', paymentMethod: 'Efectivo', notes: '' });
       loadEvent();
-    } catch (err) { setMutationError(err); }
+    } catch (err) { setMutationError(err); } finally { setPaymentSaving(false); }
   };
 
   const handleAddActivity = async (e) => {
@@ -207,11 +212,13 @@ export default function EventDetail() {
   };
 
   const handleDuplicate = async () => {
+    if (duplicating) return;
     try {
       setMutationError(null);
+      setDuplicating(true);
       const copy = await duplicateEvent(id);
       navigate(`/history/${copy.id}/edit`);
-    } catch (err) { setMutationError(err); }
+    } catch (err) { setMutationError(err); } finally { setDuplicating(false); }
   };
 
   if (isLoading) return <LoadingState title="Cargando evento" description="Obteniendo tareas, pagos y compras." />;
@@ -240,8 +247,8 @@ export default function EventDetail() {
         <Button size="sm" asChild>
           <Link to={`/history/${id}/edit`}><Pencil className="size-3.5" /> Editar</Link>
         </Button>
-        <Button variant="outline" size="sm" onClick={handleDuplicate}>
-          <Copy className="size-3.5" /> Duplicar
+        <Button variant="outline" size="sm" onClick={handleDuplicate} disabled={duplicating}>
+          <Copy className="size-3.5" /> {duplicating ? 'Duplicando...' : 'Duplicar'}
         </Button>
       </div>
 
@@ -472,8 +479,8 @@ export default function EventDetail() {
             <form onSubmit={handleAddTask} className="flex flex-wrap gap-2">
               <Input className="min-w-[12rem] flex-1" placeholder="Nueva tarea" value={taskForm.title} onChange={e => setTaskForm({ ...taskForm, title: e.target.value })} required />
               <Input type="date" className="w-36" value={taskForm.dueDate} onChange={e => setTaskForm({ ...taskForm, dueDate: e.target.value })} />
-              <Button type="submit" size="default">
-                <Plus className="size-4" /> Agregar
+              <Button type="submit" size="default" disabled={taskSaving}>
+                <Plus className="size-4" /> {taskSaving ? 'Agregando...' : 'Agregar'}
               </Button>
             </form>
             {(event.tasks || []).length === 0 ? (
@@ -530,8 +537,8 @@ export default function EventDetail() {
               <FormField label="Notas" className="sm:col-span-2">
                 <Input value={paymentForm.notes} onChange={e => setPaymentForm({ ...paymentForm, notes: e.target.value })} placeholder="Seña / saldo / ajuste" />
               </FormField>
-              <Button type="submit" className="sm:col-span-2">
-                <Plus className="size-4" /> Registrar pago
+              <Button type="submit" className="sm:col-span-2" disabled={paymentSaving}>
+                <Plus className="size-4" /> {paymentSaving ? 'Registrando...' : 'Registrar pago'}
               </Button>
             </form>
             {(event.payments || []).length === 0 ? (

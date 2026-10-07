@@ -1,14 +1,7 @@
 #!/usr/bin/env node
-import crypto from 'crypto';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
-
-function hashPassword(password) {
-  const salt = crypto.randomBytes(16).toString('hex');
-  const derivedKey = crypto.scryptSync(password, salt, 64);
-  return `${salt}:${derivedKey.toString('hex')}`;
-}
+import 'dotenv/config';
+import { hashPassword } from '../auth.js';
+import { prisma } from '../db.js';
 
 const username = process.argv[2];
 const newPassword = process.argv[3];
@@ -20,8 +13,8 @@ if (!username || !newPassword) {
   process.exit(1);
 }
 
-if (newPassword.length < 4) {
-  console.error('La contraseña debe tener al menos 4 caracteres');
+if (newPassword.length < 8) {
+  console.error('La contraseña debe tener al menos 8 caracteres');
   process.exit(1);
 }
 

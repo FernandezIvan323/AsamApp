@@ -3,3 +3,16 @@ node_modules
 .env
 
 /generated/prisma
+
+# Base de datos local (contiene hashes de contraseñas)
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+dev.db*
+
+# Copias de seguridad
+backups/
+
+# Logs
+logs/

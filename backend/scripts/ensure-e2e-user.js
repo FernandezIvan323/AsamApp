@@ -3,15 +3,13 @@
  * Crea o actualiza el usuario E2E usado por Playwright.
  * Uso: node scripts/ensure-e2e-user.js [username] [password]
  */
-import crypto from 'crypto';
-import { PrismaClient } from '@prisma/client';
+import 'dotenv/config';
+import { hashPassword } from '../auth.js';
+import { prisma } from '../db.js';
 
-const prisma = new PrismaClient();
-
-function hashPassword(password) {
-  const salt = crypto.randomBytes(16).toString('hex');
-  const derivedKey = crypto.scryptSync(password, salt, 64);
-  return `${salt}:${derivedKey.toString('hex')}`;
+if (process.env.NODE_ENV === 'production' && process.env.E2E_ALLOW_PROD !== '1') {
+  console.error('[e2e] Rehusando correr contra NODE_ENV=production (setea E2E_ALLOW_PROD=1 para forzar)');
+  process.exit(1);
 }
 
 const username = process.argv[2] || process.env.E2E_USER || 'e2e_workflow';

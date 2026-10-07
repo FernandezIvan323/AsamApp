@@ -43,16 +43,26 @@ function getSecret() {
   return secret;
 }
 
-function hashPassword(password) {
+export function hashPassword(password) {
   const salt = crypto.randomBytes(16).toString('hex');
   const derivedKey = crypto.scryptSync(password, salt, 64);
   return `${salt}:${derivedKey.toString('hex')}`;
 }
 
-function verifyPassword(password, stored) {
-  const [salt, key] = stored.split(':');
+function safeHexEqual(a, b) {
+  const bufA = Buffer.from(a, 'utf8');
+  const bufB = Buffer.from(b, 'utf8');
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
+const DUMMY_PASSWORD = hashPassword('asamapp-dummy-password');
+
+export function verifyPassword(password, stored) {
+  const [salt, key] = String(stored || '').split(':');
+  if (!salt || !key) return false;
   const derivedKey = crypto.scryptSync(password, salt, 64);
-  return derivedKey.toString('hex') === key;
+  return safeHexEqual(derivedKey.toString('hex'), key);
 }
 
 export function signToken(userId) {
@@ -72,7 +82,7 @@ export function verifyToken(token) {
     const userId = parts.join(':');
     const payload = `${userId}:${issuedAt}`;
     const expected = crypto.createHmac('sha256', getSecret()).update(payload).digest('hex');
-    if (signature !== expected) return null;
+    if (!safeHexEqual(signature, expected)) return null;
     if (Date.now() - issuedAt > TOKEN_TTL_MS) return null;
     return userId;
   } catch {
@@ -89,10 +99,10 @@ export async function authMiddleware(req, res, next) {
 
   const header = req.headers.authorization || '';
   const token = header.startsWith('Bearer ') ? header.slice(7) : null;
-  if (!token || !verifyToken(token)) {
+  const userId = token ? verifyToken(token) : null;
+  if (!userId) {
     return res.status(401).json({ error: 'No autorizado. Inicia sesion.' });
   }
-  const userId = verifyToken(token);
 
   try {
     const user = await prisma.user.findUnique({
@@ -116,8 +126,8 @@ export async function handleAuthRegister(req, res) {
     if (!email?.trim() || !username?.trim() || !password) {
       return res.status(400).json({ error: 'Email, usuario y contraseña son requeridos' });
     }
-    if (password.length < 4) {
-      return res.status(400).json({ error: 'La contraseña debe tener al menos 4 caracteres' });
+    if (password.length < 8) {
+      return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres' });
     }
 
     const existing = await prisma.user.findFirst({
@@ -150,7 +160,11 @@ export async function handleAuthLogin(req, res) {
     }
 
     const user = await prisma.user.findUnique({ where: { username: username.trim() } });
-    if (!user || !user.active || !verifyPassword(password, user.password)) {
+    if (!user) {
+      verifyPassword(password, DUMMY_PASSWORD);
+      return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
+    }
+    if (!user.active || !verifyPassword(password, user.password)) {
       return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
     }
 
@@ -168,10 +182,11 @@ export async function handleAuthMe(req, res) {
 }
 
 export async function handleAuthConfig(_req, res) {
+  const enabled = isAuthEnabled();
   try {
     const count = await prisma.user.count();
-    res.json({ enabled: true, hasUsers: count > 0 });
+    res.json({ enabled, hasUsers: count > 0 });
   } catch {
-    res.json({ enabled: true, hasUsers: false });
+    res.json({ enabled, hasUsers: false });
   }
 }

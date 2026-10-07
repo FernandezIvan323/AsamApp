@@ -4,7 +4,7 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { PrismaClient } from '@prisma/client';
-import { authMiddleware, handleAuthConfig, handleAuthLogin, handleAuthRegister, handleAuthMe, validateSecret } from './auth.js';
+import { authMiddleware, handleAuthConfig, handleAuthLogin, handleAuthRegister, handleAuthMe, validateSecret, hashPassword } from './auth.js';
 import { ROLES, hasPermission } from './permissions.js';
 import {
   validateCatalogPayload,
@@ -93,11 +93,36 @@ function ownerFilter(req) {
   return req.user.role === 'admin' ? {} : { ownerId: req.user?.id };
 }
 
+function invalidReference(field) {
+  return Object.assign(new Error(`${field} no pertenece a tu cuenta`), { status: 400 });
+}
+
+async function assertOwnedReferences(req, refs) {
+  const filter = ownerFilter(req);
+  for (const [field, id] of Object.entries(refs)) {
+    if (!id) continue;
+    let exists = false;
+    if (field === 'clientId') {
+      exists = Boolean(await prisma.client.findFirst({ where: { id, ...filter }, select: { id: true } }));
+    } else if (field === 'eventId') {
+      exists = Boolean(await prisma.event.findFirst({ where: { id, ...filter }, select: { id: true } }));
+    } else if (field === 'providerId') {
+      exists = Boolean(await prisma.provider.findFirst({ where: { id, ...filter }, select: { id: true } }));
+    } else if (field === 'employeeId') {
+      exists = Boolean(await prisma.employee.findFirst({ where: { id, ...filter }, select: { id: true } }));
+    }
+    if (!exists) throw invalidReference(field);
+  }
+}
+
 function sendValidationError(res, errors) {
   return res.status(400).json({ error: errors.join('. ') });
 }
 
 function handlePrismaError(res, error, fallbackMessage) {
+  if (error?.status && Number.isInteger(error.status)) {
+    return res.status(error.status).json({ error: error.message });
+  }
   if (error?.code === 'P2025') {
     logger.warn('prisma_not_found', { err: error });
     return res.status(404).json({ error: 'Recurso no encontrado' });
@@ -198,6 +223,7 @@ app.post('/api/events', requirePermission('events:write'), async (req, res) => {
   if (errors.length) return sendValidationError(res, errors);
 
   try {
+    await assertOwnedReferences(req, { clientId: data.clientId });
     const event = await prisma.event.create({
       data: {
         title: data.title,
@@ -241,6 +267,7 @@ app.put('/api/events/:id', requirePermission('events:write'), async (req, res) =
         status: req.body.status !== undefined ? req.body.status : existing.status,
       });
       if (errors.length) return sendValidationError(res, errors);
+      await assertOwnedReferences(req, { clientId: data.clientId });
 
       if (String(existing.status) !== String(data.status)) {
         const transition = assertStatusTransition(existing.status, data.status);
@@ -460,8 +487,10 @@ app.put('/api/events/:eventId/tasks/:taskId', requirePermission('events:write'),
   try {
     const event = await prisma.event.findFirst({ where: { id: req.params.eventId, ...ownerFilter(req) } });
     if (!event) return res.status(404).json({ error: 'Evento no encontrado' });
+    const existing = await prisma.eventTask.findFirst({ where: { id: req.params.taskId, eventId: event.id } });
+    if (!existing) return res.status(404).json({ error: 'Tarea no encontrada' });
     const task = await prisma.eventTask.update({
-      where: { id: req.params.taskId },
+      where: { id: existing.id },
       data,
     });
     res.json(task);
@@ -856,9 +885,11 @@ app.post('/api/employee-activities', requirePermission('inventory:write'), async
   }
 
   try {
+    await assertOwnedReferences(req, { employeeId, eventId: req.body.eventId || null });
+
     if (paymentType === 'Por hora' && !(payment > 0)) {
       const emp = await prisma.employee.findFirst({ where: { id: employeeId, ...ownerFilter(req) } });
-      if (emp) payment = hours * Number(emp.hourlyRate || 0);
+      payment = hours * Number(emp?.hourlyRate || 0);
     }
 
     const activity = await prisma.employeeActivity.create({
@@ -1044,6 +1075,7 @@ app.post('/api/market-purchases', requirePermission('purchases:write'), async (r
   if (errors.length) return sendValidationError(res, errors);
 
   try {
+    await assertOwnedReferences(req, { eventId: data.eventId, providerId: data.providerId });
     const purchase = await prisma.marketPurchase.create({
       data: {
         purchasedAt: data.purchasedAt,
@@ -1076,6 +1108,7 @@ app.put('/api/market-purchases/:id', requirePermission('purchases:write'), async
   try {
     const existing = await prisma.marketPurchase.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
     if (!existing) return res.status(404).json({ error: 'Compra no encontrada' });
+    await assertOwnedReferences(req, { eventId: data.eventId, providerId: data.providerId });
     const purchase = await prisma.marketPurchase.update({
       where: { id: req.params.id },
       data: {
@@ -1637,8 +1670,8 @@ app.post('/api/users', requirePermission('users:write'), async (req, res) => {
     if (!email?.trim() || !username?.trim() || !password) {
       return res.status(400).json({ error: 'Email, usuario y contraseña son requeridos' });
     }
-    if (password.length < 4) {
-      return res.status(400).json({ error: 'La contraseña debe tener al menos 4 caracteres' });
+    if (password.length < 8) {
+      return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres' });
     }
     if (role && !ROLES.includes(role)) {
       return res.status(400).json({ error: `role debe ser uno de: ${ROLES.join(', ')}` });
@@ -1650,7 +1683,6 @@ app.post('/api/users', requirePermission('users:write'), async (req, res) => {
       const field = existing.email === email.trim() ? 'email' : 'usuario';
       return res.status(409).json({ error: `Ese ${field} ya esta registrado` });
     }
-    const { hashPassword } = await import('./auth.js');
     const user = await prisma.user.create({
       data: { email: email.trim(), username: username.trim(), password: hashPassword(password), role: role || 'viewer' },
       select: { id: true, email: true, username: true, role: true, active: true, createdAt: true },
@@ -1683,7 +1715,7 @@ app.put('/api/users/:id', requirePermission('users:write'), async (req, res) => 
 
 app.delete('/api/users/:id', requirePermission('users:delete'), async (req, res) => {
   try {
-    if (req.user.id === req.params.id) {
+    if (req.user?.id === req.params.id) {
       return res.status(400).json({ error: 'No podés eliminar tu propio usuario' });
     }
     await prisma.user.delete({ where: { id: req.params.id } });
@@ -1749,7 +1781,9 @@ app.delete('/api/events/:eventId/photos/:photoId', requirePermission('events:del
   try {
     const event = await prisma.event.findFirst({ where: { id: req.params.eventId, ...ownerFilter(req) } });
     if (!event) return res.status(404).json({ error: 'Evento no encontrado' });
-    await prisma.eventPhoto.delete({ where: { id: req.params.photoId } });
+    const existing = await prisma.eventPhoto.findFirst({ where: { id: req.params.photoId, eventId: event.id } });
+    if (!existing) return res.status(404).json({ error: 'Foto no encontrada' });
+    await prisma.eventPhoto.delete({ where: { id: existing.id } });
     res.status(204).send();
   } catch (error) {
     handlePrismaError(res, error, 'Error al eliminar foto');

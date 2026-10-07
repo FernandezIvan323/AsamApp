@@ -250,3 +250,65 @@ test('aislamiento en plantillas de presupuesto', async () => {
   const templatesB = await listB.json();
   assert.equal(templatesB.length, 0);
 });
+
+test('usuario B no puede actualizar una tarea de A via su propio evento (IDOR tasks)', async () => {
+  const taskRes = await api(`/api/events/${eventIdA}/tasks`, {
+    method: 'POST',
+    token: tokenA,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title: 'Tarea secreta A', done: false }),
+  });
+  assert.equal(taskRes.status, 201);
+  const task = await taskRes.json();
+
+  const hijackRes = await api(`/api/events/${eventIdB}/tasks/${task.id}`, {
+    method: 'PUT',
+    token: tokenB,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title: 'Hackeado', done: true }),
+  });
+  assert.equal(hijackRes.status, 404);
+
+  const checkRes = await api(`/api/events/${eventIdA}`, { token: tokenA });
+  const eventA = await checkRes.json();
+  const untouched = eventA.tasks.find(t => t.id === task.id);
+  assert.ok(untouched, 'la tarea debe seguir existiendo');
+  assert.equal(untouched.title, 'Tarea secreta A');
+  assert.equal(untouched.done, false);
+});
+
+test('usuario B no puede enlazar una compra al evento de A (FK cross-tenant)', async () => {
+  const res = await api('/api/market-purchases', {
+    method: 'POST',
+    token: tokenB,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      store: 'Tienda B',
+      paymentMethod: 'Efectivo',
+      totalAmount: 100,
+      purchasedAt: new Date().toISOString(),
+      eventId: eventIdA,
+      items: [{ name: 'Item B', quantity: 1, unit: 'kg', unitPrice: 100, subtotal: 100 }],
+    }),
+  });
+  assert.equal(res.status, 400);
+});
+
+test('usuario B no puede enlazar una actividad al empleado de A (FK cross-tenant)', async () => {
+  const empRes = await api('/api/employees', {
+    method: 'POST',
+    token: tokenA,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: 'Empleado A', hourlyRate: 50 }),
+  });
+  assert.equal(empRes.status, 201);
+  const employee = await empRes.json();
+
+  const res = await api('/api/employee-activities', {
+    method: 'POST',
+    token: tokenB,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ employeeId: employee.id, hours: 2, paymentType: 'Por hora' }),
+  });
+  assert.equal(res.status, 400);
+});

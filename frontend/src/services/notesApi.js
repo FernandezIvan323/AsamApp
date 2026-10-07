@@ -1,4 +1,4 @@
-import { apiRequest } from '@/lib/api';
+import { apiRequest, downloadRequest } from '@/lib/api';
 
 export const getNotes = (params = {}) => {
   const query = new URLSearchParams(
@@ -25,11 +25,5 @@ export const archiveNote = (id) =>
 export const restoreNote = (id) =>
   apiRequest(`/api/notes/${id}/restore`, { method: 'POST' });
 
-export const exportNotes = async (format = 'json') => {
-  const token = localStorage.getItem('asamapp_token');
-  const response = await fetch(`http://localhost:3000/api/notes-export?format=${format}`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  });
-  if (!response.ok) throw new Error('Error al exportar notas');
-  return response.blob();
-};
+export const exportNotes = (format = 'json') =>
+  downloadRequest(`/api/notes-export?format=${format}`);
