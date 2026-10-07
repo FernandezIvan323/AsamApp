@@ -6,9 +6,10 @@ const INTERVAL_MS = HOURS * 60 * 60 * 1000;
 
 console.log(`[scheduler] Backup automatico cada ${HOURS}h. Ctrl+C para detener.`);
 
-function tick() {
+async function tick() {
   try {
-    runBackup();
+    const result = await runBackup();
+    if (!result.ok) console.error('[scheduler] Backup falló:', result.message);
   } catch (error) {
     console.error('[scheduler] Error en backup:', error.message);
   }

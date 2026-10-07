@@ -1,7 +1,6 @@
 import crypto from 'crypto';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from './db.js';
 
-const prisma = new PrismaClient();
 const TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 export { prisma };

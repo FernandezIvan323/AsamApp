@@ -118,14 +118,20 @@ const EMPTY_FORM = {
   recurrence: 'none',
 };
 
+function toLocalDateString(date) {
+  const d = date instanceof Date ? date : new Date(date);
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 function todayString() {
-  return new Date().toISOString().slice(0, 10);
+  return toLocalDateString(new Date());
 }
 
 function tomorrowString() {
   const date = new Date();
   date.setDate(date.getDate() + 1);
-  return date.toISOString().slice(0, 10);
+  return toLocalDateString(date);
 }
 
 function isOverdue(note) {
@@ -397,15 +403,15 @@ function NoteViewModal({ note, onClose, onEdit, onDelete, onArchive, onRestore, 
     if (!note || !note.linkedId || !options) return null;
     if (note.linkedType === 'event') {
       const e = (options.events || []).find(x => x.id === note.linkedId);
-      return e ? { label: e.title, sub: e.client, path: `/app/history/${e.id}` } : null;
+      return e ? { label: e.title, sub: e.client, path: `/history/${e.id}` } : null;
     }
     if (note.linkedType === 'provider') {
       const p = (options.providers || []).find(x => x.id === note.linkedId);
-      return p ? { label: p.name, sub: p.category, path: '/app/providers' } : null;
+      return p ? { label: p.name, sub: p.category, path: '/providers' } : null;
     }
     if (note.linkedType === 'purchase') {
       const p = (options.purchases || []).find(x => x.id === note.linkedId);
-      return p ? { label: p.store || p.vendorName || 'Compra', sub: format(new Date(p.purchasedAt), 'd MMM yyyy', { locale: es }), path: '/app/weekly-expenses' } : null;
+      return p ? { label: p.store || p.vendorName || 'Compra', sub: format(new Date(p.purchasedAt), 'd MMM yyyy', { locale: es }), path: '/weekly-expenses' } : null;
     }
     return null;
   }, [note, options]);

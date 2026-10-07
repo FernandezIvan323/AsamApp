@@ -140,3 +140,102 @@ test('POST /api/users crea un usuario correctamente', async () => {
 
   await prisma.user.deleteMany({ where: { username: 'createduser' } });
 });
+
+test('PUT parcial de evento no borra campos existentes', async () => {
+  const createRes = await fetch(`${baseUrl}/api/events`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      title: 'Evento completo',
+      date: '2026-10-15',
+      time: '20:00',
+      location: 'Calle 5',
+      guests: 30,
+      extraCosts: 1000,
+      profitMargin: 25,
+      insumos: [{ name: 'Carne', unit: 'kg', quantity: 10, costPerUnit: 20000 }],
+    }),
+  });
+  assert.equal(createRes.status, 201);
+  const created = await createRes.json();
+  assert.equal(created.date, '2026-10-15');
+  assert.equal(created.insumos.length, 1);
+
+  const putRes = await fetch(`${baseUrl}/api/events/${created.id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title: 'Solo cambia el titulo' }),
+  });
+  assert.equal(putRes.status, 200);
+  const updated = await putRes.json();
+  assert.equal(updated.title, 'Solo cambia el titulo');
+  assert.equal(updated.date, '2026-10-15', 'la fecha no debe perderse');
+  assert.equal(updated.time, '20:00', 'la hora no debe perderse');
+  assert.equal(updated.location, 'Calle 5', 'la ubicacion no debe perderse');
+  assert.equal(updated.guests, 30, 'los invitados no deben perderse');
+  assert.equal(updated.insumos.length, 1, 'los insumos no deben perderse');
+  assert.equal(updated.totalPrice, created.totalPrice, 'el total no debe cambiar');
+
+  await fetch(`${baseUrl}/api/events/${created.id}`, { method: 'DELETE' });
+});
+
+test('POST/PUT con status invalido devuelve 400', async () => {
+  const createRes = await fetch(`${baseUrl}/api/events`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      title: 'Status invalido',
+      guests: 10,
+      extraCosts: 0,
+      profitMargin: 0,
+      status: 'EstadoInexistente',
+      insumos: [],
+    }),
+  });
+  assert.equal(createRes.status, 400);
+  const createBody = await createRes.json();
+  assert.ok(createBody.error.includes('status'));
+});
+
+test('registrar y eliminar pago recalcula amountPaid', async () => {
+  const createRes = await fetch(`${baseUrl}/api/events`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      title: 'Evento con pagos',
+      guests: 10,
+      extraCosts: 0,
+      profitMargin: 100,
+      amountPaid: 0,
+      insumos: [{ name: 'Carne', unit: 'kg', quantity: 1, costPerUnit: 1000 }],
+    }),
+  });
+  const event = await createRes.json();
+  assert.equal(event.totalPrice, 2000);
+
+  const payRes = await fetch(`${baseUrl}/api/events/${event.id}/payments`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ amount: 500, paymentMethod: 'Efectivo' }),
+  });
+  assert.equal(payRes.status, 201);
+  const payment = await payRes.json();
+
+  const pay2Res = await fetch(`${baseUrl}/api/events/${event.id}/payments`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ amount: 250, paymentMethod: 'Transferencia' }),
+  });
+  assert.equal(pay2Res.status, 201);
+
+  let detail = await (await fetch(`${baseUrl}/api/events/${event.id}`)).json();
+  assert.equal(detail.amountPaid, 750, 'amountPaid debe ser la suma de los pagos');
+
+  const delRes = await fetch(`${baseUrl}/api/events/${event.id}/payments/${payment.id}`, { method: 'DELETE' });
+  assert.equal(delRes.status, 204);
+
+  detail = await (await fetch(`${baseUrl}/api/events/${event.id}`)).json();
+  assert.equal(detail.amountPaid, 250, 'eliminar un pago debe recalcular amountPaid');
+
+  await fetch(`${baseUrl}/api/events/${event.id}`, { method: 'DELETE' });
+});

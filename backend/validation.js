@@ -1,4 +1,4 @@
-import { EVENT_STATUSES } from './eventStatus.js';
+import { EVENT_STATUSES, normalizeStatus } from './eventStatus.js';
 
 export const ALLOWED_STATUSES = [...EVENT_STATUSES];
 export const PAYMENT_METHODS = ['Efectivo', 'Tarjeta', 'Transferencia', 'Otro'];
@@ -104,6 +104,14 @@ export function validateEventPayload(payload) {
   const time = validateTime(payload?.time, errors);
   const insumosPayload = Array.isArray(payload?.insumos) ? payload.insumos : [];
 
+  const providedStatus = payload?.status;
+  const normalizedStatus = normalizeStatus(normalizeText(providedStatus));
+  const status = ALLOWED_STATUSES.includes(normalizedStatus) ? normalizedStatus : null;
+  const statusProvided = providedStatus !== undefined && providedStatus !== null && normalizeText(providedStatus) !== '';
+  if (statusProvided && !status) {
+    errors.push(`status debe ser uno de: ${ALLOWED_STATUSES.join(', ')}`);
+  }
+
   if (!title) errors.push('title es requerido');
   if (!Number.isInteger(guests)) errors.push('guests debe ser un numero entero');
 
@@ -140,7 +148,7 @@ export function validateEventPayload(payload) {
       guests,
       adults: resolvedAdults,
       kids: resolvedKids,
-      status: ALLOWED_STATUSES.includes(normalizeText(payload?.status)) ? normalizeText(payload?.status) : 'Cotizado',
+      status: status || 'Cotizado',
       menuNotes: optionalText(payload?.menuNotes),
       recipeName: optionalText(payload?.recipeName),
       extraCosts,

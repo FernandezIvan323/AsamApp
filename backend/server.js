@@ -3,7 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from './db.js';
 import { authMiddleware, handleAuthConfig, handleAuthLogin, handleAuthRegister, handleAuthMe, validateSecret, hashPassword } from './auth.js';
 import { ROLES, hasPermission } from './permissions.js';
 import {
@@ -27,7 +27,6 @@ import { assertStatusTransition } from './eventStatus.js';
 import { createRateLimiter, clientIp } from './rate-limit.js';
 
 const app = express();
-const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3000;
 const corsOrigin = process.env.CORS_ORIGIN;
 
@@ -258,14 +257,30 @@ app.post('/api/events', requirePermission('events:write'), async (req, res) => {
 app.put('/api/events/:id', requirePermission('events:write'), async (req, res) => {
   try {
     if (req.body?.title !== undefined) {
-      const existing = await prisma.event.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
+      const existing = await prisma.event.findFirst({
+        where: { id: req.params.id, ...ownerFilter(req) },
+        include: { insumos: true },
+      });
       if (!existing) return res.status(404).json({ error: 'Evento no encontrado' });
 
-      const { errors, data } = validateEventPayload({
+      const merged = {
         ...req.body,
         amountPaid: existing.amountPaid,
         status: req.body.status !== undefined ? req.body.status : existing.status,
-      });
+      };
+      for (const key of ['client', 'clientId', 'date', 'time', 'location', 'guests', 'adults', 'kids', 'menuNotes', 'recipeName', 'extraCosts', 'profitMargin']) {
+        if (merged[key] === undefined) merged[key] = existing[key];
+      }
+      if (merged.insumos === undefined) {
+        merged.insumos = existing.insumos.map(i => ({
+          name: i.name,
+          quantity: i.quantity,
+          unit: i.unit,
+          costPerUnit: i.costPerUnit,
+        }));
+      }
+
+      const { errors, data } = validateEventPayload(merged);
       if (errors.length) return sendValidationError(res, errors);
       await assertOwnedReferences(req, { clientId: data.clientId });
 
@@ -519,16 +534,19 @@ app.post('/api/events/:id/payments', requirePermission('events:write'), async (r
   try {
     const event = await prisma.event.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
     if (!event) return res.status(404).json({ error: 'Evento no encontrado' });
-    const payment = await prisma.eventPayment.create({
-      data: { ...data, eventId: req.params.id, ownerId: req.user?.id },
-    });
-    const paidTotal = await prisma.eventPayment.aggregate({
-      where: { eventId: req.params.id },
-      _sum: { amount: true },
-    });
-    await prisma.event.update({
-      where: { id: req.params.id },
-      data: { amountPaid: paidTotal._sum.amount || 0 },
+    const payment = await prisma.$transaction(async (tx) => {
+      const created = await tx.eventPayment.create({
+        data: { ...data, eventId: req.params.id, ownerId: req.user?.id },
+      });
+      const paidTotal = await tx.eventPayment.aggregate({
+        where: { eventId: req.params.id },
+        _sum: { amount: true },
+      });
+      await tx.event.update({
+        where: { id: req.params.id },
+        data: { amountPaid: paidTotal._sum.amount || 0 },
+      });
+      return created;
     });
     res.status(201).json(payment);
   } catch (error) {
@@ -542,14 +560,16 @@ app.delete('/api/events/:eventId/payments/:paymentId', requirePermission('events
     if (!event) return res.status(404).json({ error: 'Evento no encontrado' });
     const existing = await prisma.eventPayment.findFirst({ where: { id: req.params.paymentId, eventId: event.id } });
     if (!existing) return res.status(404).json({ error: 'Pago no encontrado' });
-    await prisma.eventPayment.delete({ where: { id: existing.id } });
-    const paidTotal = await prisma.eventPayment.aggregate({
-      where: { eventId: event.id },
-      _sum: { amount: true },
-    });
-    await prisma.event.update({
-      where: { id: event.id },
-      data: { amountPaid: paidTotal._sum.amount || 0 },
+    await prisma.$transaction(async (tx) => {
+      await tx.eventPayment.delete({ where: { id: existing.id } });
+      const paidTotal = await tx.eventPayment.aggregate({
+        where: { eventId: event.id },
+        _sum: { amount: true },
+      });
+      await tx.event.update({
+        where: { id: event.id },
+        data: { amountPaid: paidTotal._sum.amount || 0 },
+      });
     });
     res.status(204).send();
   } catch (error) {
@@ -629,22 +649,26 @@ app.post('/api/inventory/:id/stock-movements', requirePermission('inventory:writ
   if (errors.length) return sendValidationError(res, errors);
 
   try {
-    const current = await prisma.catalogItem.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
-    if (!current) return res.status(404).json({ error: 'Insumo no encontrado' });
-    const nextStock = data.type === 'Entrada'
-      ? current.stock + data.quantity
-      : data.type === 'Salida'
-        ? Math.max(0, current.stock - data.quantity)
-        : data.quantity;
+    const result = await prisma.$transaction(async (tx) => {
+      const current = await tx.catalogItem.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
+      if (!current) return null;
+      const nextStock = data.type === 'Entrada'
+        ? current.stock + data.quantity
+        : data.type === 'Salida'
+          ? Math.max(0, current.stock - data.quantity)
+          : data.quantity;
 
-    const movement = await prisma.stockMovement.create({
-      data: { ...data, catalogItemId: req.params.id, ownerId: req.user?.id },
+      const movement = await tx.stockMovement.create({
+        data: { ...data, catalogItemId: req.params.id, ownerId: req.user?.id },
+      });
+      const item = await tx.catalogItem.update({
+        where: { id: req.params.id },
+        data: { stock: nextStock },
+      });
+      return { movement, item };
     });
-    const item = await prisma.catalogItem.update({
-      where: { id: req.params.id },
-      data: { stock: nextStock },
-    });
-    res.status(201).json({ movement, item });
+    if (!result) return res.status(404).json({ error: 'Insumo no encontrado' });
+    res.status(201).json(result);
   } catch (error) {
     handlePrismaError(res, error, 'Error al actualizar stock');
   }
@@ -1102,12 +1126,32 @@ app.post('/api/market-purchases', requirePermission('purchases:write'), async (r
 });
 
 app.put('/api/market-purchases/:id', requirePermission('purchases:write'), async (req, res) => {
-  const { errors, data } = validateMarketPurchasePayload(req.body);
-  if (errors.length) return sendValidationError(res, errors);
-
   try {
-    const existing = await prisma.marketPurchase.findFirst({ where: { id: req.params.id, ...ownerFilter(req) } });
+    const existing = await prisma.marketPurchase.findFirst({
+      where: { id: req.params.id, ...ownerFilter(req) },
+      include: { items: true },
+    });
     if (!existing) return res.status(404).json({ error: 'Compra no encontrada' });
+
+    const merged = { ...req.body };
+    for (const key of ['purchasedAt', 'store', 'vendorName', 'vendorPhone', 'eventId', 'providerId', 'paymentMethod', 'notes']) {
+      if (merged[key] === undefined) merged[key] = existing[key];
+    }
+    if (merged.items === undefined) {
+      merged.items = existing.items.map(i => ({
+        name: i.name,
+        quantity: i.quantity,
+        unit: i.unit,
+        unitPrice: i.unitPrice,
+      }));
+    }
+    if (merged.receiptPhotos === undefined) {
+      try { merged.receiptPhotos = JSON.parse(existing.receiptPhotos || '[]'); }
+      catch { merged.receiptPhotos = []; }
+    }
+
+    const { errors, data } = validateMarketPurchasePayload(merged);
+    if (errors.length) return sendValidationError(res, errors);
     await assertOwnedReferences(req, { eventId: data.eventId, providerId: data.providerId });
     const purchase = await prisma.marketPurchase.update({
       where: { id: req.params.id },
@@ -1189,8 +1233,14 @@ function serializeNote(note) {
   };
 }
 
+function toLocalDateString(date) {
+  const d = date instanceof Date ? date : new Date(date);
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 function getTodayString() {
-  return new Date().toISOString().slice(0, 10);
+  return toLocalDateString(new Date());
 }
 
 function addInterval(dateStr, interval) {
@@ -1198,8 +1248,14 @@ function addInterval(dateStr, interval) {
   const d = new Date(`${dateStr}T00:00:00`);
   if (interval === 'daily') d.setDate(d.getDate() + 1);
   else if (interval === 'weekly') d.setDate(d.getDate() + 7);
-  else if (interval === 'monthly') d.setMonth(d.getMonth() + 1);
-  return d.toISOString().slice(0, 10);
+  else if (interval === 'monthly') {
+    const day = d.getDate();
+    d.setDate(1);
+    d.setMonth(d.getMonth() + 1);
+    const lastDayOfTarget = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+    d.setDate(Math.min(day, lastDayOfTarget));
+  }
+  return toLocalDateString(d);
 }
 
 function sortOperationalNotes(a, b) {
@@ -1342,34 +1398,38 @@ app.patch('/api/notes/:id', requirePermission('notes:write'), async (req, res) =
     // Detect transition to "Realizada" with recurrence → spawn next instance
     const becomingDone = newData.status === 'Realizada' && existing.status !== 'Realizada';
 
-    const note = await prisma.note.update({
-      where: { id: req.params.id },
-      data: newData,
-      include: { changelog: true },
+    const note = await prisma.$transaction(async (tx) => {
+      const updated = await tx.note.update({
+        where: { id: req.params.id },
+        data: newData,
+        include: { changelog: true },
+      });
+
+      if (becomingDone && updated.recurrence && updated.recurrence !== 'none') {
+        const nextDue = addInterval(updated.dueDate || getTodayString(), updated.recurrence);
+        await tx.note.create({
+          data: {
+            title: updated.title,
+            content: updated.content,
+            priority: updated.priority,
+            type: updated.type,
+            linkedType: updated.linkedType,
+            linkedId: updated.linkedId,
+            tags: updated.tags,
+            dueDate: nextDue,
+            status: 'Pendiente',
+            done: false,
+            recurrence: updated.recurrence,
+            recurrenceParentId: updated.id,
+            ownerId: req.user?.id,
+          },
+        });
+      }
+
+      return updated;
     });
 
     await logNoteChanges(req.params.id, existing, newData);
-
-    if (becomingDone && note.recurrence && note.recurrence !== 'none') {
-      const nextDue = addInterval(note.dueDate || getTodayString(), note.recurrence);
-      await prisma.note.create({
-        data: {
-          title: note.title,
-          content: note.content,
-          priority: note.priority,
-          type: note.type,
-          linkedType: note.linkedType,
-          linkedId: note.linkedId,
-          tags: note.tags,
-          dueDate: nextDue,
-          status: 'Pendiente',
-          done: false,
-          recurrence: note.recurrence,
-          recurrenceParentId: note.id,
-          ownerId: req.user?.id,
-        },
-      });
-    }
 
     res.json(serializeNote(note));
   } catch (error) {

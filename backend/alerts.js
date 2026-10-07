@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from './db.js';
 
 const ALERT_TYPES = {
   EVENT_UNCONFIRMED: 'event_unconfirmed',
@@ -14,14 +12,20 @@ const ALERT_TYPES = {
 
 const SEVERITY = { info: 'info', warn: 'warn', error: 'error' };
 
+function toLocalDateString(date) {
+  const d = date instanceof Date ? date : new Date(date);
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 function getToday() {
-  return new Date().toISOString().slice(0, 10);
+  return toLocalDateString(new Date());
 }
 
 function daysAgo(date, days) {
   const d = new Date(date);
   d.setDate(d.getDate() - days);
-  return d.toISOString().slice(0, 10);
+  return toLocalDateString(d);
 }
 
 export async function generateAlerts(user = null) {
@@ -49,7 +53,7 @@ export async function generateAlerts(user = null) {
 
     const pending = Number(event.totalPrice || 0) - Number(event.amountPaid || 0);
     if (pending > 0 && event.status !== 'Cancelado' && event.status !== 'Cobrado') {
-      if (event.date && event.date < daysAgo(today, -7)) {
+      if (event.date && event.date < daysAgo(today, 7)) {
         alerts.push({
           type: ALERT_TYPES.PAYMENT_OVERDUE,
           severity: SEVERITY.error,

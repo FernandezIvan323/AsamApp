@@ -1,11 +1,13 @@
 #!/usr/bin/env node
-import { existsSync, mkdirSync, copyFileSync, statSync, readdirSync, unlinkSync } from 'fs';
+import 'dotenv/config';
+import { existsSync, mkdirSync, statSync, readdirSync, unlinkSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { prisma } from '../db.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const BACKEND_DIR = path.join(__dirname, '..');
-const DB_PATH = path.join(BACKEND_DIR, process.env.DATABASE_URL?.replace(/^file:/, '') || 'dev.db');
+const DB_PATH = path.join(BACKEND_DIR, process.env.DATABASE_URL?.replace(/^file:/, '').split('?')[0] || 'dev.db');
 
 const BACKUP_DIR = process.env.BACKUP_DIR
   ? path.resolve(process.env.BACKUP_DIR)
@@ -51,7 +53,7 @@ function pruneOldBackups() {
   return toRemove.map(e => e.name);
 }
 
-export function runBackup({ silent = false } = {}) {
+export async function runBackup({ silent = false } = {}) {
   ensureDir(BACKUP_DIR);
 
   if (!existsSync(DB_PATH)) {
@@ -64,12 +66,16 @@ export function runBackup({ silent = false } = {}) {
   const target = path.join(BACKUP_DIR, filename);
 
   try {
-    copyFileSync(DB_PATH, target);
+    const escapedTarget = target.replace(/'/g, "''");
+    await prisma.$executeRawUnsafe(`VACUUM INTO '${escapedTarget}'`);
   } catch (error) {
-    const message = `Error al copiar la base de datos: ${error.message}`;
+    const message = `Error al generar el backup consistente: ${error.message}`;
     if (!silent) console.error(`[backup] ${message}`);
+    await prisma.$disconnect().catch(() => {});
     return { ok: false, message };
   }
+
+  await prisma.$disconnect().catch(() => {});
 
   const removed = pruneOldBackups();
   const total = listBackups().length;
@@ -93,6 +99,7 @@ export function runBackup({ silent = false } = {}) {
 const isMain = process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
 if (isMain) {
   const args = new Set(process.argv.slice(2));
-  const result = runBackup({ silent: args.has('--silent') });
-  process.exit(result.ok ? 0 : 1);
+  runBackup({ silent: args.has('--silent') })
+    .then((result) => process.exit(result.ok ? 0 : 1))
+    .catch(() => process.exit(1));
 }

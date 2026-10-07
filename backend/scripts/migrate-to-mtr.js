@@ -8,13 +8,13 @@ const MODELS = [
   'Event', 'Note', 'CatalogItem', 'MarketPurchase', 'MarketPurchaseItem',
   'Provider', 'RecipeCombo', 'EventTask', 'EventPayment', 'StockMovement',
   'NoteChangeLog', 'QuoteTemplate', 'EventChangeLog', 'FixedCost',
-  'EventPhoto', 'Insumo',
+  'EventPhoto', 'Insumo', 'Client', 'Employee', 'EmployeeActivity',
 ];
 
 async function main() {
   console.log('=== Multi-Tenant Migration v2.0.0 ===\n');
 
-  const backup = runBackup();
+  const backup = await runBackup();
   if (!backup.ok) {
     console.error(`[ERROR] Respaldo fallido: ${backup.message}`);
     process.exit(1);
