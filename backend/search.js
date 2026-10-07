@@ -46,6 +46,12 @@ export async function ensureFtsTable() {
         VALUES (new.rowid, new.title, COALESCE(new.client, ''), COALESCE(new.location, ''), COALESCE(new.menuNotes, ''));
       END;
     `);
+    await prisma.$executeRawUnsafe(`
+      INSERT INTO event_fts(rowid, title, client, location, menuNotes)
+      SELECT rowid, title, COALESCE(client, ''), COALESCE(location, ''), COALESCE(menuNotes, '')
+      FROM Event
+      WHERE rowid NOT IN (SELECT rowid FROM event_fts);
+    `).catch(() => {});
     ftsInitialized = true;
   } catch (error) {
     console.error('No se pudo inicializar FTS5:', error.message);
@@ -56,11 +62,6 @@ export async function ftsSearchEvents(query, limit = 8, userId = null) {
   if (!query || query.length < 2) return [];
   const tokens = tokenize(query);
   if (!tokens) return [];
-
-  const ownerClause = userId
-    ? `AND e.ownerId = ?`
-    : '';
-
   try {
     await ensureFtsTable();
     const rows = userId

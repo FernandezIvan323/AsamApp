@@ -71,6 +71,36 @@ function readFileAsDataUrl(file) {
   });
 }
 
+const PHOTO_MAX_DIMENSION = 1600;
+const PHOTO_JPEG_QUALITY = 0.82;
+
+async function compressPhoto(file) {
+  if (!file.type || !file.type.startsWith('image/')) {
+    throw new Error('El archivo debe ser una imagen');
+  }
+  const dataUrl = await readFileAsDataUrl(file);
+  if (file.type === 'image/gif') return dataUrl;
+
+  const img = await new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error('No se pudo leer la imagen'));
+    image.src = dataUrl;
+  });
+
+  const scale = Math.min(1, PHOTO_MAX_DIMENSION / Math.max(img.width, img.height));
+  if (scale === 1 && dataUrl.length < 300_000) return dataUrl;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(img.width * scale));
+  canvas.height = Math.max(1, Math.round(img.height * scale));
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL('image/jpeg', PHOTO_JPEG_QUALITY);
+}
+
 function StepBadge({ n }) {
   return (
     <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-bold text-primary">
@@ -483,7 +513,7 @@ export default function NewMarketPurchase() {
     try {
       const remainingSlots = Math.max(0, 6 - sessionPhotos.length);
       const selectedFiles = files.slice(0, remainingSlots);
-      const photos = await Promise.all(selectedFiles.map(readFileAsDataUrl));
+      const photos = await Promise.all(selectedFiles.map(compressPhoto));
       setSessionPhotos(prev => [...prev, ...photos]);
     } catch {
       triggerAlert('Error', 'No se pudieron leer una o más imágenes.');
@@ -499,6 +529,10 @@ export default function NewMarketPurchase() {
   const handleSave = async () => {
     if (session.purchases.length === 0) {
       triggerAlert('Sin compras', 'Agregá al menos una compra para guardar.');
+      return;
+    }
+    if (!session.purchasedAt || Number.isNaN(new Date(session.purchasedAt).getTime())) {
+      triggerAlert('Falta la fecha', 'Ingresá la fecha y hora de la compra.');
       return;
     }
     for (let i = 0; i < session.purchases.length; i++) {
@@ -518,8 +552,10 @@ export default function NewMarketPurchase() {
 
     setIsSaving(true);
     setSaveError(null);
+    let savedCount = 0;
+    const totalCount = session.purchases.length;
     try {
-      for (let i = 0; i < session.purchases.length; i++) {
+      for (let i = 0; i < totalCount; i++) {
         const p = session.purchases[i];
         const validItems = p.items.filter(item => item.name.trim() && Number(item.quantity) > 0);
         const allPhotos = [...p.receiptPhotos, ...sessionPhotos];
@@ -539,11 +575,19 @@ export default function NewMarketPurchase() {
           })),
         };
         await createMarketPurchase(payload);
+        savedCount += 1;
       }
       navigate(session.eventId ? `/history/${session.eventId}` : '/weekly-expenses');
     } catch (err) {
       setSaveError(err);
-      triggerAlert('Error de guardado', 'No se pudieron guardar las compras. Revisá los datos e intentá de nuevo.');
+      if (savedCount > 0) {
+        triggerAlert(
+          'Guardado parcial',
+          `Se guardaron ${savedCount} de ${totalCount} compras. La compra #${savedCount + 1} falló. NO reintentes todo: revisá la compra restante para no duplicar las ya guardadas.`,
+        );
+      } else {
+        triggerAlert('Error de guardado', 'No se pudieron guardar las compras. Revisá los datos e intentá de nuevo.');
+      }
     } finally {
       setIsSaving(false);
     }

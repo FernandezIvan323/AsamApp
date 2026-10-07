@@ -23,12 +23,14 @@ export default function FixedCosts() {
   const [costs, setCosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [toDelete, setToDelete] = useState(null);
+  const [loadError, setLoadError] = useState(null);
 
   const load = () => {
     setLoading(true);
+    setLoadError(null);
     getFixedCosts()
       .then(data => setCosts(Array.isArray(data) ? data : []))
-      .catch(() => setCosts([]))
+      .catch((err) => { setCosts([]); setLoadError(err); })
       .finally(() => setLoading(false));
   };
 
@@ -101,6 +103,11 @@ export default function FixedCosts() {
           {loading ? (
             <div className="flex min-h-[20vh] items-center justify-center">
               <div className="size-8 animate-spin rounded-full border-2 border-border border-t-primary" />
+            </div>
+          ) : loadError ? (
+            <div className="flex flex-col items-center gap-3 py-10">
+              <p className="text-sm text-destructive">{loadError.message || 'No se pudieron cargar los gastos fijos'}</p>
+              <Button size="sm" variant="outline" onClick={load}>Reintentar</Button>
             </div>
           ) : costs.length === 0 ? (
             <div className="flex flex-col items-center gap-3 py-10">

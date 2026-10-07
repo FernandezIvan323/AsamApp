@@ -78,6 +78,7 @@ export default function Employees() {
   const [activities, setActivities] = useState([]);
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const [search, setSearch] = useState('');
 
   const [empModal, setEmpModal] = useState(null); // null | 'create' | employee
@@ -95,21 +96,22 @@ export default function Employees() {
 
   const load = () => {
     setLoading(true);
+    setLoadError(null);
     Promise.all([getEmployees(), getEmployeeActivities(), getEvents()])
       .then(([emps, acts, evs]) => {
         setEmployees(Array.isArray(emps) ? emps : []);
         setActivities(Array.isArray(acts) ? acts : []);
         setEvents(Array.isArray(evs) ? evs : []);
       })
-      .catch(() => {})
+      .catch((err) => setLoadError(err))
       .finally(() => setLoading(false));
   };
 
   useEffect(load, []);
 
   const filtered = employees.filter(e => e.name.toLowerCase().includes(search.toLowerCase()));
-  const totalHours = activities.reduce((s, a) => s + a.hours, 0);
-  const totalPayments = activities.reduce((s, a) => s + a.payment, 0);
+  const totalHours = activities.reduce((s, a) => s + (Number(a.hours) || 0), 0);
+  const totalPayments = activities.reduce((s, a) => s + (Number(a.payment) || 0), 0);
 
   const setTab = (next) => {
     if (next === 'activities') setSearchParams({ tab: 'activities' });
@@ -277,6 +279,11 @@ export default function Employees() {
           <CardContent className="pt-5">
             {loading ? (
               <div className="flex min-h-[20vh] items-center justify-center"><div className="size-8 animate-spin rounded-full border-2 border-border border-t-primary" /></div>
+            ) : loadError ? (
+              <div className="flex flex-col items-center gap-3 py-10">
+                <p className="text-sm text-destructive">{loadError.message || 'No se pudieron cargar los datos'}</p>
+                <Button size="sm" variant="outline" onClick={load}>Reintentar</Button>
+              </div>
             ) : filtered.length === 0 ? (
               <div className="flex flex-col items-center gap-3 py-10">
                 <Users className="size-10 text-muted-foreground/40" />
@@ -327,6 +334,11 @@ export default function Employees() {
           <CardContent className="pt-5">
             {loading ? (
               <div className="flex min-h-[20vh] items-center justify-center"><div className="size-8 animate-spin rounded-full border-2 border-border border-t-primary" /></div>
+            ) : loadError ? (
+              <div className="flex flex-col items-center gap-3 py-10">
+                <p className="text-sm text-destructive">{loadError.message || 'No se pudieron cargar los datos'}</p>
+                <Button size="sm" variant="outline" onClick={load}>Reintentar</Button>
+              </div>
             ) : activities.length === 0 ? (
               <div className="flex flex-col items-center gap-3 py-10">
                 <Clock className="size-10 text-muted-foreground/40" />
@@ -378,7 +390,7 @@ export default function Employees() {
             </FormField>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <FormField label="Teléfono">
-                <Input type="tel" value={empForm.phone} onChange={e => setEmpForm(f => ({ ...f, phone: e.target.value }))} placeholder="+54 11 …" />
+                <Input type="tel" value={empForm.phone} onChange={e => setEmpForm(f => ({ ...f, phone: e.target.value }))} placeholder="+57 300 …" />
               </FormField>
               <FormField label="Email">
                 <Input type="email" value={empForm.email} onChange={e => setEmpForm(f => ({ ...f, email: e.target.value }))} />

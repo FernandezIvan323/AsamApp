@@ -12,7 +12,10 @@ export async function generateEventPdf(filename = 'presupuesto.pdf') {
   const canvas = await html2canvas(element, {
     scale: 2,
     useCORS: true,
-    backgroundColor: '#0f0f0f', // fondo oscuro de la app
+    backgroundColor: '#ffffff',
+    onclone: (doc) => {
+      doc.documentElement.classList.add('pdf-light');
+    },
   });
 
   const imgData = canvas.toDataURL('image/png');

@@ -1,0 +1,16 @@
+node_modules
+npm-debug.log
+.env
+.git
+.gitignore
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+logs
+backups
+test-output.txt
+test-integration.db
+test-isolation.db
+Dockerfile
+.dockerignore

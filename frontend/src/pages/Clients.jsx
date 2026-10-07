@@ -132,10 +132,12 @@ export default function Clients() {
   const [saving, setSaving] = useState(false);
   const [touched, setTouched] = useState({});
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [loadError, setLoadError] = useState(null);
 
   const load = () => {
     setLoading(true);
-    getClients().then(setClients).catch(() => {}).finally(() => setLoading(false));
+    setLoadError(null);
+    getClients().then(setClients).catch((err) => setLoadError(err)).finally(() => setLoading(false));
   };
 
   useEffect(load, []);
@@ -290,6 +292,11 @@ export default function Clients() {
           {loading ? (
             <div className="flex min-h-[20vh] items-center justify-center">
               <div className="size-8 animate-spin rounded-full border-2 border-border border-t-primary" />
+            </div>
+          ) : loadError ? (
+            <div className="flex flex-col items-center gap-3 py-10">
+              <p className="text-sm text-destructive">{loadError.message || 'No se pudieron cargar los clientes'}</p>
+              <Button size="sm" variant="outline" onClick={load}>Reintentar</Button>
             </div>
           ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center gap-3 py-10">

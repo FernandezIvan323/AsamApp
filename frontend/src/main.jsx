@@ -5,7 +5,6 @@ import './index.css'
 import App from './App.jsx'
 import AuthGate from './components/AuthGate.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
-import './lib/i18n.js'
 
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {

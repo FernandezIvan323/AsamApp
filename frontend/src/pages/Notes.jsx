@@ -1053,24 +1053,18 @@ export default function Notes() {
   // Keyboard shortcuts
   useEffect(() => {
     const handler = (e) => {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
-      if (mode) return;
-      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
-        if (mode === 'create' || mode === 'edit') {
+      if (mode) {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          handleClose();
+        } else if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+          e.preventDefault();
           const form = document.querySelector('form');
           if (form) form.requestSubmit();
         }
         return;
       }
-      if (e.key === 'Escape' && mode) {
-        handleClose();
-        return;
-      }
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        searchRef.current?.focus();
-        return;
-      }
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
       if (e.key === 'n' && !e.metaKey && !e.ctrlKey) {
         e.preventDefault();
         handleCreate();

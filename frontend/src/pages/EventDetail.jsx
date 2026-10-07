@@ -309,7 +309,7 @@ export default function EventDetail() {
         )}
 
         {/* KPI Metrics Grid */}
-        <StaggerContainer className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7">
+        <StaggerContainer className="no-print grid gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7">
           <StaggerItem>
             <Card>
               <CardContent className="pt-5">

@@ -256,3 +256,19 @@ textarea[aria-invalid='true'] {
   }
 }
 
+/* Tema claro para el PDF generado con html2canvas (clon, no toca el DOM vivo) */
+.pdf-light body,
+.pdf-light .print-area {
+  background: #ffffff !important;
+}
+
+.pdf-light .print-area,
+.pdf-light .print-area * {
+  color: #111827 !important;
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  border-color: #d1d5db !important;
+  text-shadow: none !important;
+}
+

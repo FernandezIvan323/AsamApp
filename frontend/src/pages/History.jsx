@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Download, Eye, Flame, Printer, Search, Trash2, X } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
@@ -39,6 +39,19 @@ export default function History() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [eventToDelete, setEventToDelete] = useState(null);
   const [statusConfirm, setStatusConfirm] = useState(null);
+  const [printRequested, setPrintRequested] = useState(false);
+
+  useEffect(() => {
+    if (!selectedEvent || !printRequested) return;
+    setPrintRequested(false);
+    let cancelled = false;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (!cancelled) window.print();
+      });
+    });
+    return () => { cancelled = true; };
+  }, [selectedEvent, printRequested]);
 
   const filteredEvents = events.filter(event => {
     const term = searchTerm.toLowerCase();
@@ -190,7 +203,7 @@ export default function History() {
                           </Button>
                           <Button
                             size="sm"
-                            onClick={() => { setSelectedEvent(event); setTimeout(handlePrint, 300); }}
+                            onClick={() => { setSelectedEvent(event); setPrintRequested(true); }}
                           >
                             <Download className="size-3.5" />
                             PDF

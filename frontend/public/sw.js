@@ -4,7 +4,6 @@ const RUNTIME_CACHE = `asamapp-runtime-${CACHE_VERSION}`;
 
 const PRECACHE_URLS = [
   '/',
-  '/app/',
   '/manifest.json',
   '/favicon.svg',
   '/icon-192.svg',
@@ -49,11 +48,14 @@ self.addEventListener('fetch', (event) => {
 });
 
 async function networkFirst(request) {
+  const cache = await caches.open(RUNTIME_CACHE);
   try {
     const response = await fetch(request);
+    if (response && response.status === 200) {
+      cache.put(request, response.clone());
+    }
     return response;
   } catch {
-    const cache = await caches.open(RUNTIME_CACHE);
     const cached = await cache.match(request);
     return cached || new Response(JSON.stringify({ error: 'Sin conexion' }), {
       status: 503,

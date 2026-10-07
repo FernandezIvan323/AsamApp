@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { prisma } from './db.js';
@@ -41,7 +42,21 @@ try {
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-app.use(cors(corsOrigin ? { origin: corsOrigin.split(',').map(origin => origin.trim()) } : undefined));
+if (process.env.TRUST_PROXY === 'loopback') {
+  app.set('trust proxy', 'loopback');
+} else if (/^\d+$/.test(process.env.TRUST_PROXY || '')) {
+  app.set('trust proxy', Number(process.env.TRUST_PROXY));
+}
+
+const corsOptions = corsOrigin
+  ? { origin: corsOrigin.split(',').map(origin => origin.trim()) }
+  : (process.env.NODE_ENV === 'production' ? { origin: false } : undefined);
+
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false,
+}));
+app.use(cors(corsOptions));
 app.use(express.json({ limit: '1mb' }));
 app.use(requestLogger);
 
@@ -50,10 +65,11 @@ process.on('unhandledRejection', (reason) => {
 });
 process.on('uncaughtException', (err) => {
   logger.error('uncaughtException', { err });
+  process.exit(1);
 });
 
 app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', version: '2.0.0' });
+  res.json({ status: 'ok', version: process.env.npm_package_version || '2.5.1' });
 });
 
 app.get('/api/auth/config', handleAuthConfig);
@@ -1892,10 +1908,27 @@ app.use(errorHandler);
 const isMain = process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
 
 if (isMain) {
-  app.listen(PORT, () => {
+  try {
+    await prisma.$queryRawUnsafe('PRAGMA journal_mode=WAL');
+    await prisma.$queryRawUnsafe('PRAGMA busy_timeout=5000');
+  } catch (err) {
+    logger.warn('sqlite_pragma_failed', { err });
+  }
+  const server = app.listen(PORT, () => {
     const mode = process.env.SERVE_FRONTEND === 'true' ? ' + frontend estatico' : '';
     logger.info('server_started', { port: PORT, mode: mode.trim() });
   });
+
+  const shutdown = (signal) => {
+    logger.info('server_stopping', { signal });
+    server.close(async () => {
+      await prisma.$disconnect().catch(() => {});
+      process.exit(0);
+    });
+    setTimeout(() => process.exit(1), 10_000).unref();
+  };
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
 }
 
 export { app, prisma };

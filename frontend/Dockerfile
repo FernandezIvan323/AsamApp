@@ -1,20 +1,16 @@
-# Usamos una imagen de Node.js como base
-FROM node:20-alpine
-
-# Establecemos el directorio de trabajo dentro del contenedor
+# ── Build del frontend con Vite ──
+FROM node:20-alpine AS build
 WORKDIR /app
 
-# Copiamos los archivos de configuración
-COPY package*.json ./
+COPY package.json package-lock.json ./
+RUN npm ci
 
-# Instalamos las dependencias
-RUN npm install
-
-# Copiamos el resto del código del proyecto
 COPY . .
+RUN npm run build
 
-# Exponemos el puerto que usa Vite
-EXPOSE 5173
+# ── Serve estático con nginx + proxy /api al backend ──
+FROM nginx:alpine
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/dist /usr/share/nginx/html
 
-# Comando para iniciar la aplicación en modo desarrollo
-CMD ["npm", "run", "dev", "--", "--host"]
+EXPOSE 80

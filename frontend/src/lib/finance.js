@@ -16,7 +16,7 @@ export const MONTHS = [
 ];
 
 export function currency(value) {
-  return Number(value || 0).toLocaleString('es-AR', { maximumFractionDigits: 0 });
+  return Number(value || 0).toLocaleString('es-CO', { maximumFractionDigits: 0 });
 }
 
 export function getEventSubtotal(event) {
